@@ -1,0 +1,241 @@
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
+
+type Language = 'en' | 'pt';
+
+interface LanguageContextType {
+    language: Language;
+    setLanguage: (language: Language) => void;
+    t: (key: string, replacements?: { [key: string]: string }) => string;
+}
+
+const translations: { [lang in Language]: { [key: string]: string } } = {
+  en: {
+    title: "Flags of the World Explorer",
+    headerTitle: "Flags of the World",
+    explorer: "Explorer",
+    exploreTitle: "Flag of the Day",
+    exploreSubtitle: "Discover the stories, symbols, and colors behind the flags of nations. Use the filters below to navigate through the rich tapestry of global heraldry.",
+    searchPlaceholder: "Search by country name...",
+    fetchError: "Failed to fetch country data. Please try again later.",
+    errorOops: "Oops! Something went wrong.",
+    noResults: "No flags match your search criteria.",
+    viewDetailsFor: "View details for {{countryName}}",
+    closeModal: "Close modal",
+    continents: "Continent(s)",
+    capital: "Capital",
+    population: "Population",
+    area: "Area",
+    areaUnit: "km²",
+    coatOfArms: "Coat of Arms",
+    viewOnMap: "View on Google Maps",
+    goToTop: "Go to top",
+    footerRights: `© ${new Date().getFullYear()} Flags of the World Explorer. All rights reserved.`,
+    footerBuiltWith: "Built with React & Tailwind CSS | Data from REST Countries API",
+    showingFlags: "Showing {{count}} of {{total}} flags",
+    loadingFlags: "Loading flags from around the globe...",
+    startQuiz: "Start Quiz",
+    quizTitle: "Flag Quiz",
+    questionOf: "Question {{current}} of {{total}}",
+    whichCountry: "Which country's flag is this?",
+    whichFlag: "Which flag belongs to the capital: {{capital}}?",
+    nextQuestion: "Next Question",
+    quizResults: "Quiz Results",
+    yourScore: "You scored {{score}} out of {{total}}",
+    playAgain: "Play Again",
+    backToExplorer: "Back to Explorer",
+    scoreFeedbackExcellent: "Excellent! You're a flag expert!",
+    scoreFeedbackGood: "Good job! You know your flags well.",
+    scoreFeedbackAverage: "Not bad! A little more practice and you'll be an expert.",
+    scoreFeedbackPoor: "Keep practicing! The world of flags is fascinating.",
+    askAI: "Ask AI about {{countryName}}",
+    aiThinking: "Thinking...",
+    aiError: "Sorry, I couldn't fetch insights right now. Please try again.",
+    aiInsightsTitle: "AI-Powered Insights",
+    discoverTitle: "Discover",
+    discoverLoading: "Curating a new collection for you...",
+    flagOfTheDay: "Flag of the Day",
+    flagOfTheDayLoading: "Selecting today's featured flag...",
+    filterAndSearch: "Filter & Search",
+    filterByContinent: "Filter by Continent",
+    quizMode: "Quiz Mode",
+    quizModeFlag: "Flag → Country",
+    quizModeCapital: "Capital → Flag",
+    quizTime: "Total Time",
+    quizAvgTime: "Avg. Time / Q",
+    quizSeconds: "{{seconds}}s",
+    aiUnavailable: "AI features are unavailable. Please check your API key configuration.",
+    compareMode: "Compare Mode",
+    compareModeTooltip: "Toggle to select two flags for comparison",
+    selectForComparison: "Select {{countryName}} for comparison",
+    compareFlags: "Compare ({{count}}/2)",
+    clearSelection: "Clear",
+    comparisonTitle: "Flag Comparison",
+    aiComparisonTitle: "AI Vexillology Analysis",
+    aiComparing: "Analyzing flags...",
+    designer: "Designer",
+    designerTitle: "Flag Designer Studio",
+    designerDescription: "Unleash your creativity! Select a flag and use AI to reimagine it.",
+    selectAFlag: "Select a Flag to Begin",
+    designerPrompt: "Describe your changes",
+    designerPromptPlaceholder: "e.g., 'Change the red stripes to purple' or 'Add a majestic lion in the center'",
+    generate: "Generate",
+    reset: "Reset",
+    download: "Download",
+    designerPreparing: "Preparing your canvas...",
+    designerOutputAlt: "AI generated flag design",
+    designerStart: "Select a flag to start designing.",
+    designerErrorImage: "Could not prepare the flag image. Please try another.",
+    aiSearchPlaceholder: "Ask AI: 'flags with a moon', etc.",
+    aiSearchError: "Sorry, the AI search failed. Please try again.",
+    aiSearching: "AI is searching...",
+    aiFilterActive: "Showing AI results for: \"{{query}}\"",
+    clearAiFilter: "Clear",
+    favorites: "Favorites",
+    noFavorites: "No favorites yet!",
+    noFavoritesDescription: "Click the heart on any flag to add it to your collection.",
+    addToFavorites: "Add to favorites",
+    removeFromFavorites: "Remove from favorites",
+    addedToFavoritesToast: "{{countryName}} added to favorites!",
+    removedFromFavoritesToast: "{{countryName}} removed from favorites.",
+    similarFlagsTitle: "You Might Also Like",
+    toggleTheme: "Toggle theme",
+    quickFact: "Get a quick fact",
+    loadingFact: "Loading fact...",
+  },
+  pt: {
+    title: "Explorador de Bandeiras do Mundo",
+    headerTitle: "Bandeiras do Mundo",
+    explorer: "Explorador",
+    exploreTitle: "Bandeira do Dia",
+    exploreSubtitle: "Descubra as histórias, símbolos e cores por trás das bandeiras das nações. Use os filtros abaixo para navegar pela rica tapeçaria da heráldica global.",
+    searchPlaceholder: "Pesquisar por nome do país...",
+    fetchError: "Falha ao buscar dados dos países. Por favor, tente novamente mais tarde.",
+    errorOops: "Opa! Algo deu errado.",
+    noResults: "Nenhuma bandeira corresponde aos seus critérios de pesquisa.",
+    viewDetailsFor: "Ver detalhes de {{countryName}}",
+    closeModal: "Fechar modal",
+    continents: "Continente(s)",
+    capital: "Capital",
+    population: "População",
+    area: "Área",
+    areaUnit: "km²",
+    coatOfArms: "Brasão de Armas",
+    viewOnMap: "Ver no Google Maps",
+    goToTop: "Ir para o topo",
+    footerRights: `© ${new Date().getFullYear()} Explorador de Bandeiras do Mundo. Todos os direitos reservados.`,
+    footerBuiltWith: "Construído com React & Tailwind CSS | Dados da API REST Countries",
+    showingFlags: "Mostrando {{count}} de {{total}} bandeiras",
+    loadingFlags: "Carregando bandeiras de todo o mundo...",
+    startQuiz: "Iniciar Quiz",
+    quizTitle: "Quiz de Bandeiras",
+    questionOf: "Questão {{current}} de {{total}}",
+    whichCountry: "De que país é esta bandeira?",
+    whichFlag: "Qual bandeira pertence à capital: {{capital}}?",
+    nextQuestion: "Próxima Pergunta",
+    quizResults: "Resultados do Quiz",
+    yourScore: "Você acertou {{score}} de {{total}}",
+    playAgain: "Jogar Novamente",
+    backToExplorer: "Voltar ao Explorador",
+    scoreFeedbackExcellent: "Excelente! Você é um expert em bandeiras!",
+    scoreFeedbackGood: "Bom trabalho! Você conhece bem as bandeiras.",
+    scoreFeedbackAverage: "Nada mal! Com um pouco mais de prática você será um expert.",
+    scoreFeedbackPoor: "Continue praticando! O mundo das bandeiras é fascinante.",
+    askAI: "Perguntar à IA sobre {{countryName}}",
+    aiThinking: "Pensando...",
+    aiError: "Desculpe, não consegui buscar os insights no momento. Por favor, tente novamente.",
+    aiInsightsTitle: "Insights da IA",
+    discoverTitle: "Descubra",
+    discoverLoading: "Criando uma nova coleção para você...",
+    flagOfTheDay: "Bandeira do Dia",
+    flagOfTheDayLoading: "Selecionando a bandeira em destaque de hoje...",
+    filterAndSearch: "Filtrar e Pesquisar",
+    filterByContinent: "Filtrar por Continente",
+    quizMode: "Modo do Quiz",
+    quizModeFlag: "Bandeira → País",
+    quizModeCapital: "Capital → Bandeira",
+    quizTime: "Tempo Total",
+    quizAvgTime: "Tempo Médio / Q",
+    quizSeconds: "{{seconds}}s",
+    aiUnavailable: "Recursos de IA indisponíveis. Verifique a configuração da sua chave de API.",
+    compareMode: "Modo de Comparação",
+    compareModeTooltip: "Ative para selecionar duas bandeiras para comparação",
+    selectForComparison: "Selecionar {{countryName}} para comparação",
+    compareFlags: "Comparar ({{count}}/2)",
+    clearSelection: "Limpar",
+    comparisonTitle: "Comparação de Bandeiras",
+    aiComparisonTitle: "Análise de Vexilologia por IA",
+    aiComparing: "Analisando bandeiras...",
+    designer: "Designer",
+    designerTitle: "Estúdio de Design de Bandeiras",
+    designerDescription: "Solte sua criatividade! Selecione uma bandeira e use IA para reimaginá-la.",
+    selectAFlag: "Selecione uma Bandeira para Começar",
+    designerPrompt: "Descreva suas alterações",
+    designerPromptPlaceholder: "ex: 'Mude as listras vermelhas para roxas' ou 'Adicione um leão majestoso no centro'",
+    generate: "Gerar",
+    reset: "Resetar",
+    download: "Baixar",
+    designerPreparing: "Preparando sua tela...",
+    designerOutputAlt: "Design de bandeira gerado por IA",
+    designerStart: "Selecione uma bandeira para começar a criar.",
+    designerErrorImage: "Não foi possível preparar a imagem da bandeira. Por favor, tente outra.",
+    aiSearchPlaceholder: "Pergunte à IA: 'bandeiras com uma lua', etc.",
+    aiSearchError: "Desculpe, a busca com IA falhou. Tente uma consulta diferente.",
+    aiSearching: "A IA está pesquisando...",
+    aiFilterActive: "Mostrando resultados da IA para: \"{{query}}\"",
+    clearAiFilter: "Limpar",
+    favorites: "Favoritos",
+    noFavorites: "Nenhum favorito ainda!",
+    noFavoritesDescription: "Clique no coração em qualquer bandeira para adicioná-la à sua coleção.",
+    addToFavorites: "Adicionar aos favoritos",
+    removeFromFavorites: "Remover dos favoritos",
+    addedToFavoritesToast: "{{countryName}} adicionado aos favoritos!",
+    removedFromFavoritesToast: "{{countryName}} removido dos favoritos.",
+    similarFlagsTitle: "Você Também Pode Gostar",
+    toggleTheme: "Alternar tema",
+    quickFact: "Obter um fato rápido",
+    loadingFact: "Carregando fato...",
+  }
+};
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [language, setLanguageState] = useState<Language>(() => {
+        const savedLang = localStorage.getItem('language') as Language;
+        return savedLang || 'en';
+    });
+
+    const setLanguage = (lang: Language) => {
+        localStorage.setItem('language', lang);
+        setLanguageState(lang);
+    };
+
+    const t = useCallback((key: string, replacements?: { [key: string]: string }) => {
+        let translation = translations[language][key] || key;
+        if (replacements) {
+            Object.keys(replacements).forEach(placeholder => {
+                translation = translation.replace(`{{${placeholder}}}`, replacements[placeholder]);
+            });
+        }
+        return translation;
+    }, [language]);
+    
+    useEffect(() => {
+        document.documentElement.lang = language;
+        document.title = t('title');
+    }, [language, t]);
+
+    return (
+        <LanguageContext.Provider value={{ language, setLanguage, t }}>
+            {children}
+        </LanguageContext.Provider>
+    );
+};
+
+export const useLanguage = (): LanguageContextType => {
+    const context = useContext(LanguageContext);
+    if (!context) {
+        throw new Error('useLanguage must be used within a LanguageProvider');
+    }
+    return context;
+};
