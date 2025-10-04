@@ -6,7 +6,6 @@ import { fetchCountryQuickFact } from '../services/geminiService';
 interface FlagCardProps {
     country: Country;
     onCardClick: (country: Country) => void;
-    style?: React.CSSProperties;
     isCompareModeActive?: boolean;
     isSelectedForCompare?: boolean;
     isFavorite?: boolean;
@@ -37,7 +36,6 @@ const QuickFact: React.FC<{ fact: string | null; isLoading: boolean; error: stri
 const FlagCard: React.FC<FlagCardProps> = ({ 
     country, 
     onCardClick, 
-    style, 
     isCompareModeActive = false, 
     isSelectedForCompare = false,
     isFavorite = false,
@@ -82,7 +80,6 @@ const FlagCard: React.FC<FlagCardProps> = ({
             onKeyPress={(e) => { if (e.key === 'Enter') onCardClick(country) }}
             aria-label={ariaLabel}
             aria-pressed={isSelectedForCompare}
-            style={style}
         >
             <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
                 <button

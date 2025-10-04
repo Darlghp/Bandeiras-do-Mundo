@@ -42,12 +42,11 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ featuredData, isLoading, on
                     {isLoading ? (
                         <DiscoverSkeleton />
                     ) : featuredData && featuredData.countries.length > 0 ? (
-                        featuredData.countries.map((country, index) => (
+                        featuredData.countries.map((country) => (
                             <div key={country.cca3} className="w-64 flex-shrink-0">
                                 <FlagCard 
                                     country={country}
                                     onCardClick={onCardClick}
-                                    style={{ animationDelay: `${index * 50}ms` }}
                                     isFavorite={favorites.has(country.cca3)}
                                     onToggleFavorite={onToggleFavorite}
                                 />

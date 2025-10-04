@@ -101,6 +101,13 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     toggleTheme: "Toggle theme",
     quickFact: "Get a quick fact",
     loadingFact: "Loading fact...",
+    filterByColor: "Filter by Color",
+    searchByColor: "Search by Color",
+    aiColorFilterActive: "Showing AI results for colors:",
+    clearColorFilter: "Clear",
+    continentTab: "Continents",
+    aiSearchTab: "AI Search",
+    toolsTab: "Tools",
   },
   pt: {
     title: "Explorador de Bandeiras do Mundo",
@@ -194,6 +201,13 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     toggleTheme: "Alternar tema",
     quickFact: "Obter um fato rápido",
     loadingFact: "Carregando fato...",
+    filterByColor: "Filtrar por Cor",
+    searchByColor: "Pesquisar por Cor",
+    aiColorFilterActive: "Mostrando resultados da IA para cores:",
+    clearColorFilter: "Limpar",
+    continentTab: "Continentes",
+    aiSearchTab: "Busca IA",
+    toolsTab: "Ferramentas",
   }
 };
 

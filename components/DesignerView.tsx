@@ -99,7 +99,7 @@ const DesignerView: React.FC<{ countries: Country[] }> = ({ countries }) => {
             const imageToEdit = currentImage ? currentImage.split(',')[1] : originalImage.base64;
             const mimeType = currentImage ? currentImage.split(';')[0].split(':')[1] : originalImage.mimeType;
 
-            const newImage = await editFlagWithAi(imageToEdit, mimeType, prompt, language);
+            const newImage = await editFlagWithAi(imageToEdit, mimeType, prompt);
             setCurrentImage(`data:${newImage.mimeType};base64,${newImage.base64}`);
             setPrompt('');
         } catch (e) {

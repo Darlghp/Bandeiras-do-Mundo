@@ -1,28 +1,32 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import type { Country } from './types';
 import { fetchCountries } from './services/countryService';
-import { fetchFeaturedCountries, getAiAvailability, fetchTitleForFlag, fetchFlagsByQuery } from './services/geminiService';
+import { fetchFeaturedCountries, getAiAvailability, fetchFlagsByQuery, fetchFlagsByColor } from './services/geminiService';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import FlagCard from './components/FlagCard';
-import SearchBar from './components/SearchBar';
-import ContinentFilter from './components/ContinentFilter';
 import FlagModal from './components/FlagModal';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import SkeletonCard from './components/SkeletonCard';
 import DiscoverView from './components/DiscoverView';
 import Hero from './components/Hero';
-import { CONTINENTS_API_VALUES } from './constants';
+import { CONTINENTS_API_VALUES, FLAG_COLORS } from './constants';
+import { FLAG_OF_THE_DAY_TITLES } from './constants/flagOfTheDayTitles';
 import { useLanguage } from './context/LanguageContext';
-import CompareModeToggle from './components/CompareModeToggle';
 import CompareTray from './components/CompareTray';
 import CompareModal from './components/CompareModal';
+import ViewNavigator from './components/ViewNavigator';
+import FilterNavigator from './components/FilterNavigator';
+import VirtualFlagGrid from './components/VirtualFlagGrid';
 
 // Lazy load views that are not part of the initial screen
 const QuizView = lazy(() => import('./components/QuizView'));
 const DesignerView = lazy(() => import('./components/DesignerView'));
 
 export type View = 'explorer' | 'quiz' | 'designer';
+
+type AiFilter = 
+    | { type: 'text', query: string; results: string[] } 
+    | { type: 'color', colors: string[]; results: string[] };
 
 interface FeaturedData {
     title: string;
@@ -86,7 +90,7 @@ const App: React.FC = () => {
     const [featuredData, setFeaturedData] = useState<FeaturedData | null>(null);
     const [isFeaturedLoading, setIsFeaturedLoading] = useState<boolean>(false);
     const [flagOfTheDay, setFlagOfTheDay] = useState<FlagOfTheDayData | null>(null);
-    const [isFlagOfTheDayLoading, setIsFlagOfTheDayLoading] = useState<boolean>(false);
+    const [isFlagOfTheDayLoading, setIsFlagOfTheDayLoading] = useState<boolean>(true);
     const [aiAvailable, setAiAvailable] = useState(false);
 
     const [isCompareModeActive, setIsCompareModeActive] = useState(false);
@@ -94,7 +98,7 @@ const App: React.FC = () => {
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     
     const [isAiSearching, setIsAiSearching] = useState<boolean>(false);
-    const [aiFilter, setAiFilter] = useState<{ query: string; results: string[] } | null>(null);
+    const [aiFilter, setAiFilter] = useState<AiFilter | null>(null);
 
     const [favorites, setFavorites] = useState<Set<string>>(() => {
         try {
@@ -184,22 +188,25 @@ const App: React.FC = () => {
         }
     }, [language]);
     
-    const manageFlagOfTheDay = useCallback(async (countryData: Country[]) => {
-        if (!getAiAvailability() || countryData.length === 0) {
+    const manageFlagOfTheDay = useCallback((countryData: Country[]) => {
+        if (countryData.length === 0) {
+            setIsFlagOfTheDayLoading(false);
             return;
         }
+    
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const countryForToday = getDeterministicCountryForDate(today, countryData);
         if (!countryForToday) return;
     
-        const storageKey = `flagOfTheDay_v2_${language}`;
+        const storageKey = `flagOfTheDay_v3_${language}`;
         const storedFlagRaw = localStorage.getItem(storageKey);
         if (storedFlagRaw) {
             try {
                 const storedFlag: StoredFlagOfTheDay = JSON.parse(storedFlagRaw);
                 if (storedFlag.date === today && storedFlag.country.cca3 === countryForToday.cca3) {
                     setFlagOfTheDay({ country: storedFlag.country, title: storedFlag.title });
+                    setIsFlagOfTheDayLoading(false);
                     return;
                 }
             } catch (e) {
@@ -207,24 +214,24 @@ const App: React.FC = () => {
                 localStorage.removeItem(storageKey);
             }
         }
+        
+        // Use curated title if available, otherwise fallback to country name.
+        const curatedTitle = FLAG_OF_THE_DAY_TITLES[countryForToday.cca3]?.[language];
+        const fallbackTitle = language === 'pt' ? countryForToday.translations.por.common : countryForToday.name.common;
+        const title = curatedTitle || fallbackTitle;
     
-        setIsFlagOfTheDayLoading(true);
+        const flagDayData = { country: countryForToday, title };
+        setFlagOfTheDay(flagDayData);
+        
         try {
-            const title = await fetchTitleForFlag(countryForToday, language);
-            const flagDayData = { country: countryForToday, title };
-            setFlagOfTheDay(flagDayData);
             const newStoredFlag: StoredFlagOfTheDay = { date: today, ...flagDayData };
             localStorage.setItem(storageKey, JSON.stringify(newStoredFlag));
-        } catch (aiError) {
-            console.error("Failed to fetch title for flag of the day:", aiError);
-            const fallbackData = { 
-                country: countryForToday, 
-                title: language === 'pt' ? countryForToday.translations.por.common : countryForToday.name.common 
-            };
-            setFlagOfTheDay(fallbackData);
-        } finally {
-            setIsFlagOfTheDayLoading(false);
+        } catch (error) {
+            console.error("Failed to cache flag of the day data.", error);
         }
+        
+        setIsFlagOfTheDayLoading(false);
+    
     }, [language]);
 
     useEffect(() => {
@@ -286,7 +293,7 @@ const App: React.FC = () => {
         setError(null);
         try {
             const countryNames = await fetchFlagsByQuery(query, countries, language);
-            setAiFilter({ query: query, results: countryNames });
+            setAiFilter({ type: 'text', query: query, results: countryNames });
         } catch (err) {
             console.error("AI Search failed:", err);
             setError(t('aiSearchError'));
@@ -295,6 +302,30 @@ const App: React.FC = () => {
             setIsAiSearching(false);
         }
     };
+    
+    const handleColorSearch = async (colors: string[]) => {
+        if (!getAiAvailability()) {
+            setError(t('aiUnavailable'));
+            return;
+        }
+        if (colors.length === 0) {
+            setAiFilter(null);
+            return;
+        }
+        setIsAiSearching(true);
+        setError(null);
+        try {
+            const countryNames = await fetchFlagsByColor(colors, countries, language);
+            setAiFilter({ type: 'color', colors: colors, results: countryNames });
+        } catch (err) {
+            console.error("AI Color Search failed:", err);
+            setError(t('aiSearchError'));
+            setAiFilter(null);
+        } finally {
+            setIsAiSearching(false);
+        }
+    };
+
 
     const handleClearAiFilter = () => {
         setSearchQuery('');
@@ -327,6 +358,46 @@ const App: React.FC = () => {
         return continentFiltered;
     }, [countries, selectedContinent, language, aiFilter, favorites]);
     
+    const AiFilterIndicator: React.FC = () => {
+        if (!aiFilter) return null;
+
+        if (aiFilter.type === 'text') {
+            return (
+                <div className="bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between animate-fade-in-up-short">
+                    <p className="text-sm">
+                        <span className="font-semibold">{t('aiFilterActive', { query: aiFilter.query })}</span>
+                    </p>
+                    <button onClick={handleClearAiFilter} className="font-bold hover:text-blue-600 dark:hover:text-blue-100 transition-colors text-sm flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                        {t('clearAiFilter')}
+                    </button>
+                </div>
+            );
+        }
+
+        if (aiFilter.type === 'color') {
+             return (
+                <div className="bg-purple-100 dark:bg-purple-900/50 border border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between animate-fade-in-up-short">
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="font-semibold">{t('aiColorFilterActive')}</span>
+                        <div className="flex items-center gap-1.5">
+                            {aiFilter.colors.map(colorName => (
+                                <div key={colorName} className="w-4 h-4 rounded-full border border-gray-400/50" style={{ backgroundColor: FLAG_COLORS[colorName as keyof typeof FLAG_COLORS] }}></div>
+                            ))}
+                        </div>
+                    </div>
+                    <button onClick={handleClearAiFilter} className="font-bold hover:text-purple-600 dark:hover:text-purple-100 transition-colors text-sm flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                        {t('clearColorFilter')}
+                    </button>
+                </div>
+            );
+        }
+
+        return null;
+    };
+
+
     const MainContent: React.FC = () => {
         if (view === 'quiz') {
             return <QuizView countries={countries} onBackToExplorer={() => setView('explorer')} />;
@@ -355,157 +426,110 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
                     <aside className="md:col-span-1">
                         <div className="md:sticky top-24">
-                            <div className="space-y-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-xl shadow-md border border-gray-200 dark:border-slate-700/50 animate-fade-in">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100">{t('filterAndSearch')}</h3>
-                                <SearchBar 
-                                    initialQuery={searchQuery}
-                                    onAiSearch={handleAiSearch}
-                                    isAiSearching={isAiSearching}
-                                />
-                                {aiFilter && (
-                                    <div className="p-3 bg-blue-50 dark:bg-sky-900/50 rounded-lg text-sm text-blue-800 dark:text-sky-200 animate-fade-in">
-                                        <p className="font-semibold">{t('aiFilterActive', { query: aiFilter.query })}</p>
-                                        <button onClick={handleClearAiFilter} className="mt-1 text-blue-600 dark:text-sky-300 hover:underline font-bold">
-                                            {t('clearAiFilter')}
-                                        </button>
-                                    </div>
-                                )}
-                                
-                                <div className="space-y-2 border-t border-b border-gray-200 dark:border-slate-700/50 py-4">
-                                     <button
-                                        onClick={() => setSelectedContinent('Favorites')}
-                                        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 ${
-                                            selectedContinent === 'Favorites' 
-                                            ? 'bg-amber-500 text-white shadow-md' 
-                                            : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                            </svg>
-                                            <span>{t('favorites')}</span>
-                                        </div>
-                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${selectedContinent === 'Favorites' ? 'bg-white/20' : 'bg-gray-200 dark:bg-slate-600'}`}>{favorites.size}</span>
-                                    </button>
-                                </div>
-
-                                <ContinentFilter 
-                                    continents={CONTINENTS_API_VALUES}
-                                    selectedContinent={selectedContinent} 
-                                    setSelectedContinent={setSelectedContinent} 
-                                />
-                                <CompareModeToggle 
-                                    isActive={isCompareModeActive} 
-                                    onToggle={() => {
-                                        setIsCompareModeActive(!isCompareModeActive);
-                                        handleClearComparison();
-                                    }} 
-                                />
-                                {!isLoading && (
-                                    <p className="text-center text-sm text-gray-600 dark:text-slate-400" aria-live="polite">
-                                        {t('showingFlags', { 
-                                            count: filteredCountries.length.toString(), 
-                                            total: countries.length.toString() 
-                                        })}
-                                    </p>
-                                )}
-                            </div>
+                           <FilterNavigator
+                                continents={CONTINENTS_API_VALUES}
+                                selectedContinent={selectedContinent}
+                                setSelectedContinent={setSelectedContinent}
+                                initialQuery={searchQuery}
+                                onAiSearch={handleAiSearch}
+                                isAiSearchingText={isAiSearching && aiFilter?.type === 'text'}
+                                onColorSearch={handleColorSearch}
+                                isAiSearchingColor={isAiSearching && aiFilter?.type === 'color'}
+                                isCompareModeActive={isCompareModeActive}
+                                onToggleCompareMode={() => setIsCompareModeActive(!isCompareModeActive)}
+                                aiAvailable={aiAvailable}
+                           />
                         </div>
                     </aside>
-
-                    <div className="md:col-span-3">
+                    <main className="md:col-span-3">
+                        <AiFilterIndicator />
+                        
                         {isLoading ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {Array.from({ length: 15 }).map((_, index) => <SkeletonCard key={index} />)}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {Array.from({ length: 12 }).map((_, index) => <SkeletonCard key={index} />)}
                             </div>
-                        ) : error && !isAiSearching ? ( // Hide general error during AI search
-                            <ErrorMessage message={error} />
                         ) : filteredCountries.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredCountries.map((country, index) => (
-                                    <FlagCard 
-                                        key={country.cca3} 
-                                        country={country} 
-                                        onCardClick={handleCardClick}
-                                        style={{ animationDelay: `${index * 30}ms` }}
-                                        isCompareModeActive={isCompareModeActive}
-                                        isSelectedForCompare={comparisonList.some(c => c.cca3 === country.cca3)}
-                                        isFavorite={favorites.has(country.cca3)}
-                                        onToggleFavorite={handleToggleFavorite}
-                                    />
-                                ))}
-                            </div>
-                        ) : (selectedContinent === 'Favorites' && favorites.size === 0) ? (
-                            <div className="col-span-full text-center py-20">
-                                <div className="inline-block bg-amber-100 dark:bg-amber-900/50 p-4 rounded-full">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.539 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.539-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                    </svg>
-                                </div>
-                                <h3 className="mt-4 text-xl font-semibold text-gray-800 dark:text-slate-200">{t('noFavorites')}</h3>
-                                <p className="mt-2 text-gray-500 dark:text-slate-400">{t('noFavoritesDescription')}</p>
+                            <VirtualFlagGrid
+                                countries={filteredCountries}
+                                onCardClick={handleCardClick}
+                                isCompareModeActive={isCompareModeActive}
+                                comparisonList={comparisonList}
+                                favorites={favorites}
+                                onToggleFavorite={handleToggleFavorite}
+                            />
+                        ) : error ? (
+                            <div className="col-span-full text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                <p className="text-red-600 dark:text-red-400 font-semibold">{t('errorOops')}</p>
+                                <p className="text-red-500 dark:text-red-400 mt-1">{error}</p>
                             </div>
                         ) : (
-                            <NoResults />
+                            <div className="col-span-full text-center py-12">
+                                {selectedContinent === 'Favorites' ? (
+                                    <div className="text-center py-12 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                        <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-slate-200">{t('noFavorites')}</h3>
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{t('noFavoritesDescription')}</p>
+                                    </div>
+                                ) : (
+                                     <p>{t('noResults')}</p>
+                                )}
+                            </div>
                         )}
-                    </div>
+                    </main>
                 </div>
             </>
         );
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-transparent text-gray-800 dark:text-slate-300">
+        <div className="min-h-screen flex flex-col">
             <Header currentView={view} setView={setView} />
-            <main className="relative z-10 flex-grow container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-                <Suspense fallback={<PageLoader />}>
-                    <MainContent />
-                </Suspense>
+            <main className="flex-grow pt-16"> {/* Adjusted pt for header height */}
+                {view !== 'explorer' && (
+                     <div className="bg-gray-100 dark:bg-slate-950/50 border-b border-gray-200 dark:border-slate-800">
+                        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                             <ViewNavigator currentView={view} setView={setView} />
+                        </div>
+                    </div>
+                )}
+                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                     <Suspense fallback={<PageLoader />}>
+                        <MainContent />
+                    </Suspense>
+                 </div>
             </main>
-            <Footer />
-            <FlagModal 
-                country={selectedCountry} 
-                onClose={handleCloseModal}
-                isFavorite={selectedCountry ? favorites.has(selectedCountry.cca3) : false}
-                onToggleFavorite={handleToggleFavorite}
-                allCountries={countries}
-                onCountrySelect={handleCardClick}
-            />
-            {isCompareModeActive && (
-                <CompareTray 
-                    comparisonList={comparisonList} 
-                    onCompare={handleOpenCompareModal} 
-                    onClear={handleClearComparison} 
+            {selectedCountry && (
+                <FlagModal 
+                    country={selectedCountry}
+                    onClose={handleCloseModal}
+                    isFavorite={favorites.has(selectedCountry.cca3)}
+                    onToggleFavorite={handleToggleFavorite}
+                    allCountries={countries}
+                    onCountrySelect={(country) => {
+                        handleCloseModal();
+                        // A small timeout to allow modal to close before opening a new one
+                        setTimeout(() => setSelectedCountry(country), 300);
+                    }}
                 />
             )}
             {isCompareModalOpen && comparisonList.length === 2 && (
-                <CompareModal 
-                    countries={[comparisonList[0], comparisonList[1]]} 
-                    onClose={handleCloseCompareModal} 
+                 <CompareModal 
+                    countries={[comparisonList[0], comparisonList[1]]}
+                    onClose={handleCloseCompareModal}
                 />
             )}
+            <Footer />
             <ScrollToTopButton />
+            {isCompareModeActive && (
+                <CompareTray 
+                    comparisonList={comparisonList}
+                    onCompare={handleOpenCompareModal}
+                    onClear={handleClearComparison}
+                />
+            )}
             <Toast message={toastMessage} isVisible={isToastVisible} />
-        </div>
-    );
-};
-
-const ErrorMessage: React.FC<{ message: string }> = ({ message }) => {
-    const { t } = useLanguage();
-    return (
-        <div className="col-span-full text-center py-20 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg">
-            <p className="text-xl font-semibold">{t('errorOops')}</p>
-            <p>{message}</p>
-        </div>
-    );
-};
-
-const NoResults: React.FC = () => {
-    const { t } = useLanguage();
-    return (
-        <div className="col-span-full text-center py-20">
-            <p className="text-xl text-gray-500 dark:text-slate-400">{t('noResults')}</p>
         </div>
     );
 };
