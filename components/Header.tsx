@@ -73,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
                     </div>
                     
                     {/* Center: Navigation */}
-                    <div className="flex-shrink-0">
+                    <div className="hidden md:block">
                         <div ref={navRef} className="flex items-center justify-center p-1 bg-gray-100 dark:bg-slate-800/50 rounded-lg">
                             <div className="relative flex items-center">
                                 {navItems.map(item => (

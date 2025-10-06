@@ -17,6 +17,7 @@ import CompareModal from './components/CompareModal';
 import ViewNavigator from './components/ViewNavigator';
 import FilterNavigator from './components/FilterNavigator';
 import VirtualFlagGrid from './components/VirtualFlagGrid';
+import BottomNav from './components/BottomNav';
 
 // Lazy load views that are not part of the initial screen
 const QuizView = lazy(() => import('./components/QuizView'));
@@ -279,6 +280,16 @@ const App: React.FC = () => {
     const handleOpenCompareModal = () => setIsCompareModalOpen(true);
     const handleCloseCompareModal = () => setIsCompareModalOpen(false);
 
+    const handleToggleCompareMode = useCallback(() => {
+        setIsCompareModeActive(prev => {
+            // When turning OFF compare mode, clear the comparison list for better UX.
+            if (prev) {
+                setComparisonList([]);
+            }
+            return !prev;
+        });
+    }, []);
+
     const handleAiSearch = async (query: string) => {
         setSearchQuery(query);
         if (!getAiAvailability()) {
@@ -289,6 +300,7 @@ const App: React.FC = () => {
             setAiFilter(null);
             return;
         }
+        setSelectedContinent('All'); // Reset continent filter for a global search
         setIsAiSearching(true);
         setError(null);
         try {
@@ -312,6 +324,7 @@ const App: React.FC = () => {
             setAiFilter(null);
             return;
         }
+        setSelectedContinent('All'); // Reset continent filter for a global search
         setIsAiSearching(true);
         setError(null);
         try {
@@ -436,7 +449,7 @@ const App: React.FC = () => {
                                 onColorSearch={handleColorSearch}
                                 isAiSearchingColor={isAiSearching && aiFilter?.type === 'color'}
                                 isCompareModeActive={isCompareModeActive}
-                                onToggleCompareMode={() => setIsCompareModeActive(!isCompareModeActive)}
+                                onToggleCompareMode={handleToggleCompareMode}
                                 aiAvailable={aiAvailable}
                            />
                         </div>
@@ -494,7 +507,7 @@ const App: React.FC = () => {
                         </div>
                     </div>
                 )}
-                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24 md:py-8">
                      <Suspense fallback={<PageLoader />}>
                         <MainContent />
                     </Suspense>
@@ -529,6 +542,7 @@ const App: React.FC = () => {
                     onClear={handleClearComparison}
                 />
             )}
+            {!isCompareModeActive && <BottomNav currentView={view} setView={setView} />}
             <Toast message={toastMessage} isVisible={isToastVisible} />
         </div>
     );

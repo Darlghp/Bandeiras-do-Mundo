@@ -8,12 +8,15 @@ const ThemeSwitcher: React.FC = () => {
 
     useEffect(() => {
         const root = window.document.documentElement;
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]');
         if (isDarkMode) {
             root.classList.add('dark');
             localStorage.setItem('theme', 'dark');
+            themeColorMeta?.setAttribute('content', '#0f172a');
         } else {
             root.classList.remove('dark');
             localStorage.setItem('theme', 'light');
+            themeColorMeta?.setAttribute('content', '#ffffff');
         }
     }, [isDarkMode]);
 

@@ -80,12 +80,21 @@ const DesignerView: React.FC<{ countries: Country[] }> = ({ countries }) => {
         setCurrentImage(null);
         setError(null);
         try {
+            // Try SVG first
             const imageData = await svgUrlToBase64Png(country.flags.svg);
             setOriginalImage(imageData);
             setCurrentImage(`data:${imageData.mimeType};base64,${imageData.base64}`);
-        } catch (e) {
-            setError(t('designerErrorImage'));
-            console.error(e);
+        } catch (svgError) {
+            console.error("Failed to load SVG, trying PNG fallback:", svgError);
+            try {
+                // Fallback to PNG
+                const imageData = await svgUrlToBase64Png(country.flags.png);
+                setOriginalImage(imageData);
+                setCurrentImage(`data:${imageData.mimeType};base64,${imageData.base64}`);
+            } catch (pngError) {
+                console.error("Failed to load PNG as well:", pngError);
+                setError(t('designerErrorImage'));
+            }
         } finally {
             setIsPreparing(false);
         }

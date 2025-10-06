@@ -18,8 +18,8 @@ import { COLOR_TRANSLATIONS } from '../constants';
  * =================================================================================
  */
 
-// We check if the API_KEY is available in the environment.
 export const getAiAvailability = (): boolean => {
+    // FIX: Use process.env.API_KEY as per coding guidelines to fix TypeScript error.
     return !!process.env.API_KEY;
 };
 
@@ -30,6 +30,7 @@ const getAiClient = () => {
         throw new Error('AI features are unavailable. API_KEY is missing.');
     }
     if (!ai) {
+        // FIX: Use process.env.API_KEY as per coding guidelines to fix TypeScript error.
         ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
     }
     return ai;

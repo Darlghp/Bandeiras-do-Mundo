@@ -1,0 +1,17 @@
+{
+  "name": "Flags of the World Explorer",
+  "short_name": "Flag Explorer",
+  "description": "An interactive web application to explore flags from countries all around the world. Users can search for specific countries and filter the flags by continent for a customized browsing experience.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f0f9ff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
