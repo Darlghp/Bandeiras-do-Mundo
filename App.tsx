@@ -324,7 +324,7 @@ const App: React.FC = () => {
         });
     }, []);
 
-    const handleAiSearch = async (query: string) => {
+    const handleAiSearch = useCallback(async (query: string) => {
         setSearchQuery(query);
         if (!getAiAvailability()) {
             setError(t('aiUnavailable'));
@@ -347,9 +347,9 @@ const App: React.FC = () => {
         } finally {
             setIsAiSearching(false);
         }
-    };
+    }, [t, countries, language]);
     
-    const handleColorSearch = async (colors: string[]) => {
+    const handleColorSearch = useCallback(async (colors: string[]) => {
         if (!getAiAvailability()) {
             setError(t('aiUnavailable'));
             return;
@@ -371,7 +371,7 @@ const App: React.FC = () => {
         } finally {
             setIsAiSearching(false);
         }
-    };
+    }, [t, countries, language]);
 
 
     const handleClearAiFilter = () => {

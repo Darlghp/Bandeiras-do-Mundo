@@ -4,6 +4,7 @@ import SearchBar from './SearchBar';
 import ContinentFilter from './ContinentFilter';
 import ColorFilter from './ColorFilter';
 import CompareModeToggle from './CompareModeToggle';
+import { useDebounce } from '../hooks/useDebounce';
 
 type FilterTab = 'continent' | 'ai' | 'tools';
 
@@ -30,6 +31,22 @@ const FilterNavigator: React.FC<FilterNavigatorProps> = (props) => {
     const [activeTab, setActiveTab] = useState<FilterTab>('continent');
     const [magicLineStyle, setMagicLineStyle] = useState({});
     const navRef = useRef<HTMLDivElement>(null);
+
+    const [searchTerm, setSearchTerm] = useState(props.initialQuery);
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+    const isMounted = useRef(false);
+
+    useEffect(() => {
+        setSearchTerm(props.initialQuery);
+    }, [props.initialQuery]);
+
+    useEffect(() => {
+        if (isMounted.current) {
+            props.onAiSearch(debouncedSearchTerm);
+        } else {
+            isMounted.current = true;
+        }
+    }, [debouncedSearchTerm, props.onAiSearch]);
 
     // Fix: Define the typed array of all possible tabs first. This ensures TypeScript
     // correctly infers `id` as `FilterTab` (a union of string literals) instead of the wider `string` type.
@@ -85,9 +102,9 @@ const FilterNavigator: React.FC<FilterNavigatorProps> = (props) => {
                 {activeTab === 'ai' && (
                     <div className="space-y-6">
                         <SearchBar 
-                            initialQuery={props.initialQuery}
-                            onAiSearch={props.onAiSearch}
-                            isAiSearching={props.isAiSearchingText}
+                            value={searchTerm}
+                            onChange={setSearchTerm}
+                            isSearching={props.isAiSearchingText}
                         />
                         <ColorFilter 
                             onColorSearch={props.onColorSearch} 

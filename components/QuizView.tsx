@@ -132,7 +132,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
     const progressPercentage = ((currentQuestionIndex + 1) / QUIZ_LENGTH) * 100;
 
     return (
-        <div className="max-w-2xl mx-auto animate-fade-in">
+        <div className="max-w-2xl mx-auto">
             <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 text-center">{t('quizMode')}</p>
                  <div className="flex justify-center bg-gray-200 dark:bg-gray-700 rounded-full p-1">
@@ -148,43 +148,45 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercentage}%` }}></div></div>
             </div>
+            
+            <div key={currentQuestionIndex} className="animate-fade-in">
+                {quizMode === 'flag' ? (
+                    <>
+                        <h2 className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1 mb-6">{t('whichCountry')}</h2>
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg mb-8"><div className="aspect-w-16 aspect-h-9"><img src={currentCountry.flags.svg} alt={t('whichCountry')} className="w-full h-full object-contain drop-shadow-md"/></div></div>
+                    </>
+                ) : (
+                    <>
+                        <h2 className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1 mb-6">{t('whichFlag', { capital: currentCountry.capital[0] })}</h2>
+                        <div className="grid grid-cols-2 gap-4 mb-8">
+                            {options.map(option => {
+                                const countryOption = countries.find(c => (language === 'pt' ? c.translations.por.common : c.name.common) === option);
+                                return (
+                                    <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 active:scale-95 ${isAnswered && (language === 'pt' ? currentCountry.translations.por.common : currentCountry.name.common) === option ? 'border-green-500' : 'border-transparent'} ${getButtonClass(option)}`}>
+                                        <div className="aspect-w-16 aspect-h-9"><img src={countryOption?.flags.svg} alt={option} className="w-full h-full object-cover"/></div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
 
-            {quizMode === 'flag' ? (
-                <>
-                    <h2 className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1 mb-6">{t('whichCountry')}</h2>
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg mb-8"><div className="aspect-w-16 aspect-h-9"><img src={currentCountry.flags.svg} alt={t('whichCountry')} className="w-full h-full object-contain drop-shadow-md"/></div></div>
-                </>
-            ) : (
-                <>
-                    <h2 className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1 mb-6">{t('whichFlag', { capital: currentCountry.capital[0] })}</h2>
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                        {options.map(option => {
-                            const countryOption = countries.find(c => (language === 'pt' ? c.translations.por.common : c.name.common) === option);
-                            return (
-                                <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 active:scale-95 ${isAnswered && (language === 'pt' ? currentCountry.translations.por.common : currentCountry.name.common) === option ? 'border-green-500' : 'border-transparent'} ${getButtonClass(option)}`}>
-                                    <div className="aspect-w-16 aspect-h-9"><img src={countryOption?.flags.svg} alt={option} className="w-full h-full object-cover"/></div>
-                                </button>
-                            );
-                        })}
+                {quizMode === 'flag' && (
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {options.map(option => (
+                            <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 active:scale-95 ${getButtonClass(option)}`}>
+                                <span className="font-semibold text-gray-800 dark:text-gray-100">{option}</span>
+                            </button>
+                        ))}
                     </div>
-                </>
-            )}
+                )}
 
-            {quizMode === 'flag' && (
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {options.map(option => (
-                        <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 active:scale-95 ${getButtonClass(option)}`}>
-                            <span className="font-semibold text-gray-800 dark:text-gray-100">{option}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
-
-            {isAnswered && (
-                <div className="text-center mt-8">
-                    <button onClick={handleNextQuestion} className="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800">{t('nextQuestion')}</button>
-                </div>
-            )}
+                {isAnswered && (
+                    <div className="text-center mt-8 animate-fade-in-up">
+                        <button onClick={handleNextQuestion} className="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800">{t('nextQuestion')}</button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

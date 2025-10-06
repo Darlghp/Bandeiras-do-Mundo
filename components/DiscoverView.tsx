@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import FlagCard from './FlagCard';
@@ -24,6 +24,33 @@ const DiscoverSkeleton: React.FC = () => (
 
 const DiscoverView: React.FC<DiscoverViewProps> = ({ featuredData, isLoading, onCardClick, favorites, onToggleFavorite }) => {
     const { t } = useLanguage();
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [scrollState, setScrollState] = useState({ canScrollLeft: false, canScrollRight: false });
+
+    const checkScrollability = () => {
+        const el = scrollContainerRef.current;
+        if (el) {
+            const canScrollLeft = el.scrollLeft > 5; // A small buffer
+            const canScrollRight = el.scrollWidth > el.clientWidth && el.scrollLeft < el.scrollWidth - el.clientWidth - 5;
+            if (canScrollLeft !== scrollState.canScrollLeft || canScrollRight !== scrollState.canScrollRight) {
+                setScrollState({ canScrollLeft, canScrollRight });
+            }
+        }
+    };
+
+    useEffect(() => {
+        const el = scrollContainerRef.current;
+        if (el) {
+            checkScrollability();
+            el.addEventListener('scroll', checkScrollability, { passive: true });
+            const resizeObserver = new ResizeObserver(checkScrollability);
+            resizeObserver.observe(el);
+            return () => {
+                el.removeEventListener('scroll', checkScrollability);
+                resizeObserver.disconnect();
+            };
+        }
+    }, [featuredData, isLoading]); // Re-check when data changes
 
     return (
         <div className="mb-12">
@@ -38,7 +65,7 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ featuredData, isLoading, on
             )}
 
             <div className="relative">
-                <div className="flex space-x-6 overflow-x-auto pb-4 -mb-4 no-scrollbar">
+                <div ref={scrollContainerRef} className="flex space-x-6 overflow-x-auto pb-4 -mb-4 no-scrollbar">
                     {isLoading ? (
                         <DiscoverSkeleton />
                     ) : featuredData && featuredData.countries.length > 0 ? (
@@ -54,8 +81,9 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ featuredData, isLoading, on
                         ))
                     ) : null}
                 </div>
-                {/* Fade-out effect for horizontal scroll */}
-                <div className="absolute top-0 right-0 bottom-0 w-16 bg-gradient-to-l from-blue-50 dark:from-slate-900 pointer-events-none"></div>
+                {/* Fade-out effects for horizontal scroll */}
+                <div className={`absolute top-0 left-0 bottom-0 w-16 bg-gradient-to-r from-blue-50 dark:from-slate-900 pointer-events-none transition-opacity duration-300 ${scrollState.canScrollLeft ? 'opacity-100' : 'opacity-0'}`}></div>
+                <div className={`absolute top-0 right-0 bottom-0 w-16 bg-gradient-to-l from-blue-50 dark:from-slate-900 pointer-events-none transition-opacity duration-300 ${scrollState.canScrollRight ? 'opacity-100' : 'opacity-0'}`}></div>
             </div>
         </div>
     );

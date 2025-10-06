@@ -45,52 +45,52 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
     }, [handleResize]);
 
     // Update visible items on scroll
-    useEffect(() => {
-        const handleScroll = () => {
-            if (!rootRef.current) return;
-            
-            const scrollTop = window.scrollY;
-            const viewportHeight = window.innerHeight;
-            
-            const gridTop = rootRef.current.offsetTop;
-            const gridHeight = rootRef.current.offsetHeight;
-            const buffer = viewportHeight * 0.5;
+    const handleScroll = useCallback(() => {
+        if (!rootRef.current) return;
+        
+        const scrollTop = window.scrollY;
+        const viewportHeight = window.innerHeight;
+        
+        const gridTop = rootRef.current.offsetTop;
+        const gridHeight = rootRef.current.offsetHeight;
+        const buffer = viewportHeight * 0.5;
 
-            // Check if the grid is way outside the viewport, and if so, clear rendered items
-            if (scrollTop + viewportHeight < gridTop - buffer || scrollTop > gridTop + gridHeight + buffer) {
-                setVisibleRange(prevRange => {
-                    if (prevRange.start === 0 && prevRange.end === 0) return prevRange;
-                    return { start: 0, end: 0 };
-                });
-                return;
-            }
-
-            // Number of rows to render before and after the visible area for smoother scrolling
-            const overscanRowCount = 3;
-
-            // Calculate which rows are visible, relative to the grid's top
-            const visibleStart = scrollTop - gridTop;
-            
-            const startRow = Math.max(0, Math.floor(visibleStart / rowHeight) - overscanRowCount);
-            const endRow = Math.min(
-                Math.ceil(countries.length / columnCount), 
-                Math.floor((visibleStart + viewportHeight) / rowHeight) + overscanRowCount
-            );
-            
+        // Check if the grid is way outside the viewport, and if so, clear rendered items
+        if (scrollTop + viewportHeight < gridTop - buffer || scrollTop > gridTop + gridHeight + buffer) {
             setVisibleRange(prevRange => {
-                if (startRow !== prevRange.start || endRow !== prevRange.end) {
-                    return { start: startRow, end: endRow };
-                }
-                return prevRange;
+                if (prevRange.start === 0 && prevRange.end === 0) return prevRange;
+                return { start: 0, end: 0 };
             });
-        };
+            return;
+        }
 
+        // Number of rows to render before and after the visible area for smoother scrolling
+        const overscanRowCount = 3;
+
+        // Calculate which rows are visible, relative to the grid's top
+        const visibleStart = scrollTop - gridTop;
+        
+        const startRow = Math.max(0, Math.floor(visibleStart / rowHeight) - overscanRowCount);
+        const endRow = Math.min(
+            Math.ceil(countries.length / columnCount), 
+            Math.floor((visibleStart + viewportHeight) / rowHeight) + overscanRowCount
+        );
+        
+        setVisibleRange(prevRange => {
+            if (startRow !== prevRange.start || endRow !== prevRange.end) {
+                return { start: startRow, end: endRow };
+            }
+            return prevRange;
+        });
+    }, [countries.length, columnCount, rowHeight]);
+
+    useEffect(() => {
         // Initial render calculation
         handleScroll();
 
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, [countries.length, columnCount, rowHeight]); // Corrected dependency array
+    }, [handleScroll]);
 
 
     const virtualRows = useMemo(() => {
