@@ -12,11 +12,11 @@ interface DiscoverViewProps {
 }
 
 const DiscoverSkeleton: React.FC = () => (
-    <div className="flex space-x-6 animate-pulse">
+    <div className="flex space-x-6">
         {Array.from({ length: 4 }).map((_, index) => (
              <div key={index} className="w-64 flex-shrink-0">
-                <div className="aspect-w-4 aspect-h-3 bg-gray-300 dark:bg-slate-700 rounded-lg"></div>
-                <div className="h-4 bg-gray-300 dark:bg-slate-700 rounded-md w-3/4 mx-auto mt-4"></div>
+                <div className="aspect-w-4 aspect-h-3 bg-gray-300 dark:bg-slate-700 rounded-lg shimmer-bg"></div>
+                <div className="h-4 bg-gray-300 dark:bg-slate-700 rounded-md w-3/4 mx-auto mt-4 shimmer-bg"></div>
             </div>
         ))}
     </div>

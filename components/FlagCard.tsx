@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { fetchCountryQuickFact } from '../services/geminiService';
@@ -45,6 +45,7 @@ const FlagCard: React.FC<FlagCardProps> = ({
     const [quickFact, setQuickFact] = useState<string | null>(null);
     const [isFactLoading, setIsFactLoading] = useState(false);
     const [factError, setFactError] = useState<string | null>(null);
+    const animationDelay = useMemo(() => `${Math.random() * 250}ms`, []);
 
     const commonName = language === 'pt' ? country.translations.por.common : country.name.common;
     const ariaLabel = isCompareModeActive 
@@ -74,6 +75,7 @@ const FlagCard: React.FC<FlagCardProps> = ({
     return (
         <div 
             className={`relative bg-white dark:bg-slate-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 ease-in-out overflow-hidden group cursor-pointer flex flex-col opacity-0 animate-fade-in-up ${cardClasses}`}
+            style={{ animationDelay }}
             onClick={() => onCardClick(country)}
             role="button"
             tabIndex={0}

@@ -78,6 +78,39 @@ const Toast: React.FC<{ message: string; isVisible: boolean }> = ({ message, isV
     );
 };
 
+const CompareModeIndicator: React.FC<{ onDisable: () => void }> = ({ onDisable }) => {
+    const { t } = useLanguage();
+    return (
+        <div className="bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between animate-fade-in-up-short">
+            <div className="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+                </svg>
+                <p className="text-sm font-semibold">
+                    {t('compareMode')}
+                </p>
+            </div>
+            <button onClick={onDisable} className="font-bold hover:text-blue-600 dark:hover:text-blue-100 transition-colors text-sm flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                {t('exitCompareMode')}
+            </button>
+        </div>
+    );
+};
+
+const NoResults: React.FC = () => {
+    const { t } = useLanguage();
+    return (
+        <div className="text-center py-12 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-slate-200">{t('noFlagsFound')}</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{t('noFlagsFoundDescription')}</p>
+        </div>
+    );
+};
+
 const App: React.FC = () => {
     const { t, language } = useLanguage();
     const [countries, setCountries] = useState<Country[]>([]);
@@ -282,11 +315,12 @@ const App: React.FC = () => {
 
     const handleToggleCompareMode = useCallback(() => {
         setIsCompareModeActive(prev => {
+            const nextState = !prev;
             // When turning OFF compare mode, clear the comparison list for better UX.
-            if (prev) {
+            if (!nextState) {
                 setComparisonList([]);
             }
-            return !prev;
+            return nextState;
         });
     }, []);
 
@@ -455,6 +489,7 @@ const App: React.FC = () => {
                         </div>
                     </aside>
                     <main className="md:col-span-3">
+                        {isCompareModeActive && <CompareModeIndicator onDisable={handleToggleCompareMode} />}
                         <AiFilterIndicator />
                         
                         {isLoading ? (
@@ -476,7 +511,7 @@ const App: React.FC = () => {
                                 <p className="text-red-500 dark:text-red-400 mt-1">{error}</p>
                             </div>
                         ) : (
-                            <div className="col-span-full text-center py-12">
+                            <div className="col-span-full">
                                 {selectedContinent === 'Favorites' ? (
                                     <div className="text-center py-12 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -486,7 +521,7 @@ const App: React.FC = () => {
                                         <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{t('noFavoritesDescription')}</p>
                                     </div>
                                 ) : (
-                                     <p>{t('noResults')}</p>
+                                     <NoResults />
                                 )}
                             </div>
                         )}

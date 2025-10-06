@@ -161,7 +161,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
                         {options.map(option => {
                             const countryOption = countries.find(c => (language === 'pt' ? c.translations.por.common : c.name.common) === option);
                             return (
-                                <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 ${isAnswered && (language === 'pt' ? currentCountry.translations.por.common : currentCountry.name.common) === option ? 'border-green-500' : 'border-transparent'} ${getButtonClass(option)}`}>
+                                <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 active:scale-95 ${isAnswered && (language === 'pt' ? currentCountry.translations.por.common : currentCountry.name.common) === option ? 'border-green-500' : 'border-transparent'} ${getButtonClass(option)}`}>
                                     <div className="aspect-w-16 aspect-h-9"><img src={countryOption?.flags.svg} alt={option} className="w-full h-full object-cover"/></div>
                                 </button>
                             );
@@ -173,7 +173,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
             {quizMode === 'flag' && (
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {options.map(option => (
-                        <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${getButtonClass(option)}`}>
+                        <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 active:scale-95 ${getButtonClass(option)}`}>
                             <span className="font-semibold text-gray-800 dark:text-gray-100">{option}</span>
                         </button>
                     ))}

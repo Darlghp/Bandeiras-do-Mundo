@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -32,9 +32,15 @@ const CompareSlot: React.FC<{ country: Country | undefined }> = ({ country }) =>
 const CompareTray: React.FC<CompareTrayProps> = ({ comparisonList, onCompare, onClear }) => {
     const { t } = useLanguage();
     const canCompare = comparisonList.length === 2;
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsMounted(true), 50); // Small delay to allow initial render
+        return () => clearTimeout(timer);
+    }, []);
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-30 transform transition-transform duration-300 ease-out translate-y-0 hide-on-keyboard">
+        <div className={`fixed bottom-0 left-0 right-0 z-30 transform transition-transform duration-300 ease-out hide-on-keyboard ${isMounted ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-4">
                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-4 rounded-t-xl shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] border-t border-x border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center gap-4">
                     <div className="grid grid-cols-2 gap-4 w-full sm:w-2/3">
