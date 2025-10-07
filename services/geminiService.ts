@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality, Type } from '@google/genai';
+import { GoogleGenAI, Type, Modality } from '@google/genai';
 import type { Country } from '../types';
 import { COLOR_TRANSLATIONS } from '../constants';
 
@@ -63,28 +63,6 @@ export const fetchFlagComparison = async (country1: Country, country2: Country, 
         contents: prompt,
     });
     return response.text;
-};
-
-export const editFlagWithAi = async (base64ImageData: string, mimeType: string, prompt: string): Promise<{ base64: string; mimeType: string; }> => {
-    const aiClient = getAiClient();
-    
-    const imagePart = { inlineData: { data: base64ImageData, mimeType } };
-    const textPart = { text: prompt };
-
-    const response = await aiClient.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [imagePart, textPart] },
-        config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
-    });
-
-    const imageOutput = response.candidates?.[0]?.content?.parts?.find(part => part.inlineData);
-    if (imageOutput?.inlineData) {
-        return {
-            base64: imageOutput.inlineData.data,
-            mimeType: imageOutput.inlineData.mimeType,
-        };
-    }
-    throw new Error('AI did not return an image.');
 };
 
 export const fetchCountryFacts = async (countryName: string, language: string): Promise<string> => {
@@ -268,4 +246,43 @@ export const fetchSimilarFlags = async (targetCountry: Country, allCountries: Co
     return similarCountryNames.map((name: string) => {
         return allCountries.find(c => (language === 'pt' ? c.translations.por.common : c.name.common).toLowerCase() === name.toLowerCase());
     }).filter((c?: Country): c is Country => c !== undefined);
+};
+
+// FIX: Add the missing `editFlagWithAi` function for image editing.
+export const editFlagWithAi = async (base64ImageData: string, mimeType: string, prompt: string): Promise<{ base64: string, mimeType: string }> => {
+    const aiClient = getAiClient();
+
+    const imagePart = {
+        inlineData: {
+            data: base64ImageData,
+            mimeType: mimeType,
+        },
+    };
+
+    const textPart = {
+        text: prompt,
+    };
+
+    const response = await aiClient.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: {
+            parts: [imagePart, textPart],
+        },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
+    });
+
+    if (response.candidates && response.candidates.length > 0) {
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                return {
+                    base64: part.inlineData.data,
+                    mimeType: part.inlineData.mimeType,
+                };
+            }
+        }
+    }
+
+    throw new Error("AI did not return an image. Please try a different prompt.");
 };

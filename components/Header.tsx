@@ -43,7 +43,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
     const navItems = [
         { id: 'explorer', label: t('explorer') },
         { id: 'quiz', label: t('quizTitle') },
-        { id: 'designer', label: t('designerTitle') }
     ];
 
     useEffect(() => {

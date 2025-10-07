@@ -1,7 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
-
-type View = 'explorer' | 'quiz' | 'designer';
+import type { View } from '../App';
 
 interface ViewNavigatorProps {
     currentView: View;
@@ -17,13 +16,6 @@ const ExplorerIcon: React.FC = () => (
 const QuizIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-    </svg>
-);
-
-const DesignerIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-        <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
     </svg>
 );
 
@@ -54,7 +46,6 @@ const ViewNavigator: React.FC<ViewNavigatorProps> = ({ currentView, setView }) =
     const navItems = [
         { id: 'explorer', label: t('explorer'), icon: <ExplorerIcon /> },
         { id: 'quiz', label: t('quizTitle'), icon: <QuizIcon /> },
-        { id: 'designer', label: t('designerTitle'), icon: <DesignerIcon /> }
     ];
 
     return (

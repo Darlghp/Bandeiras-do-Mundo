@@ -21,9 +21,8 @@ import BottomNav from './components/BottomNav';
 
 // Lazy load views that are not part of the initial screen
 const QuizView = lazy(() => import('./components/QuizView'));
-const DesignerView = lazy(() => import('./components/DesignerView'));
 
-export type View = 'explorer' | 'quiz' | 'designer';
+export type View = 'explorer' | 'quiz';
 
 type AiFilter = 
     | { type: 'text', query: string; results: string[] } 
@@ -447,10 +446,6 @@ const App: React.FC = () => {
     const MainContent: React.FC = () => {
         if (view === 'quiz') {
             return <QuizView countries={countries} onBackToExplorer={() => setView('explorer')} />;
-        }
-
-        if (view === 'designer') {
-            return <DesignerView countries={countries} />;
         }
 
         return (
