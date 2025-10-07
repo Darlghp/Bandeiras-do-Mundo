@@ -100,62 +100,77 @@ export const fetchCountryFacts = async (countryName: string, language: string): 
     return response.text;
 };
 
-const FEATURED_CACHE_KEY_PREFIX = 'featuredCountries_v2';
-const FEATURED_CACHE_EXPIRATION_MS = 6 * 60 * 60 * 1000;
+function shuffleArray<T>(array: T[]): T[] {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
+
+const collectionGenerators: {
+    title: { en: string; pt: string };
+    getCountries: (countries: Country[]) => Country[];
+}[] = [
+    {
+        title: { en: "Population Giants", pt: "Gigantes Populacionais" },
+        getCountries: (countries: Country[]) => {
+            return [...countries].sort((a, b) => b.population - a.population).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Smallest Nations by Area", pt: "Menores Nações por Área" },
+        getCountries: (countries: Country[]) => {
+            return [...countries].filter(c => c.area > 0).sort((a, b) => a.area - b.area).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The Power of Red, White, and Blue", pt: "O Poder do Vermelho, Branco e Azul" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['USA', 'FRA', 'GBR', 'RUS', 'NLD', 'CHL', 'CUB', 'THA', 'NOR', 'AUS', 'NZL', 'CZE', 'PAN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Flags with a Golden Touch", pt: "Bandeiras com um Toque Dourado" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ESP', 'DEU', 'COL', 'BEL', 'ROU', 'VEN', 'ECU', 'BOL', 'UKR', 'SWE', 'BRA'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Nordic Crosses", pt: "Cruzes Nórdicas" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['DNK', 'SWE', 'NOR', 'FIN', 'ISL'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Green in the Flag", pt: "Verde na Bandeira" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['BRA', 'NGA', 'ITA', 'IRL', 'MEX', 'PAK', 'SAU', 'BGD', 'PRT', 'ZAF'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+];
 
 export const fetchFeaturedCountries = async (allCountries: Country[], language: string): Promise<{ title: string, countries: Country[] }> => {
-    const CACHE_KEY = `${FEATURED_CACHE_KEY_PREFIX}_${language}`;
-    const cachedItem = localStorage.getItem(CACHE_KEY);
-
-    if (cachedItem) {
-        try {
-            const { timestamp, data } = JSON.parse(cachedItem);
-            if (Date.now() - timestamp < FEATURED_CACHE_EXPIRATION_MS) {
-                const featuredCountries = data.countryNames.map((name: string) => allCountries.find(c => 
-                    (language === 'pt' ? c.translations.por.common : c.name.common).toLowerCase() === name.toLowerCase()
-                )).filter((c?: Country): c is Country => c !== undefined);
-                
-                if (featuredCountries.length === data.countryNames.length) {
-                    return { title: data.title, countries: featuredCountries };
-                }
-            }
-        } catch (error) { localStorage.removeItem(CACHE_KEY); }
+    // This function no longer uses AI. It creates a random collection on each call.
+    if (allCountries.length === 0) {
+        return { title: '', countries: [] };
     }
-    
-    const aiClient = getAiClient();
-    const countryList = allCountries.map(c => language === 'pt' ? c.translations.por.common : c.name.common).join(', ');
-    const prompt = language === 'pt'
-        ? `Dada esta lista de países: ${countryList}. Crie um título cativante para uma coleção de 4 países com um tema interessante (ex: "Gigantes da Selva", "Design Minimalista"). Escolha 4 países da lista que se encaixem nesse tema. O tema não pode ser geográfico.`
-        : `Given this list of countries: ${countryList}. Create a catchy title for a collection of 4 countries with an interesting theme (e.g., "Jungle Giants," "Minimalist Design"). Choose 4 countries from the list that fit this theme. The theme must not be geographical.`;
 
-    const response = await aiClient.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    title: { type: Type.STRING },
-                    countryNames: { type: Type.ARRAY, items: { type: Type.STRING } }
-                }
-            }
-        }
-    });
-
-    const parsed = JSON.parse(response.text);
+    const generator = collectionGenerators[Math.floor(Math.random() * collectionGenerators.length)];
     
-    try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: parsed }));
-    } catch (error) { console.error("Failed to cache featured countries data.", error); }
+    const title = generator.title[language as 'en' | 'pt'];
+    const countries = generator.getCountries(allCountries);
     
-    const featuredCountries = parsed.countryNames
-        .map((name: string) => allCountries.find(c => 
-            (language === 'pt' ? c.translations.por.common : c.name.common).toLowerCase() === name.toLowerCase()
-        ))
-        .filter((c?: Country): c is Country => c !== undefined);
-
-    return { title: parsed.title, countries: featuredCountries };
+    return { title, countries };
 };
 
 export const fetchFlagsByQuery = async (query: string, allCountries: Country[], language: string): Promise<string[]> => {

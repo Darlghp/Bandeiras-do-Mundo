@@ -208,17 +208,16 @@ const App: React.FC = () => {
         setAiAvailable(getAiAvailability());
     }, []);
 
-    const fetchDynamicAiContent = useCallback(async (countryData: Country[]) => {
-        if (getAiAvailability()) {
-            setIsFeaturedLoading(true);
-            try {
-                const featured = await fetchFeaturedCountries(countryData, language);
-                setFeaturedData(featured);
-            } catch (aiError) {
-                console.error("Failed to fetch featured content:", aiError);
-            } finally {
-                setIsFeaturedLoading(false);
-            }
+    const fetchDynamicContent = useCallback(async (countryData: Country[]) => {
+        setIsFeaturedLoading(true);
+        try {
+            // This function no longer relies on AI and can be run for all users.
+            const featured = await fetchFeaturedCountries(countryData, language);
+            setFeaturedData(featured);
+        } catch (error) {
+            console.error("Failed to fetch featured content:", error);
+        } finally {
+            setIsFeaturedLoading(false);
         }
     }, [language]);
     
@@ -276,7 +275,7 @@ const App: React.FC = () => {
                 const unsortedData = await fetchCountries();
                 const data = [...unsortedData].sort((a, b) => a.cca3.localeCompare(b.cca3));
                 setCountries(data);
-                fetchDynamicAiContent(data);
+                fetchDynamicContent(data);
                 manageFlagOfTheDay(data);
             } catch (err) {
                 setError(t('fetchError'));
@@ -286,7 +285,7 @@ const App: React.FC = () => {
             }
         };
         getCountries();
-    }, [t, fetchDynamicAiContent, manageFlagOfTheDay]);
+    }, [t, fetchDynamicContent, manageFlagOfTheDay]);
 
     const handleCardClick = (country: Country) => {
         if (isCompareModeActive) {
@@ -462,13 +461,13 @@ const App: React.FC = () => {
                     onFlagClick={handleCardClick}
                 />
 
-                {aiAvailable && <DiscoverView 
+                <DiscoverView 
                     featuredData={featuredData} 
                     isLoading={isFeaturedLoading} 
                     onCardClick={handleCardClick}
                     favorites={favorites}
                     onToggleFavorite={handleToggleFavorite}
-                />}
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
                     <aside className="md:col-span-1">
