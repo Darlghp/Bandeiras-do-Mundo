@@ -487,6 +487,406 @@ const collectionGenerators: {
             return shuffleArray(available).slice(0, 4);
         }
     },
+    {
+        title: { en: "The Lions of Heraldry", pt: "Os Leões da Heráldica" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ESP', 'LKA', 'FJI', 'MNE', 'BEL', 'FIN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Eagles Taking Flight", pt: "Águias Alçando Voo" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['MEX', 'EGY', 'ALB', 'ZMB', 'POL', 'SRB', 'KAZ', 'DEU'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Green and Gold Glory", pt: "Glória em Verde e Dourado" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['BRA', 'LTU', 'JAM', 'GHA', 'SEN', 'TGO', 'MRT', 'ZAF', 'AUS'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "No Red, White, or Blue", pt: "Sem Vermelho, Branco ou Azul" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['JAM', 'MRT', 'LKA', 'BRA', 'ZAF', 'UKR', 'LTU', 'GHA', 'SEN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Flags of the Balkans", pt: "Bandeiras dos Bálcãs" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ALB', 'BIH', 'BGR', 'HRV', 'GRC', 'MNE', 'MKD', 'ROU', 'SRB', 'SVN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Colors of Southeast Asia", pt: "Cores do Sudeste Asiático" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['BRN', 'KHM', 'IDN', 'LAO', 'MYS', 'MMR', 'PHL', 'SGP', 'THA', 'TLS', 'VNM'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Featuring a Trident", pt: "Apresentando um Tridente" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['BRB', 'UKR'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Former Yugoslavian Nations", pt: "Nações da Antiga Iugoslávia" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['BIH', 'HRV', 'MNE', 'MKD', 'SRB', 'SVN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The Baltic States", pt: "Os Estados Bálticos" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['EST', 'LVA', 'LTU'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 3);
+        }
+    },
+    {
+        title: { en: "The Benelux Countries", pt: "Os Países do Benelux" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['BEL', 'NLD', 'LUX'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 3);
+        }
+    },
+    {
+        title: { en: "A Touch of Purple", pt: "Um Toque de Roxo" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['DMA', 'NIC', 'ESP'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 3);
+        }
+    },
+    {
+        title: { en: "The Maghreb Nations", pt: "As Nações do Magrebe" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['DZA', 'LBY', 'MRT', 'MAR', 'TUN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The Asian Tigers", pt: "Os Tigres Asiáticos" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['HKG', 'SGP', 'KOR', 'TWN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The 'Stans' of Central Asia", pt: "Os 'Stões' da Ásia Central" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['KAZ', 'KGZ', 'TJK', 'TKM', 'UZB'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Islands of the Indian Ocean", pt: "Ilhas do Oceano Índico" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['COM', 'MDG', 'MDV', 'MUS', 'SYC', 'LKA'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Nations of the Caucasus", pt: "Nações do Cáucaso" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ARM', 'AZE', 'GEO'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 3);
+        }
+    },
+    {
+        title: { en: "Flags with a Dragon", pt: "Bandeiras com um Dragão" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['BTN', 'MLT'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 2);
+        }
+    },
+    {
+        title: { en: "The Southern Cone", pt: "O Cone Sul" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ARG', 'CHL', 'PRY', 'URY'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The Visegrád Group", pt: "O Grupo de Visegrád" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['CZE', 'HUN', 'POL', 'SVK'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The Gulf Monarchies", pt: "As Monarquias do Golfo" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['BHR', 'KWT', 'OMN', 'QAT', 'SAU', 'ARE'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The Horn of Africa", pt: "O Chifre da África" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['DJI', 'ERI', 'ETH', 'SOM'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Rainbow of Colors", pt: "Arco-íris de Cores" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ZAF', 'CAF', 'SYC', 'SSD', 'COM', 'MUS'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Featuring a Map", pt: "Apresentando um Mapa" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['CYP', 'BRA'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 2);
+        }
+    },
+    {
+        title: { en: "The Saltire Cross", pt: "A Cruz de Santo André" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['JAM', 'BDI', 'GRD'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 3);
+        }
+    },
+    {
+        title: { en: "Serrated Flags", pt: "Bandeiras Serrilhadas" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['QAT', 'BHR'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 2);
+        }
+    },
+    {
+        title: { en: "Unique Shapes", pt: "Formatos Únicos" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['NPL', 'CHE', 'VAT'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 3);
+        }
+    },
+    {
+        title: { en: "Echoes of Gran Colombia", pt: "Ecos da Grã-Colômbia" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['COL', 'ECU', 'VEN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 3);
+        }
+    },
+    {
+        title: { en: "Francophone African Flags", pt: "Bandeiras da África Francófona" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['SEN', 'CIV', 'MLI', 'GIN', 'CMR', 'TCD', 'GAB', 'COG', 'BFA', 'NER', 'TGO', 'BEN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Mirrored Designs", pt: "Designs Espelhados" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['IDN', 'MCO', 'POL', 'ROU', 'TCD', 'IRL', 'CIV', 'MLI', 'GIN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Inverted Comrades", pt: "Camaradas Invertidos" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['NLD', 'YUG', 'POL', 'MCO', 'IDN', 'GIN', 'MLI'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Flags with a Fess (Horizontal Band)", pt: "Bandeiras com uma Faixa Horizontal" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ESP', 'LVA', 'AUT', 'ISR', 'BWA', 'THA', 'LAO', 'KEN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Flags with a Pale (Vertical Band)", pt: "Bandeiras com uma Pala Vertical" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['CAN', 'PER', 'NGA', 'DZA', 'PAK', 'BRB', 'PRT'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Quarters of Culture (Cantons)", pt: "Quartos de Cultura (Cantões)" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['USA', 'CHL', 'GRC', 'MYS', 'LBR', 'AUS', 'NZL', 'URY', 'TWN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The Scandinavian Cross Family", pt: "A Família da Cruz Escandinava" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['DNK', 'SWE', 'NOR', 'FIN', 'ISL'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Islands of the Pacific", pt: "Ilhas do Pacífico" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['FJI', 'KIR', 'MHL', 'FSM', 'NRU', 'PLW', 'PNG', 'WSM', 'SLB', 'TON', 'TUV', 'VUT'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Arab Revolt Descendants", pt: "Descendentes da Revolta Árabe" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['JOR', 'PSE', 'KWT', 'ARE', 'SDN', 'IRQ', 'SYR'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Red, White, and Green", pt: "Vermelho, Branco e Verde" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ITA', 'HUN', 'BGR', 'IRN', 'MDG', 'OMN', 'MEX', 'TJK', 'DZA'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Slavic Tricolors", pt: "Tricolores Eslavos" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['RUS', 'SRB', 'SVN', 'SVK', 'HRV', 'CZE'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "A Chevron of Hope", pt: "Um Chevron de Esperança" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['PHL', 'CZE', 'ZAF', 'SSD', 'VUT', 'BHS', 'GUY'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The Double-Headed Eagle", pt: "A Águia de Duas Cabeças" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ALB', 'SRB', 'MNE'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 3);
+        }
+    },
+    {
+        title: { en: "Black, Red, and Gold", pt: "Preto, Vermelho e Dourado" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['DEU', 'BEL', 'AGO', 'UGA', 'PNG', 'TLS'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The African Great Lakes Region", pt: "A Região dos Grandes Lagos Africanos" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['BDI', 'KEN', 'MWI', 'RWA', 'SSD', 'TZA', 'UGA', 'COD'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The Iberian Peninsula", pt: "A Península Ibérica" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ESP', 'PRT', 'AND'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 3);
+        }
+    },
+    {
+        title: { en: "Nations Named After People", pt: "Nações com Nomes de Pessoas" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['COL', 'BOL', 'SAU', 'PHL', 'USA', 'ISR', 'MOZ'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Flags with an Armillary Sphere", pt: "Bandeiras com uma Esfera Armilar" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['PRT', 'BRA'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 2);
+        }
+    },
+    {
+        title: { en: "A Sea of Blue", pt: "Um Mar de Azul" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['GRC', 'FIN', 'ISR', 'SOM', 'ARG', 'URY', 'FSM'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Flags of the Commonwealth", pt: "Bandeiras da Commonwealth" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['GBR', 'CAN', 'AUS', 'NZL', 'IND', 'PAK', 'ZAF', 'NGA', 'GHA', 'MYS', 'SGP', 'KEN'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "The World's Newest Flags", pt: "As Bandeiras Mais Novas do Mundo" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['SSD', 'LBY', 'MWI', 'MRT', 'MSR'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Red and Yellow Bicolors", pt: "Bicolores Vermelhos e Amarelos" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['ESP', 'CHN', 'VNM', 'MKD', 'KGZ', 'MNE'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    },
+    {
+        title: { en: "Gems of Oceania", pt: "Joias da Oceania" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['AUS', 'NZL', 'FJI', 'PNG', 'WSM', 'SLB', 'VUT', 'PLW'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 4);
+        }
+    }
 ];
 
 export const fetchFeaturedCountries = async (allCountries: Country[], language: string): Promise<{ title: string, countries: Country[] }> => {
