@@ -1,23 +1,33 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
+import { CONTINENT_NAMES } from '../constants';
 
 type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'shape-to-country';
 type QuizDifficulty = 'easy' | 'medium' | 'hard';
 
 const QUIZ_LENGTH = 10;
 const OPTIONS_COUNT = 4;
+const HINTS_PER_QUIZ = 3;
 
 function shuffleArray<T>(array: T[]): T[] {
     return [...array].sort(() => Math.random() - 0.5);
 }
 
 const Stat: React.FC<{ label: string, value: string }> = ({ label, value }) => (
-    <div className="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
-        <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</h4>
-        <p className="text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1">{value}</p>
+    <div className="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-slate-700/50 rounded-lg">
+        <h4 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">{label}</h4>
+        <p className="text-2xl font-bold text-gray-800 dark:text-slate-200 mt-1">{value}</p>
     </div>
 );
+
+interface QuizHistoryItem {
+    question: Country;
+    userAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+    options: string[];
+}
 
 interface QuizGameProps {
     countries: Country[];
@@ -37,6 +47,14 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
     const [startTime, setStartTime] = useState(Date.now());
     const [endTime, setEndTime] = useState(Date.now());
     const [error, setError] = useState<string | null>(null);
+
+    // New state for enhancements
+    const [quizHistory, setQuizHistory] = useState<QuizHistoryItem[]>([]);
+    const [streak, setStreak] = useState(0);
+    const [hintsRemaining, setHintsRemaining] = useState(HINTS_PER_QUIZ);
+    const [isHintUsedThisTurn, setIsHintUsedThisTurn] = useState(false);
+    const [isReviewing, setIsReviewing] = useState(false);
+    const reviewListRef = useRef<HTMLDivElement>(null);
 
     const startNewQuiz = useCallback(() => {
         let difficultyPool: Country[];
@@ -73,18 +91,29 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         setQuizState('playing');
         setStartTime(Date.now());
         setError(null);
+        setQuizHistory([]);
+        setStreak(0);
+        setHintsRemaining(HINTS_PER_QUIZ);
+        setIsHintUsedThisTurn(false);
+        setIsReviewing(false);
     }, [countries, mode, difficulty]);
 
     useEffect(() => {
         startNewQuiz();
     }, [startNewQuiz]);
+    
+    useEffect(() => {
+        if (isReviewing && reviewListRef.current) {
+            reviewListRef.current.scrollTop = 0;
+        }
+    }, [isReviewing]);
 
     const currentCountry = useMemo(() => quizQuestions[currentQuestionIndex], [quizQuestions, currentQuestionIndex]);
 
+    const getCountryName = useCallback((c: Country) => language === 'pt' ? c.translations.por.common : c.name.common, [language]);
+
     const options = useMemo(() => {
         if (!currentCountry) return [];
-
-        const getCountryName = (c: Country) => language === 'pt' ? c.translations.por.common : c.name.common;
 
         let correctAnswer: string;
         let wrongOptionPool: Country[];
@@ -114,11 +143,10 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
             .map(getOptionValue);
 
         return shuffleArray([correctAnswer, ...wrongOptions]);
-    }, [currentCountry, countries, language, mode, difficulty]);
+    }, [currentCountry, countries, getCountryName, mode, difficulty]);
 
     const handleAnswer = (answer: string) => {
         if (isAnswered) return;
-        const getCountryName = (c: Country) => language === 'pt' ? c.translations.por.common : c.name.common;
         
         let correctAnswer: string;
         if (mode === 'flag-to-capital') {
@@ -126,12 +154,22 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         } else {
             correctAnswer = getCountryName(currentCountry);
         }
-
+        
+        const isCorrect = answer === correctAnswer;
         setSelectedAnswer(answer);
         setIsAnswered(true);
-        if (answer === correctAnswer) {
+
+        if (isCorrect) {
             setScore(prev => prev + 1);
+            setStreak(prev => prev + 1);
+        } else {
+            setStreak(0);
         }
+
+        setQuizHistory(prev => [
+            ...prev,
+            { question: currentCountry, userAnswer: answer, correctAnswer, isCorrect, options }
+        ]);
     };
 
     const handleNextQuestion = () => {
@@ -139,9 +177,17 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
             setCurrentQuestionIndex(prev => prev + 1);
             setSelectedAnswer(null);
             setIsAnswered(false);
+            setIsHintUsedThisTurn(false);
         } else {
             setEndTime(Date.now());
             setQuizState('results');
+        }
+    };
+
+    const handleUseHint = () => {
+        if (hintsRemaining > 0 && !isHintUsedThisTurn) {
+            setHintsRemaining(prev => prev - 1);
+            setIsHintUsedThisTurn(true);
         }
     };
 
@@ -153,18 +199,15 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         return t('scoreFeedbackPoor');
     };
 
-    const getButtonClass = (option: string) => {
-        if (!isAnswered) return "bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600";
-        const getCountryName = (c: Country) => language === 'pt' ? c.translations.por.common : c.name.common;
-        let correctAnswer: string;
-        if (mode === 'flag-to-capital') {
-            correctAnswer = currentCountry.capital[0];
-        } else {
-            correctAnswer = getCountryName(currentCountry);
-        }
-        if (option === correctAnswer) return "bg-green-500 text-white transform scale-105";
-        if (option === selectedAnswer) return "bg-red-500 text-white";
-        return "bg-white dark:bg-gray-700 opacity-60 cursor-not-allowed";
+    const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
+    const CrossIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
+    const LightbulbIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.5c-2.485 0-4.5 2.015-4.5 4.5 0 1.44.693 2.723 1.763 3.565.175.14.237.374.15.562l-.5 1.125A1.5 1.5 0 008 15.5h4a1.5 1.5 0 001.413-1.748l-.5-1.125c-.087-.188-.025-.422.15-.562A4.482 4.482 0 0014.5 8C14.5 5.515 12.485 3.5 10 3.5zM8.5 16.5a1.5 1.5 0 103 0h-3z" /></svg>;
+
+    const getButtonClass = (option: string, correctAnswer: string) => {
+        if (!isAnswered) return "bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600";
+        if (option === correctAnswer) return "bg-green-100 dark:bg-green-900/50 border-green-500 text-green-800 dark:text-green-300";
+        if (option === selectedAnswer) return "bg-red-100 dark:bg-red-900/50 border-red-500 text-red-800 dark:text-red-300";
+        return "bg-white dark:bg-slate-700 opacity-60 cursor-not-allowed";
     };
 
     if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
@@ -173,8 +216,47 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
     if (quizState === 'results') {
         const totalTime = ((endTime - startTime) / 1000).toFixed(1);
         const avgTime = (parseFloat(totalTime) / QUIZ_LENGTH).toFixed(1);
+
+        if (isReviewing) {
+            return (
+                <div className="max-w-2xl mx-auto animate-fade-in" ref={reviewListRef}>
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('quizReviewTitle')}</h2>
+                        <button onClick={() => setIsReviewing(false)} className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">{t('quizBackToSummary')}</button>
+                    </div>
+                    <div className="space-y-6">
+                        {quizHistory.map((item, index) => (
+                            <div key={index} className="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-lg">
+                                <p className="font-bold text-gray-800 dark:text-gray-200 mb-3">{t('questionOf', { current: (index + 1).toString(), total: QUIZ_LENGTH.toString() })}</p>
+                                <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-slate-700 rounded-lg mb-4 flex items-center justify-center p-2">
+                                    <img src={item.question.flags.svg} alt="Flag" className="w-full h-full object-contain drop-shadow-md max-h-32"/>
+                                </div>
+                                <div className="space-y-2">
+                                    {item.options.map(option => {
+                                        const isCorrect = option === item.correctAnswer;
+                                        const isUserChoice = option === item.userAnswer;
+                                        let borderColor = 'border-gray-200 dark:border-slate-600';
+                                        if (isCorrect) borderColor = 'border-green-500';
+                                        else if (isUserChoice) borderColor = 'border-red-500';
+
+                                        return (
+                                            <div key={option} className={`flex items-center justify-between p-3 rounded-lg border-2 ${borderColor}`}>
+                                                <span className={`font-semibold ${isCorrect ? 'text-green-700 dark:text-green-300' : isUserChoice ? 'text-red-700 dark:text-red-300' : 'text-gray-700 dark:text-gray-300'}`}>{option}</span>
+                                                {isCorrect && <span className="text-green-500"><CheckIcon /></span>}
+                                                {!isCorrect && isUserChoice && <span className="text-red-500"><CrossIcon /></span>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
         return (
-            <div className="max-w-2xl mx-auto text-center bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl animate-fade-in">
+            <div className="max-w-2xl mx-auto text-center bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl animate-fade-in">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('quizResults')}</h2>
                 <p className="text-5xl font-extrabold text-blue-600 dark:text-blue-400 my-4">{t('yourScore', { score: score.toString(), total: QUIZ_LENGTH.toString() })}</p>
                 <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{getScoreFeedback()}</p>
@@ -183,8 +265,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
                     <Stat label={t('quizAvgTime')} value={t('quizSeconds', { seconds: avgTime })} />
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onClick={startNewQuiz} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-all">{t('playAgain')}</button>
-                    <button onClick={onBackToMenu} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-all">{t('backToMenu')}</button>
+                    <button onClick={startNewQuiz} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800 transition-all">{t('playAgain')}</button>
+                    <button onClick={() => setIsReviewing(true)} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-slate-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800 transition-all">{t('quizReviewAnswers')}</button>
                 </div>
             </div>
         );
@@ -194,36 +276,57 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
 
     const questionTitle = {
         'flag-to-country': t('whichCountry'),
-        'country-to-flag': t('whichFlag', { country: (language === 'pt' ? currentCountry.translations.por.common : currentCountry.name.common) }),
+        'country-to-flag': t('whichFlag', { country: getCountryName(currentCountry) }),
         'flag-to-capital': t('whichCapital'),
         'shape-to-country': t('whichCoatOfArms'),
     }[mode];
 
+    const correctAnswerText = mode === 'flag-to-capital' ? currentCountry.capital[0] : getCountryName(currentCountry);
+
     return (
         <div className="max-w-2xl mx-auto">
             <div className="mb-4">
-                <div className="flex justify-between items-center mb-1">
-                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">{t('questionOf', { current: (currentQuestionIndex + 1).toString(), total: QUIZ_LENGTH.toString() })}</p>
-                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{score} / {currentQuestionIndex}</p>
+                <div className="flex justify-between items-center mb-1 text-sm font-semibold">
+                    <p className="text-blue-600 dark:text-blue-400 uppercase tracking-wider">{t('questionOf', { current: (currentQuestionIndex + 1).toString(), total: QUIZ_LENGTH.toString() })}</p>
+                    <div className="flex items-center gap-4">
+                        {streak > 1 && <p className="text-orange-500 animate-fade-in-up-short">{t('quizStreak', { count: streak.toString() })}</p>}
+                        <p className="text-gray-600 dark:text-gray-400">{score} / {currentQuestionIndex}</p>
+                    </div>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercentage}%` }}></div></div>
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5"><div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercentage}%` }}></div></div>
             </div>
             
             <div key={currentQuestionIndex} className="animate-fade-in">
-                <h2 className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1 mb-6 min-h-[64px] flex items-center justify-center">{questionTitle}</h2>
+                <h2 className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1 mb-4 min-h-[64px] flex items-center justify-center">{questionTitle}</h2>
 
                 { (mode === 'flag-to-country' || mode === 'flag-to-capital') &&
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg mb-8"><div className="aspect-w-16 aspect-h-9"><img src={currentCountry.flags.svg} alt="Flag" className="w-full h-full object-contain drop-shadow-md"/></div></div>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg mb-6"><div className="aspect-w-16 aspect-h-9"><img src={currentCountry.flags.svg} alt="Flag" className="w-full h-full object-contain drop-shadow-md"/></div></div>
                 }
                 { mode === 'shape-to-country' && currentCountry.coatOfArms.svg &&
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg mb-8 flex justify-center items-center h-48"><img src={currentCountry.coatOfArms.svg} alt="Coat of Arms" className="w-auto h-full object-contain drop-shadow-md"/></div>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg mb-6 flex justify-center items-center h-48"><img src={currentCountry.coatOfArms.svg} alt="Coat of Arms" className="w-auto h-full object-contain drop-shadow-md"/></div>
                 }
+
+                <div className="min-h-[44px] mb-4 text-center">
+                    { !isAnswered && (
+                        <button onClick={handleUseHint} disabled={hintsRemaining === 0} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <LightbulbIcon />
+                            {hintsRemaining > 0 ? t('quizHint', { count: hintsRemaining.toString() }) : t('quizNoHints')}
+                        </button>
+                    )}
+                    { isHintUsedThisTurn && 
+                        <p className="text-sm text-gray-600 dark:text-gray-400 animate-fade-in-up-short">
+                           {t('continentHint', { continent: currentCountry.continents.map(c => CONTINENT_NAMES[c]?.[language] || c).join(', ') })}
+                        </p>
+                    }
+                </div>
 
                 { (mode === 'flag-to-country' || mode === 'flag-to-capital' || mode === 'shape-to-country') &&
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {options.map(option => (
-                            <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 active:scale-95 ${getButtonClass(option)}`}>
-                                <span className="font-semibold text-gray-800 dark:text-gray-100">{option}</span>
+                            <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 active:scale-95 flex items-center justify-between ${getButtonClass(option, correctAnswerText)}`}>
+                                <span className="font-semibold">{option}</span>
+                                {isAnswered && option === correctAnswerText && <span className="text-green-500"><CheckIcon /></span>}
+                                {isAnswered && option === selectedAnswer && option !== correctAnswerText && <span className="text-red-500"><CrossIcon /></span>}
                             </button>
                         ))}
                     </div>
@@ -231,11 +334,16 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
                 { mode === 'country-to-flag' &&
                      <div className="grid grid-cols-2 gap-4 mb-8">
                         {options.map(option => {
-                            const countryOption = countries.find(c => (language === 'pt' ? c.translations.por.common : c.name.common) === option);
-                            const correctName = language === 'pt' ? currentCountry.translations.por.common : currentCountry.name.common;
+                            const countryOption = countries.find(c => getCountryName(c) === option);
                             return (
-                                <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered || !countryOption} className={`p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 active:scale-95 ${isAnswered && correctName === option ? 'border-green-500' : 'border-transparent'} ${getButtonClass(option)}`}>
+                                <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered || !countryOption} className={`relative p-2 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 active:scale-95 ${getButtonClass(option, correctAnswerText)}`}>
                                     <div className="aspect-w-16 aspect-h-9"><img src={countryOption?.flags.svg} alt={option} className="w-full h-full object-cover"/></div>
+                                     {isAnswered && (
+                                        <div className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 dark:bg-slate-900/80">
+                                            {option === correctAnswerText && <span className="text-green-500"><CheckIcon /></span>}
+                                            {option === selectedAnswer && option !== correctAnswerText && <span className="text-red-500"><CrossIcon /></span>}
+                                        </div>
+                                    )}
                                 </button>
                             );
                         })}
@@ -244,7 +352,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
 
                 {isAnswered && (
                     <div className="text-center mt-8 animate-fade-in-up">
-                        <button onClick={handleNextQuestion} className="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800">{t('nextQuestion')}</button>
+                        <button onClick={handleNextQuestion} className="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800">{t('nextQuestion')}</button>
                     </div>
                 )}
             </div>
@@ -291,7 +399,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('chooseMode')}</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {gameModes.map(m => (
-                            <button key={m.id} onClick={() => setMode(m.id)} className={`p-6 text-left rounded-xl border-2 transition-all duration-200 ${mode === m.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'}`}>
+                            <button key={m.id} onClick={() => setMode(m.id)} className={`p-6 text-left rounded-xl border-2 transition-all duration-200 ${mode === m.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-600'}`}>
                                 <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{m.title}</h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{m.desc}</p>
                             </button>
@@ -303,7 +411,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('selectDifficulty')}</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                          {difficultyLevels.map(d => (
-                            <button key={d.id} onClick={() => setDifficulty(d.id)} className={`p-6 text-center rounded-xl border-2 transition-all duration-200 ${difficulty === d.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'}`}>
+                            <button key={d.id} onClick={() => setDifficulty(d.id)} className={`p-6 text-center rounded-xl border-2 transition-all duration-200 ${difficulty === d.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-600'}`}>
                                 <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{d.title}</h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{d.desc}</p>
                             </button>
@@ -316,7 +424,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
                 <button 
                     onClick={() => setIsQuizStarted(true)} 
                     disabled={!mode || !difficulty}
-                    className="px-12 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-all transform hover:scale-105"
+                    className="px-12 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-900 transition-all transform hover:scale-105"
                 >
                     {t('startQuiz')}
                 </button>

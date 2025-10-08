@@ -115,6 +115,15 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     continentTab: "Continents",
     aiSearchTab: "AI Search",
     toolsTab: "Tools",
+    quizStreak: "🔥 {{count}} Streak",
+    quizHint: "Hint ({{count}} left)",
+    quizNoHints: "No hints left",
+    quizReviewAnswers: "Review Answers",
+    quizBackToSummary: "Back to Summary",
+    quizReviewTitle: "Quiz Review",
+    quizYourAnswer: "Your answer:",
+    quizCorrectAnswer: "Correct answer:",
+    continentHint: "Hint: The country is in {{continent}}.",
   },
   pt: {
     title: "Explorador de Bandeiras do Mundo",
@@ -222,6 +231,15 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     continentTab: "Continentes",
     aiSearchTab: "Busca IA",
     toolsTab: "Ferramentas",
+    quizStreak: "🔥 Sequência de {{count}}",
+    quizHint: "Dica (restam {{count}})",
+    quizNoHints: "Nenhuma dica restante",
+    quizReviewAnswers: "Rever Respostas",
+    quizBackToSummary: "Voltar ao Resumo",
+    quizReviewTitle: "Revisão do Quiz",
+    quizYourAnswer: "Sua resposta:",
+    quizCorrectAnswer: "Resposta correta:",
+    continentHint: "Dica: O país fica em {{continent}}.",
   }
 };
 
