@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Modality } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import type { Country } from '../types';
 import { COLOR_TRANSLATIONS } from '../constants';
 
@@ -458,7 +458,7 @@ const collectionGenerators: {
     {
         title: { en: "The Green, White, and Red", pt: "O Verde, Branco e Vermelho" },
         getCountries: (countries: Country[]) => {
-            const countryCodes = ['ITA', 'HUN', 'BGR', 'IRN', 'MEX', 'OMN', 'MDG', 'TJK'];
+            const countryCodes = ['ITA', 'HUN', 'BGR', 'IRN', 'MDG', 'OMN', 'MEX', 'TJK', 'DZA'];
             const available = countries.filter(c => countryCodes.includes(c.cca3));
             return shuffleArray(available).slice(0, 4);
         }
@@ -998,43 +998,4 @@ export const fetchSimilarFlags = async (targetCountry: Country, allCountries: Co
     return similarCountryNames.map((name: string) => {
         return allCountries.find(c => (language === 'pt' ? c.translations.por.common : c.name.common).toLowerCase() === name.toLowerCase());
     }).filter((c?: Country): c is Country => c !== undefined);
-};
-
-// FIX: Add the missing `editFlagWithAi` function for image editing.
-export const editFlagWithAi = async (base64ImageData: string, mimeType: string, prompt: string): Promise<{ base64: string, mimeType: string }> => {
-    const aiClient = getAiClient();
-
-    const imagePart = {
-        inlineData: {
-            data: base64ImageData,
-            mimeType: mimeType,
-        },
-    };
-
-    const textPart = {
-        text: prompt,
-    };
-
-    const response = await aiClient.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-            parts: [imagePart, textPart],
-        },
-        config: {
-            responseModalities: [Modality.IMAGE, Modality.TEXT],
-        },
-    });
-
-    if (response.candidates && response.candidates.length > 0) {
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-                return {
-                    base64: part.inlineData.data,
-                    mimeType: part.inlineData.mimeType,
-                };
-            }
-        }
-    }
-
-    throw new Error("AI did not return an image. Please try a different prompt.");
 };
