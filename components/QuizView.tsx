@@ -3,7 +3,7 @@ import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { CONTINENT_NAMES } from '../constants';
 
-type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'shape-to-country';
+type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'country-to-capital' | 'shape-to-country';
 type QuizDifficulty = 'easy' | 'medium' | 'hard';
 
 const QUIZ_LENGTH = 10;
@@ -51,6 +51,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
     // New state for enhancements
     const [quizHistory, setQuizHistory] = useState<QuizHistoryItem[]>([]);
     const [streak, setStreak] = useState(0);
+    const [bestStreak, setBestStreak] = useState(0);
     const [hintsRemaining, setHintsRemaining] = useState(HINTS_PER_QUIZ);
     const [isHintUsedThisTurn, setIsHintUsedThisTurn] = useState(false);
     const [isReviewing, setIsReviewing] = useState(false);
@@ -69,7 +70,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         }
 
         let questionPool: Country[];
-        if (mode === 'flag-to-capital') {
+        if (mode === 'flag-to-capital' || mode === 'country-to-capital') {
             questionPool = difficultyPool.filter(c => c.capital && c.capital.length > 0);
         } else if (mode === 'shape-to-country') {
             questionPool = difficultyPool.filter(c => c.coatOfArms?.svg);
@@ -93,6 +94,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         setError(null);
         setQuizHistory([]);
         setStreak(0);
+        setBestStreak(0);
         setHintsRemaining(HINTS_PER_QUIZ);
         setIsHintUsedThisTurn(false);
         setIsReviewing(false);
@@ -121,6 +123,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
 
         switch (mode) {
             case 'flag-to-capital':
+            case 'country-to-capital':
                 correctAnswer = currentCountry.capital[0];
                 wrongOptionPool = countries.filter(c => c.capital && c.capital.length > 0 && c.cca3 !== currentCountry.cca3);
                 getOptionValue = c => c.capital[0];
@@ -149,7 +152,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         if (isAnswered) return;
         
         let correctAnswer: string;
-        if (mode === 'flag-to-capital') {
+        if (mode === 'flag-to-capital' || mode === 'country-to-capital') {
             correctAnswer = currentCountry.capital[0];
         } else {
             correctAnswer = getCountryName(currentCountry);
@@ -161,7 +164,11 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
 
         if (isCorrect) {
             setScore(prev => prev + 1);
-            setStreak(prev => prev + 1);
+            setStreak(prev => {
+                const newStreak = prev + 1;
+                setBestStreak(currentBest => Math.max(currentBest, newStreak));
+                return newStreak;
+            });
         } else {
             setStreak(0);
         }
@@ -215,7 +222,20 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
 
     if (quizState === 'results') {
         const totalTime = ((endTime - startTime) / 1000).toFixed(1);
-        const avgTime = (parseFloat(totalTime) / QUIZ_LENGTH).toFixed(1);
+        const percentage = Math.round((score / QUIZ_LENGTH) * 100);
+
+        const getRank = () => {
+            if (percentage >= 95) return { title: t('rankMaster'), color: 'text-amber-400' };
+            if (percentage >= 80) return { title: t('rankExpert'), color: 'text-violet-400' };
+            if (percentage >= 60) return { title: t('rankAdept'), color: 'text-blue-400' };
+            if (percentage >= 40) return { title: t('rankApprentice'), color: 'text-green-400' };
+            return { title: t('rankNovice'), color: 'text-gray-400' };
+        };
+        const rank = getRank();
+
+        const radius = 54;
+        const circumference = 2 * Math.PI * radius;
+        const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
         if (isReviewing) {
             return (
@@ -258,12 +278,40 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         return (
             <div className="max-w-2xl mx-auto text-center bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl animate-fade-in">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('quizResults')}</h2>
-                <p className="text-5xl font-extrabold text-blue-600 dark:text-blue-400 my-4">{t('yourScore', { score: score.toString(), total: QUIZ_LENGTH.toString() })}</p>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{getScoreFeedback()}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                    <Stat label={t('quizTime')} value={t('quizSeconds', { seconds: totalTime })} />
-                    <Stat label={t('quizAvgTime')} value={t('quizSeconds', { seconds: avgTime })} />
+                <p className={`text-xl font-semibold ${rank.color} mb-4`}>{rank.title}</p>
+
+                <div className="relative inline-flex items-center justify-center my-4 w-36 h-36">
+                    <svg className="w-full h-full" viewBox="0 0 120 120">
+                        <circle className="text-gray-200 dark:text-slate-700" strokeWidth="10" stroke="currentColor" fill="transparent" r="54" cx="60" cy="60" />
+                        <circle
+                            className={`${rank.color} transition-all duration-1000 ease-out`}
+                            strokeWidth="10"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            stroke="currentColor"
+                            fill="transparent"
+                            r="54"
+                            cx="60"
+                            cy="60"
+                            style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}
+                        />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-4xl font-extrabold text-gray-800 dark:text-gray-100">{score}</span>
+                        <span className="text-lg text-gray-500 dark:text-gray-400">/ {QUIZ_LENGTH}</span>
+                    </div>
                 </div>
+                
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{getScoreFeedback()}</p>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                    <Stat label={t('quizAccuracy')} value={`${percentage}%`} />
+                    <Stat label={t('quizBestStreak')} value={bestStreak.toString()} />
+                    <Stat label={t('quizCorrect')} value={score.toString()} />
+                    <Stat label={t('quizIncorrect')} value={(QUIZ_LENGTH - score).toString()} />
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <button onClick={startNewQuiz} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800 transition-all">{t('playAgain')}</button>
                     <button onClick={() => setIsReviewing(true)} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-slate-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800 transition-all">{t('quizReviewAnswers')}</button>
@@ -278,10 +326,11 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         'flag-to-country': t('whichCountry'),
         'country-to-flag': t('whichFlag', { country: getCountryName(currentCountry) }),
         'flag-to-capital': t('whichCapital'),
+        'country-to-capital': t('whichCapitalForCountry', { country: getCountryName(currentCountry) }),
         'shape-to-country': t('whichCoatOfArms'),
     }[mode];
 
-    const correctAnswerText = mode === 'flag-to-capital' ? currentCountry.capital[0] : getCountryName(currentCountry);
+    const correctAnswerText = (mode === 'flag-to-capital' || mode === 'country-to-capital') ? currentCountry.capital[0] : getCountryName(currentCountry);
 
     return (
         <div className="max-w-2xl mx-auto">
@@ -320,7 +369,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
                     }
                 </div>
 
-                { (mode === 'flag-to-country' || mode === 'flag-to-capital' || mode === 'shape-to-country') &&
+                { (mode === 'flag-to-country' || mode === 'flag-to-capital' || mode === 'shape-to-country' || mode === 'country-to-capital') &&
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {options.map(option => (
                             <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 active:scale-95 flex items-center justify-between ${getButtonClass(option, correctAnswerText)}`}>
@@ -365,17 +414,24 @@ interface QuizViewProps {
     onBackToExplorer: () => void;
 }
 
+const BuildingIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+    </svg>
+);
+
 const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
     const { t } = useLanguage();
     const [mode, setMode] = useState<QuizMode | null>(null);
     const [difficulty, setDifficulty] = useState<QuizDifficulty | null>(null);
     const [isQuizStarted, setIsQuizStarted] = useState(false);
 
-    const gameModes: { id: QuizMode, title: string, desc: string }[] = [
-        { id: 'flag-to-country', title: t('modeFlagToCountry'), desc: t('modeFlagToCountryDesc') },
-        { id: 'country-to-flag', title: t('modeCountryToFlag'), desc: t('modeCountryToFlagDesc') },
-        { id: 'flag-to-capital', title: t('modeFlagToCapital'), desc: t('modeFlagToCapitalDesc') },
-        { id: 'shape-to-country', title: t('modeShapeToCountry'), desc: t('modeShapeToCountryDesc') },
+    const gameModes: { id: QuizMode, title: string, desc: string, icon: React.ReactNode }[] = [
+        { id: 'flag-to-country', title: t('modeFlagToCountry'), desc: t('modeFlagToCountryDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" /><path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" /></svg> },
+        { id: 'country-to-flag', title: t('modeCountryToFlag'), desc: t('modeCountryToFlagDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4a1 1 0 001 1h10a1 1 0 100-2H5a1 1 0 00-1 1zM2 9a1 1 0 001 1h14a1 1 0 100-2H3a1 1 0 00-1 1zm1 3a1 1 0 100 2h14a1 1 0 100-2H3zm-1 4a1 1 0 001 1h14a1 1 0 100-2H3a1 1 0 00-1 1z" clipRule="evenodd" /></svg> },
+        { id: 'flag-to-capital', title: t('modeFlagToCapital'), desc: t('modeFlagToCapitalDesc'), icon: <BuildingIcon /> },
+        { id: 'country-to-capital', title: t('modeCountryToCapital'), desc: t('modeCountryToCapitalDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>},
+        { id: 'shape-to-country', title: t('modeShapeToCountry'), desc: t('modeShapeToCountryDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg> },
     ];
 
     const difficultyLevels: { id: QuizDifficulty, title: string, desc: string }[] = [
@@ -400,8 +456,11 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {gameModes.map(m => (
                             <button key={m.id} onClick={() => setMode(m.id)} className={`p-6 text-left rounded-xl border-2 transition-all duration-200 ${mode === m.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-600'}`}>
-                                <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{m.title}</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{m.desc}</p>
+                                <div className="flex items-center gap-3">
+                                    <span className={mode === m.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}>{m.icon}</span>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{m.title}</h3>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 pl-8">{m.desc}</p>
                             </button>
                         ))}
                     </div>
