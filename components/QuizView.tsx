@@ -9,6 +9,7 @@ type QuizDifficulty = 'easy' | 'medium' | 'hard';
 const QUIZ_LENGTH = 10;
 const OPTIONS_COUNT = 4;
 const HINTS_PER_QUIZ = 3;
+const FIFTY_FIFTY_HINTS_PER_QUIZ = 1;
 
 function shuffleArray<T>(array: T[]): T[] {
     return [...array].sort(() => Math.random() - 0.5);
@@ -54,6 +55,9 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
     const [bestStreak, setBestStreak] = useState(0);
     const [hintsRemaining, setHintsRemaining] = useState(HINTS_PER_QUIZ);
     const [isHintUsedThisTurn, setIsHintUsedThisTurn] = useState(false);
+    const [fiftyFiftyHintsRemaining, setFiftyFiftyHintsRemaining] = useState(FIFTY_FIFTY_HINTS_PER_QUIZ);
+    const [isFiftyFiftyUsedThisTurn, setIsFiftyFiftyUsedThisTurn] = useState(false);
+    const [disabledOptions, setDisabledOptions] = useState<string[]>([]);
     const [isReviewing, setIsReviewing] = useState(false);
     const reviewListRef = useRef<HTMLDivElement>(null);
 
@@ -97,6 +101,9 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         setBestStreak(0);
         setHintsRemaining(HINTS_PER_QUIZ);
         setIsHintUsedThisTurn(false);
+        setFiftyFiftyHintsRemaining(FIFTY_FIFTY_HINTS_PER_QUIZ);
+        setIsFiftyFiftyUsedThisTurn(false);
+        setDisabledOptions([]);
         setIsReviewing(false);
     }, [countries, mode, difficulty]);
 
@@ -185,6 +192,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
             setSelectedAnswer(null);
             setIsAnswered(false);
             setIsHintUsedThisTurn(false);
+            setIsFiftyFiftyUsedThisTurn(false);
+            setDisabledOptions([]);
         } else {
             setEndTime(Date.now());
             setQuizState('results');
@@ -195,6 +204,21 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         if (hintsRemaining > 0 && !isHintUsedThisTurn) {
             setHintsRemaining(prev => prev - 1);
             setIsHintUsedThisTurn(true);
+        }
+    };
+    
+    const handleUseFiftyFiftyHint = () => {
+        if (fiftyFiftyHintsRemaining > 0 && !isFiftyFiftyUsedThisTurn && !isAnswered) {
+            setFiftyFiftyHintsRemaining(prev => prev - 1);
+            setIsFiftyFiftyUsedThisTurn(true);
+    
+            const correctAnswer = (mode === 'flag-to-capital' || mode === 'country-to-capital')
+                ? currentCountry.capital[0]
+                : getCountryName(currentCountry);
+            
+            const wrongOptions = options.filter(opt => opt !== correctAnswer);
+            const shuffledWrongOptions = shuffleArray(wrongOptions);
+            setDisabledOptions(shuffledWrongOptions.slice(0, 2));
         }
     };
 
@@ -211,10 +235,22 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
     const LightbulbIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.5c-2.485 0-4.5 2.015-4.5 4.5 0 1.44.693 2.723 1.763 3.565.175.14.237.374.15.562l-.5 1.125A1.5 1.5 0 008 15.5h4a1.5 1.5 0 001.413-1.748l-.5-1.125c-.087-.188-.025-.422.15-.562A4.482 4.482 0 0014.5 8C14.5 5.515 12.485 3.5 10 3.5zM8.5 16.5a1.5 1.5 0 103 0h-3z" /></svg>;
 
     const getButtonClass = (option: string, correctAnswer: string) => {
-        if (!isAnswered) return "bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600";
-        if (option === correctAnswer) return "bg-green-100 dark:bg-green-900/50 border-green-500 text-green-800 dark:text-green-300";
-        if (option === selectedAnswer) return "bg-red-100 dark:bg-red-900/50 border-red-500 text-red-800 dark:text-red-300";
-        return "bg-white dark:bg-slate-700 opacity-60 cursor-not-allowed";
+        if (!isAnswered) {
+             return "bg-white dark:bg-slate-700 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-600";
+        }
+        
+        const isCorrect = option === correctAnswer;
+        const isSelected = option === selectedAnswer;
+    
+        if (isCorrect) {
+            return "bg-green-100 dark:bg-green-900/50 border-green-500 text-green-800 dark:text-green-300";
+        }
+        
+        if (isSelected) { // And not correct (because of the check above)
+            return "bg-red-100 dark:bg-red-900/50 border-red-500 text-red-800 dark:text-red-300";
+        }
+        
+        return "bg-white dark:bg-slate-700 opacity-60 cursor-not-allowed text-gray-800 dark:text-gray-200";
     };
 
     if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
@@ -222,6 +258,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
 
     if (quizState === 'results') {
         const totalTime = ((endTime - startTime) / 1000).toFixed(1);
+        const avgTime = (parseFloat(totalTime) / QUIZ_LENGTH).toFixed(1);
         const percentage = Math.round((score / QUIZ_LENGTH) * 100);
 
         const getRank = () => {
@@ -308,8 +345,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
                     <Stat label={t('quizAccuracy')} value={`${percentage}%`} />
                     <Stat label={t('quizBestStreak')} value={bestStreak.toString()} />
-                    <Stat label={t('quizCorrect')} value={score.toString()} />
-                    <Stat label={t('quizIncorrect')} value={(QUIZ_LENGTH - score).toString()} />
+                    <Stat label={t('quizTime')} value={t('quizSeconds', { seconds: totalTime })} />
+                    <Stat label={t('quizAvgTime')} value={t('quizSeconds', { seconds: avgTime })} />
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -356,23 +393,29 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
                 }
 
                 <div className="min-h-[44px] mb-4 text-center">
-                    { !isAnswered && (
-                        <button onClick={handleUseHint} disabled={hintsRemaining === 0} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <LightbulbIcon />
-                            {hintsRemaining > 0 ? t('quizHint', { count: hintsRemaining.toString() }) : t('quizNoHints')}
-                        </button>
-                    )}
-                    { isHintUsedThisTurn && 
+                    { !isAnswered ? (
+                        <div className="flex items-center justify-center space-x-2">
+                             <button onClick={handleUseHint} disabled={hintsRemaining === 0 || isHintUsedThisTurn} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <LightbulbIcon />
+                                {hintsRemaining > 0 ? t('quizHint', { count: hintsRemaining.toString() }) : t('quizNoHints')}
+                            </button>
+                             <button onClick={handleUseFiftyFiftyHint} disabled={fiftyFiftyHintsRemaining === 0 || isFiftyFiftyUsedThisTurn} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-sky-800 dark:text-sky-200 bg-sky-100 dark:bg-sky-900/50 hover:bg-sky-200 dark:hover:bg-sky-900 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span className="font-mono font-bold">50:50</span>
+                                {fiftyFiftyHintsRemaining > 0 ? `(${fiftyFiftyHintsRemaining})` : ''}
+                            </button>
+                        </div>
+                    ) : ( isHintUsedThisTurn && 
                         <p className="text-sm text-gray-600 dark:text-gray-400 animate-fade-in-up-short">
                            {t('continentHint', { continent: currentCountry.continents.map(c => CONTINENT_NAMES[c]?.[language] || c).join(', ') })}
                         </p>
+                    )
                     }
                 </div>
 
                 { (mode === 'flag-to-country' || mode === 'flag-to-capital' || mode === 'shape-to-country' || mode === 'country-to-capital') &&
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {options.map(option => (
-                            <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 active:scale-95 flex items-center justify-between ${getButtonClass(option, correctAnswerText)}`}>
+                            <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered || disabledOptions.includes(option)} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 active:scale-95 flex items-center justify-between ${getButtonClass(option, correctAnswerText)} ${disabledOptions.includes(option) ? 'opacity-50 line-through' : ''}`}>
                                 <span className="font-semibold">{option}</span>
                                 {isAnswered && option === correctAnswerText && <span className="text-green-500"><CheckIcon /></span>}
                                 {isAnswered && option === selectedAnswer && option !== correctAnswerText && <span className="text-red-500"><CrossIcon /></span>}
@@ -385,7 +428,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
                         {options.map(option => {
                             const countryOption = countries.find(c => getCountryName(c) === option);
                             return (
-                                <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered || !countryOption} className={`relative p-2 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 active:scale-95 ${getButtonClass(option, correctAnswerText)}`}>
+                                <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered || !countryOption || disabledOptions.includes(option)} className={`relative p-2 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 active:scale-95 ${getButtonClass(option, correctAnswerText)} ${disabledOptions.includes(option) ? 'opacity-50 line-through' : ''}`}>
                                     <div className="aspect-w-16 aspect-h-9"><img src={countryOption?.flags.svg} alt={option} className="w-full h-full object-cover"/></div>
                                      {isAnswered && (
                                         <div className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 dark:bg-slate-900/80">

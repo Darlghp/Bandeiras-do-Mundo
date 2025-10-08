@@ -135,6 +135,10 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     rankAdept: "Vexillology Adept",
     rankExpert: "Flag Expert",
     rankMaster: "Geography Genius",
+    quiz5050Hint: "50:50 ({{count}} left)",
+    quizNo5050Hints: "No 50:50s left",
+    quizCorrect: "Correct",
+    quizIncorrect: "Incorrect",
   },
   pt: {
     title: "Explorador de Bandeiras do Mundo",
@@ -262,6 +266,10 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     rankAdept: "Adepto em Vexilologia",
     rankExpert: "Expert em Bandeiras",
     rankMaster: "Gênio da Geografia",
+    quiz5050Hint: "50:50 (restam {{count}})",
+    quizNo5050Hints: "Nenhuma 50:50 restante",
+    quizCorrect: "Corretas",
+    quizIncorrect: "Incorretas",
   }
 };
 
