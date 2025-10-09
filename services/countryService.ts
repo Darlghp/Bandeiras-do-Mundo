@@ -3,7 +3,7 @@ import { API_BASE_URL, API_FIELDS } from '../constants';
 
 const API_URL = `${API_BASE_URL}?fields=${API_FIELDS.join(',')}`;
 
-const CACHE_KEY = 'countriesData_v1';
+const CACHE_KEY = 'countriesData_v2';
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export const fetchCountries = async (): Promise<Country[]> => {

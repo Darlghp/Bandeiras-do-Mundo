@@ -2,53 +2,11 @@ import React, { useState, useEffect } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { CONTINENT_NAMES } from '../constants';
-import { fetchFlagComparison, getAiAvailability } from '../services/geminiService';
 
 interface CompareModalProps {
     countries: [Country, Country] | null;
     onClose: () => void;
 }
-
-const AiAnalysis: React.FC<{ countries: [Country, Country] }> = ({ countries }) => {
-    const { t, language } = useLanguage();
-    const [comparison, setComparison] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const getComparison = async () => {
-            if (!getAiAvailability()) {
-                setError(t('aiUnavailable'));
-                setIsLoading(false);
-                return;
-            }
-            try {
-                setIsLoading(true);
-                const result = await fetchFlagComparison(countries[0], countries[1], language);
-                setComparison(result);
-            } catch (err) {
-                setError(t('aiError'));
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        getComparison();
-    }, [countries, language, t]);
-
-    return (
-        <div className="border-t border-gray-200 dark:border-t-gray-700 pt-6 mt-6">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('aiComparisonTitle')}</h3>
-            {isLoading && (
-                <div className="flex justify-center items-center space-x-2 text-gray-600 dark:text-gray-400">
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <span>{t('aiComparing')}</span>
-                </div>
-            )}
-            {error && <p className="text-center text-red-600 dark:text-red-400">{error}</p>}
-            {comparison && <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{comparison}</p>}
-        </div>
-    );
-};
 
 const CompareModal: React.FC<CompareModalProps> = ({ countries, onClose }) => {
     const { t, language } = useLanguage();
@@ -138,8 +96,6 @@ const CompareModal: React.FC<CompareModalProps> = ({ countries, onClose }) => {
                             </div>
                         </div>
                     </div>
-
-                    <AiAnalysis countries={countries} />
                 </div>
             </div>
         </div>

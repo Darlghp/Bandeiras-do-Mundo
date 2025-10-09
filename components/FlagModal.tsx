@@ -2,15 +2,12 @@ import React, { useState, useEffect } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { CONTINENT_NAMES } from '../constants';
-import { fetchCountryFacts, getAiAvailability, fetchSimilarFlags } from '../services/geminiService';
 
 interface FlagModalProps {
     country: Country | null;
     onClose: () => void;
     isFavorite: boolean;
     onToggleFavorite: (country: Country) => void;
-    allCountries: Country[];
-    onCountrySelect: (country: Country) => void;
 }
 
 const Stat: React.FC<{ icon: React.ReactNode, label: string, value: string | number }> = ({ icon, label, value }) => (
@@ -21,110 +18,9 @@ const Stat: React.FC<{ icon: React.ReactNode, label: string, value: string | num
     </div>
 );
 
-const SimilarFlagsSkeleton: React.FC = () => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-pulse">
-        {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index}>
-                <div className="aspect-w-4 aspect-h-3 bg-gray-200 dark:bg-slate-700 rounded-md"></div>
-                <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded-md w-3/4 mx-auto mt-2"></div>
-            </div>
-        ))}
-    </div>
-);
-
-const SimilarFlagCard: React.FC<{ country: Country; onClick: (country: Country) => void; language: 'en' | 'pt'; }> = ({ country, onClick, language }) => {
-    const commonName = language === 'pt' ? country.translations.por.common : country.name.common;
-    return (
-        <button 
-            onClick={() => onClick(country)}
-            className="text-center group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded-lg"
-        >
-            <div className="aspect-w-4 aspect-h-3 bg-gray-100 dark:bg-slate-700/50 rounded-md p-1 shadow-sm overflow-hidden transform group-hover:scale-105 group-hover:shadow-md transition-all duration-200">
-                <img src={country.flags.svg} alt={`Flag of ${commonName}`} className="w-full h-full object-cover" />
-            </div>
-            <p className="text-xs font-semibold text-gray-700 dark:text-slate-300 mt-2 truncate group-hover:text-blue-600 dark:group-hover:text-sky-400">
-                {commonName}
-            </p>
-        </button>
-    );
-};
-
-const AiInsights: React.FC<{ countryName: string }> = ({ countryName }) => {
-    const { t, language } = useLanguage();
-    const [facts, setFacts] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const handleFetchFacts = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const result = await fetchCountryFacts(countryName, language);
-            setFacts(result);
-        } catch (err) {
-            setError(t('aiError'));
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const formattedFacts = facts
-        ?.split('\n')
-        .map(fact => fact.trim())
-        .filter(fact => fact.startsWith('-'))
-        .map(fact => fact.substring(1).trim());
-
-    return (
-        <div className="border-t border-gray-200 dark:border-t-slate-700 pt-6 mt-6">
-            {!facts && !isLoading && !error && (
-                <div className="text-center">
-                    <button
-                        onClick={handleFetchFacts}
-                        className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-slate-800 transition-colors"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        {t('askAI', { countryName })}
-                    </button>
-                </div>
-            )}
-            
-            {isLoading && (
-                 <div className="flex justify-center items-center space-x-2 text-gray-600 dark:text-slate-400">
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <span>{t('aiThinking')}</span>
-                </div>
-            )}
-
-            {error && <p className="text-center text-red-600 dark:text-red-400">{error}</p>}
-            
-            {formattedFacts && formattedFacts.length > 0 && (
-                <div className="text-left animate-fade-in">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-slate-200 mb-3">{t('aiInsightsTitle')}</h3>
-                    <ul className="space-y-2 list-disc list-inside text-gray-600 dark:text-slate-300">
-                       {formattedFacts.map((fact, index) => (
-                           <li key={index}>{fact}</li>
-                       ))}
-                    </ul>
-                </div>
-            )}
-        </div>
-    );
-}
-
-const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onToggleFavorite, allCountries, onCountrySelect }) => {
+const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onToggleFavorite }) => {
     const { t, language } = useLanguage();
     const [isShowing, setIsShowing] = useState(false);
-    const [aiAvailable, setAiAvailable] = useState(false);
-    const [similarFlags, setSimilarFlags] = useState<Country[]>([]);
-    const [isSimilarLoading, setIsSimilarLoading] = useState(false);
-    const [similarError, setSimilarError] = useState<string | null>(null);
-
-    useEffect(() => {
-        setAiAvailable(getAiAvailability());
-    }, []);
-
 
     useEffect(() => {
         setIsShowing(!!country);
@@ -146,30 +42,6 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
         }
     }, [country, onClose]);
 
-    useEffect(() => {
-        if (!country || !getAiAvailability()) {
-            setSimilarFlags([]);
-            return;
-        }
-
-        const fetchAndSetSimilarFlags = async () => {
-            setIsSimilarLoading(true);
-            setSimilarError(null);
-            setSimilarFlags([]);
-            try {
-                const results = await fetchSimilarFlags(country, allCountries, language);
-                setSimilarFlags(results);
-            } catch (err) {
-                console.error("Failed to fetch similar flags:", err);
-                setSimilarError(t('aiError'));
-            } finally {
-                setIsSimilarLoading(false);
-            }
-        };
-
-        fetchAndSetSimilarFlags();
-    }, [country, allCountries, language, t]);
-
     if (!country) return null;
 
     const commonName = language === 'pt' ? country.translations.por.common : country.name.common;
@@ -190,7 +62,7 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
             aria-labelledby="flag-modal-title"
         >
             <div 
-                className={`bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-4xl w-full relative transform transition-all duration-300 ease-out overflow-y-auto max-h-[90vh] ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} 
+                className={`bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-4xl w-full relative transform transition-all duration-300 ease-out overflow-y-auto max-h-[90vh] no-scrollbar ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} 
                 onClick={e => e.stopPropagation()}
             >
                 <button 
@@ -266,7 +138,7 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                         />
                     </div>
                     
-                    <div className="border-t border-gray-200 dark:border-t-slate-700 pt-6 text-center">
+                    <div className="border-t border-gray-200 dark:border-t-slate-700 pt-6 mt-6 text-center">
                         <a 
                             href={country.maps.googleMaps}
                             target="_blank"
@@ -280,24 +152,6 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                             </svg>
                         </a>
                     </div>
-                    
-                    {aiAvailable && (country.cca3 && allCountries.length > 1) && (
-                        <div className="border-t border-gray-200 dark:border-t-slate-700 pt-6 mt-6">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4">{t('similarFlagsTitle')}</h3>
-                            {isSimilarLoading && <SimilarFlagsSkeleton />}
-                            {similarError && <p className="text-red-600 dark:text-red-400 text-sm">{similarError}</p>}
-                            {!isSimilarLoading && similarFlags.length > 0 && (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                    {similarFlags.map(sf => (
-                                        <SimilarFlagCard key={sf.cca3} country={sf} onClick={onCountrySelect} language={language} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-
-                    {aiAvailable && <AiInsights countryName={commonName} />}
                 </div>
             </div>
         </div>

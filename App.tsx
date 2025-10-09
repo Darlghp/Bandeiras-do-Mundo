@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import type { Country } from './types';
 import { fetchCountries } from './services/countryService';
-import { fetchFeaturedCountries, getAiAvailability, fetchFlagsByQuery, fetchFlagsByColor } from './services/geminiService';
+import { fetchAllCollections } from './services/collectionService';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import FlagModal from './components/FlagModal';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import SkeletonCard from './components/SkeletonCard';
-import DiscoverView from './components/DiscoverView';
+import DiscoverHub from './components/DiscoverHub';
 import Hero from './components/Hero';
-import { CONTINENTS_API_VALUES, FLAG_COLORS } from './constants';
+import { CONTINENTS_API_VALUES } from './constants';
 import { FLAG_OF_THE_DAY_TITLES } from './constants/flagOfTheDayTitles';
 import { useLanguage } from './context/LanguageContext';
 import CompareTray from './components/CompareTray';
@@ -23,12 +23,15 @@ import BottomNav from './components/BottomNav';
 const QuizView = lazy(() => import('./components/QuizView'));
 
 export type View = 'explorer' | 'quiz';
+export type SortOrder = 
+    | 'name_asc' 
+    | 'name_desc' 
+    | 'pop_desc' 
+    | 'pop_asc' 
+    | 'area_desc' 
+    | 'area_asc';
 
-type AiFilter = 
-    | { type: 'text', query: string; results: string[] } 
-    | { type: 'color', colors: string[]; results: string[] };
-
-interface FeaturedData {
+interface CollectionData {
     title: string;
     countries: Country[];
 }
@@ -119,20 +122,17 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
     const [view, setView] = useState<View>('explorer');
+    const [sortOrder, setSortOrder] = useState<SortOrder>('name_asc');
 
-    const [featuredData, setFeaturedData] = useState<FeaturedData | null>(null);
-    const [isFeaturedLoading, setIsFeaturedLoading] = useState<boolean>(false);
+    const [collectionsData, setCollectionsData] = useState<CollectionData[] | null>(null);
+    const [isCollectionsLoading, setIsCollectionsLoading] = useState<boolean>(false);
     const [flagOfTheDay, setFlagOfTheDay] = useState<FlagOfTheDayData | null>(null);
     const [isFlagOfTheDayLoading, setIsFlagOfTheDayLoading] = useState<boolean>(true);
-    const [aiAvailable, setAiAvailable] = useState(false);
 
     const [isCompareModeActive, setIsCompareModeActive] = useState(false);
     const [comparisonList, setComparisonList] = useState<Country[]>([]);
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     
-    const [isAiSearching, setIsAiSearching] = useState<boolean>(false);
-    const [aiFilter, setAiFilter] = useState<AiFilter | null>(null);
-
     const [favorites, setFavorites] = useState<Set<string>>(() => {
         try {
             const savedFavorites = localStorage.getItem('favorites');
@@ -203,20 +203,15 @@ const App: React.FC = () => {
         };
     }, []);
 
-    useEffect(() => {
-        setAiAvailable(getAiAvailability());
-    }, []);
-
-    const fetchDynamicContent = useCallback(async (countryData: Country[]) => {
-        setIsFeaturedLoading(true);
+    const fetchCollections = useCallback(async (countryData: Country[]) => {
+        setIsCollectionsLoading(true);
         try {
-            // This function no longer relies on AI and can be run for all users.
-            const featured = await fetchFeaturedCountries(countryData, language);
-            setFeaturedData(featured);
+            const collections = fetchAllCollections(countryData, language);
+            setCollectionsData(collections);
         } catch (error) {
-            console.error("Failed to fetch featured content:", error);
+            console.error("Failed to fetch collections:", error);
         } finally {
-            setIsFeaturedLoading(false);
+            setIsCollectionsLoading(false);
         }
     }, [language]);
     
@@ -247,7 +242,6 @@ const App: React.FC = () => {
             }
         }
         
-        // Use curated title if available, otherwise fallback to country name.
         const curatedTitle = FLAG_OF_THE_DAY_TITLES[countryForToday.cca3]?.[language];
         const fallbackTitle = language === 'pt' ? countryForToday.translations.por.common : countryForToday.name.common;
         const title = curatedTitle || fallbackTitle;
@@ -274,7 +268,7 @@ const App: React.FC = () => {
                 const unsortedData = await fetchCountries();
                 const data = [...unsortedData].sort((a, b) => a.cca3.localeCompare(b.cca3));
                 setCountries(data);
-                fetchDynamicContent(data);
+                fetchCollections(data);
                 manageFlagOfTheDay(data);
             } catch (err) {
                 setError(t('fetchError'));
@@ -284,7 +278,7 @@ const App: React.FC = () => {
             }
         };
         getCountries();
-    }, [t, fetchDynamicContent, manageFlagOfTheDay]);
+    }, [t, fetchCollections, manageFlagOfTheDay]);
 
     const handleCardClick = (country: Country) => {
         if (isCompareModeActive) {
@@ -314,7 +308,6 @@ const App: React.FC = () => {
     const handleToggleCompareMode = useCallback(() => {
         setIsCompareModeActive(prev => {
             const nextState = !prev;
-            // When turning OFF compare mode, clear the comparison list for better UX.
             if (!nextState) {
                 setComparisonList([]);
             }
@@ -322,124 +315,110 @@ const App: React.FC = () => {
         });
     }, []);
 
-    const handleAiSearch = useCallback(async (query: string) => {
-        setSearchQuery(query);
-        if (!getAiAvailability()) {
-            setError(t('aiUnavailable'));
-            return;
-        }
-        if (!query.trim()) {
-            setAiFilter(null);
-            return;
-        }
-        setSelectedContinent('All'); // Reset continent filter for a global search
-        setIsAiSearching(true);
-        setError(null);
-        try {
-            const countryNames = await fetchFlagsByQuery(query, countries, language);
-            setAiFilter({ type: 'text', query: query, results: countryNames });
-        } catch (err) {
-            console.error("AI Search failed:", err);
-            setError(t('aiSearchError'));
-            setAiFilter(null);
-        } finally {
-            setIsAiSearching(false);
-        }
-    }, [t, countries, language]);
-    
-    const handleColorSearch = useCallback(async (colors: string[]) => {
-        if (!getAiAvailability()) {
-            setError(t('aiUnavailable'));
-            return;
-        }
-        if (colors.length === 0) {
-            setAiFilter(null);
-            return;
-        }
-        setSelectedContinent('All'); // Reset continent filter for a global search
-        setIsAiSearching(true);
-        setError(null);
-        try {
-            const countryNames = await fetchFlagsByColor(colors, countries, language);
-            setAiFilter({ type: 'color', colors: colors, results: countryNames });
-        } catch (err) {
-            console.error("AI Color Search failed:", err);
-            setError(t('aiSearchError'));
-            setAiFilter(null);
-        } finally {
-            setIsAiSearching(false);
-        }
-    }, [t, countries, language]);
-
-
-    const handleClearAiFilter = () => {
-        setSearchQuery('');
-        setAiFilter(null);
-    };
-
     const filteredCountries = useMemo(() => {
-        const sorted = [...countries].sort((a, b) => {
-            const nameA = language === 'pt' ? a.translations.por.common : a.name.common;
-            const nameB = language === 'pt' ? b.translations.por.common : b.name.common;
-            return nameA.localeCompare(nameB);
-        });
+        let result = [...countries];
 
-        const continentFiltered = sorted.filter(country => {
+        if (selectedContinent !== 'All') {
             if (selectedContinent === 'Favorites') {
-                return favorites.has(country.cca3);
+                result = result.filter(country => favorites.has(country.cca3));
+            } else {
+                result = result.filter(country => country.continents.includes(selectedContinent));
             }
-            if (selectedContinent === 'All') return true;
-            return country.continents.includes(selectedContinent);
-        });
-
-        if (aiFilter) {
-            const resultSet = new Set(aiFilter.results);
-            return continentFiltered.filter(country => {
-                const commonName = language === 'pt' ? country.translations.por.common : country.name.common;
-                return resultSet.has(commonName);
+        }
+        
+        if (searchQuery.trim()) {
+            const lowerCaseQuery = searchQuery.toLowerCase();
+            result = result.filter(country => {
+                 const commonName = language === 'pt' ? country.translations.por.common : country.name.common;
+                 const officialName = language === 'pt' ? country.translations.por.official : country.name.official;
+                 return commonName.toLowerCase().includes(lowerCaseQuery) ||
+                        officialName.toLowerCase().includes(lowerCaseQuery) ||
+                        country.cca3.toLowerCase().includes(lowerCaseQuery);
             });
         }
         
-        return continentFiltered;
-    }, [countries, selectedContinent, language, aiFilter, favorites]);
+        return [...result].sort((a, b) => {
+            const nameA = language === 'pt' ? a.translations.por.common : a.name.common;
+            const nameB = language === 'pt' ? b.translations.por.common : b.name.common;
+            
+            switch (sortOrder) {
+                case 'name_desc':
+                    return nameB.localeCompare(nameA);
+                case 'pop_desc':
+                    return b.population - a.population;
+                case 'pop_asc':
+                    return a.population - b.population;
+                case 'area_desc':
+                    return b.area - a.area;
+                case 'area_asc':
+                    return a.area - b.area;
+                case 'name_asc':
+                default:
+                    return nameA.localeCompare(nameB);
+            }
+        });
+    }, [countries, selectedContinent, language, searchQuery, favorites, sortOrder]);
     
-    const AiFilterIndicator: React.FC = () => {
-        if (!aiFilter) return null;
+    const SortControl: React.FC<{ sortOrder: SortOrder; setSortOrder: (order: SortOrder) => void; }> = ({ sortOrder, setSortOrder }) => {
+        const [isOpen, setIsOpen] = useState(false);
+        const dropdownRef = useRef<HTMLDivElement>(null);
 
-        if (aiFilter.type === 'text') {
-            return (
-                <div className="bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between animate-fade-in-up-short">
-                    <p className="text-sm">
-                        <span className="font-semibold">{t('aiFilterActive', { query: aiFilter.query })}</span>
-                    </p>
-                    <button onClick={handleClearAiFilter} className="font-bold hover:text-blue-600 dark:hover:text-blue-100 transition-colors text-sm flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                        {t('clearAiFilter')}
-                    </button>
-                </div>
-            );
-        }
+        const sortOptions: { key: SortOrder; label: string; }[] = [
+            { key: 'name_asc', label: t('sortNameAsc') },
+            { key: 'name_desc', label: t('sortNameDesc') },
+            { key: 'pop_desc', label: t('sortPopDesc') },
+            { key: 'pop_asc', label: t('sortPopAsc') },
+            { key: 'area_desc', label: t('sortAreaDesc') },
+            { key: 'area_asc', label: t('sortAreaAsc') },
+        ];
 
-        if (aiFilter.type === 'color') {
-             return (
-                <div className="bg-purple-100 dark:bg-purple-900/50 border border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between animate-fade-in-up-short">
-                    <div className="flex items-center gap-2 text-sm">
-                        <span className="font-semibold">{t('aiColorFilterActive')}</span>
-                        <div className="flex items-center gap-1.5">
-                            {aiFilter.colors.map(colorName => (
-                                <div key={colorName} className="w-4 h-4 rounded-full border border-gray-400/50" style={{ backgroundColor: FLAG_COLORS[colorName as keyof typeof FLAG_COLORS] }}></div>
+        const currentLabel = sortOptions.find(opt => opt.key === sortOrder)?.label;
+
+        useEffect(() => {
+            const handleClickOutside = (event: MouseEvent) => {
+                if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                    setIsOpen(false);
+                }
+            };
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }, []);
+
+        return (
+            <div className="relative" ref={dropdownRef}>
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="flex items-center justify-between w-full sm:w-56 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-900"
+                    aria-haspopup="listbox"
+                    aria-expanded={isOpen}
+                >
+                    <span className="truncate">{t('sortBy')}: {currentLabel}</span>
+                    <svg className={`w-5 h-5 ml-2 -mr-1 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                </button>
+                {isOpen && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 dark:ring-slate-700 z-10 animate-fade-in-up-short">
+                        <div className="py-1" role="listbox" aria-orientation="vertical">
+                            {sortOptions.map(option => (
+                                <button
+                                    key={option.key}
+                                    onClick={() => {
+                                        setSortOrder(option.key);
+                                        setIsOpen(false);
+                                    }}
+                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                    role="option"
+                                    aria-selected={sortOrder === option.key}
+                                >
+                                    {option.label}
+                                </button>
                             ))}
                         </div>
                     </div>
-                    <button onClick={handleClearAiFilter} className="font-bold hover:text-purple-600 dark:hover:text-purple-100 transition-colors text-sm flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                        {t('clearColorFilter')}
-                    </button>
-                </div>
-            );
-        }
-
-        return null;
+                )}
+            </div>
+        );
     };
 
 
@@ -456,9 +435,9 @@ const App: React.FC = () => {
                     onFlagClick={handleCardClick}
                 />
 
-                <DiscoverView 
-                    featuredData={featuredData} 
-                    isLoading={isFeaturedLoading} 
+                <DiscoverHub 
+                    collections={collectionsData}
+                    isLoading={isCollectionsLoading} 
                     onCardClick={handleCardClick}
                     favorites={favorites}
                     onToggleFavorite={handleToggleFavorite}
@@ -471,21 +450,20 @@ const App: React.FC = () => {
                                 continents={CONTINENTS_API_VALUES}
                                 selectedContinent={selectedContinent}
                                 setSelectedContinent={setSelectedContinent}
-                                initialQuery={searchQuery}
-                                onAiSearch={handleAiSearch}
-                                isAiSearchingText={isAiSearching && aiFilter?.type === 'text'}
-                                onColorSearch={handleColorSearch}
-                                isAiSearchingColor={isAiSearching && aiFilter?.type === 'color'}
+                                searchQuery={searchQuery}
+                                onSearchChange={setSearchQuery}
                                 isCompareModeActive={isCompareModeActive}
                                 onToggleCompareMode={handleToggleCompareMode}
-                                aiAvailable={aiAvailable}
                            />
                         </div>
                     </aside>
                     <main className="md:col-span-3">
                         {isCompareModeActive && <CompareModeIndicator onDisable={handleToggleCompareMode} />}
-                        <AiFilterIndicator />
                         
+                        <div className="flex justify-end mb-6">
+                            <SortControl sortOrder={sortOrder} setSortOrder={setSortOrder} />
+                        </div>
+
                         {isLoading ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {Array.from({ length: 12 }).map((_, index) => <SkeletonCard key={index} />)}
@@ -548,12 +526,6 @@ const App: React.FC = () => {
                     onClose={handleCloseModal}
                     isFavorite={favorites.has(selectedCountry.cca3)}
                     onToggleFavorite={handleToggleFavorite}
-                    allCountries={countries}
-                    onCountrySelect={(country) => {
-                        handleCloseModal();
-                        // A small timeout to allow modal to close before opening a new one
-                        setTimeout(() => setSelectedCountry(country), 300);
-                    }}
                 />
             )}
             {isCompareModalOpen && comparisonList.length === 2 && (
