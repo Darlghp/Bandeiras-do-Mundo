@@ -126,6 +126,7 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     sortPopDesc: "Population (High-Low)",
     sortAreaAsc: "Area (Low-High)",
     sortAreaDesc: "Area (High-Low)",
+    selectACountry: "Select a Country",
   },
   pt: {
     title: "Explorador de Bandeiras do Mundo",
@@ -244,6 +245,7 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     sortPopDesc: "População (Alta-Baixa)",
     sortAreaAsc: "Área (Baixa-Alta)",
     sortAreaDesc: "Área (Alta-Baixa)",
+    selectACountry: "Selecione um País",
   }
 };
 

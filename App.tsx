@@ -64,17 +64,26 @@ const PageLoader: React.FC = () => {
     );
 };
 
-const Toast: React.FC<{ message: string; isVisible: boolean }> = ({ message, isVisible }) => {
+const Toast: React.FC<{ info: { message: string; type: 'add' | 'remove' } | null, isVisible: boolean }> = ({ info, isVisible }) => {
+    if (!info) return null;
+    const isAdd = info.type === 'add';
+    
     return (
         <div
-            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-out
-                ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+            className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-out
+                ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-12 pointer-events-none'}`}
         >
             <div className="flex items-center gap-3 bg-gray-900 dark:bg-slate-50 text-white dark:text-slate-900 px-4 py-3 rounded-full shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400 dark:text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span className="text-sm font-medium">{message}</span>
+                {isAdd ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                    </svg>
+                ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400 dark:text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                )}
+                <span className="text-sm font-medium">{info.message}</span>
             </div>
         </div>
     );
@@ -142,15 +151,17 @@ const App: React.FC = () => {
         }
     });
 
-    const [toastMessage, setToastMessage] = useState<string>('');
+    const [toastInfo, setToastInfo] = useState<{ message: string; type: 'add' | 'remove' } | null>(null);
     const [isToastVisible, setIsToastVisible] = useState<boolean>(false);
     const toastTimerRef = useRef<number | null>(null);
+    
+    const [scrollProgress, setScrollProgress] = useState(0);
 
-    const showToast = useCallback((message: string) => {
+    const showToast = useCallback((message: string, type: 'add' | 'remove') => {
         if (toastTimerRef.current) {
             clearTimeout(toastTimerRef.current);
         }
-        setToastMessage(message);
+        setToastInfo({ message, type });
         setIsToastVisible(true);
         toastTimerRef.current = window.setTimeout(() => {
             setIsToastVisible(false);
@@ -167,10 +178,10 @@ const App: React.FC = () => {
             const newFavorites = new Set(prevFavorites);
             if (newFavorites.has(country.cca3)) {
                 newFavorites.delete(country.cca3);
-                showToast(t('removedFromFavoritesToast', { countryName }));
+                showToast(t('removedFromFavoritesToast', { countryName }), 'remove');
             } else {
                 newFavorites.add(country.cca3);
-                showToast(t('addedToFavoritesToast', { countryName }));
+                showToast(t('addedToFavoritesToast', { countryName }), 'add');
             }
             return newFavorites;
         });
@@ -194,10 +205,19 @@ const App: React.FC = () => {
             }
         };
         
+        const handleScroll = () => {
+            const totalScroll = document.documentElement.scrollTop;
+            const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scroll = `${(totalScroll / windowHeight) * 100}`;
+            setScrollProgress(Number(scroll));
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
         document.addEventListener('focusin', handleFocusIn);
         document.addEventListener('focusout', handleFocusOut);
 
         return () => {
+            window.removeEventListener('scroll', handleScroll);
             document.removeEventListener('focusin', handleFocusIn);
             document.removeEventListener('focusout', handleFocusOut);
         };
@@ -505,7 +525,7 @@ const App: React.FC = () => {
 
     return (
         <div className="min-h-screen flex flex-col">
-            <Header currentView={view} setView={setView} />
+            <Header currentView={view} setView={setView} scrollProgress={scrollProgress} />
             <main className="flex-grow pt-16"> {/* Adjusted pt for header height */}
                 {view !== 'explorer' && (
                      <div className="bg-gray-100 dark:bg-slate-950/50 border-b border-gray-200 dark:border-slate-800">
@@ -544,7 +564,7 @@ const App: React.FC = () => {
                 />
             )}
             {!isCompareModeActive && <BottomNav currentView={view} setView={setView} />}
-            <Toast message={toastMessage} isVisible={isToastVisible} />
+            <Toast info={toastInfo} isVisible={isToastVisible} />
         </div>
     );
 };

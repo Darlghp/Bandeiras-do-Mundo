@@ -13,13 +13,18 @@ const CompareSlot: React.FC<{ country: Country | undefined }> = ({ country }) =>
 
     if (!country) {
         return (
-            <div className="w-full h-16 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md flex items-center justify-center">
-                <span className="text-xs text-gray-400 dark:text-gray-500 px-2 text-center">{t('selectForComparison', { countryName: '' }).trim()}</span>
+            <div className="w-full h-16 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md flex items-center justify-center animate-pulse">
+                <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-xs font-semibold px-2 text-center">{t('selectACountry')}</span>
+                </div>
             </div>
         );
     }
     return (
-        <div className="w-full h-16 bg-white dark:bg-gray-700 rounded-md flex items-center p-2 shadow-sm">
+        <div className="w-full h-16 bg-white dark:bg-gray-700 rounded-md flex items-center p-2 shadow-sm animate-fade-in">
             <img src={country.flags.svg} alt={country.name.common} className="h-full w-12 object-cover rounded-sm" />
             <span className="ml-3 text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
                  {language === 'pt' ? country.translations.por.common : country.name.common}

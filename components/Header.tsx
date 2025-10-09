@@ -7,6 +7,7 @@ import type { View } from '../App';
 interface HeaderProps {
     currentView: View;
     setView: (view: View) => void;
+    scrollProgress: number;
 }
 
 const WavingFlagIcon: React.FC = () => (
@@ -35,7 +36,7 @@ const NavItem: React.FC<{
 };
 
 
-const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, setView, scrollProgress }) => {
     const { t } = useLanguage();
     const navRef = useRef<HTMLDivElement>(null);
     const [magicLineStyle, setMagicLineStyle] = useState({});
@@ -58,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
     }, [currentView, t]);
 
     return (
-        <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm z-20 border-b border-gray-200 dark:border-slate-700">
+        <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-20 border-b border-gray-200 dark:border-slate-700">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Left side: Logo and Title */}
@@ -98,6 +99,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
                     </div>
                 </div>
             </div>
+             {/* Scroll Progress Bar */}
+            <div className="absolute bottom-[-1px] left-0 h-[3px] bg-blue-600 dark:bg-sky-500 rounded-r-full transition-all duration-150 ease-linear" style={{ width: `${scrollProgress}%` }} />
         </header>
     );
 };
