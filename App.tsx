@@ -123,6 +123,205 @@ const NoResults: React.FC = () => {
     );
 };
 
+interface SortControlProps {
+    sortOrder: SortOrder;
+    setSortOrder: (order: SortOrder) => void;
+}
+const SortControl: React.FC<SortControlProps> = ({ sortOrder, setSortOrder }) => {
+    const { t } = useLanguage();
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const sortOptions: { key: SortOrder; label: string; }[] = [
+        { key: 'name_asc', label: t('sortNameAsc') },
+        { key: 'name_desc', label: t('sortNameDesc') },
+        { key: 'pop_desc', label: t('sortPopDesc') },
+        { key: 'pop_asc', label: t('sortPopAsc') },
+        { key: 'area_desc', label: t('sortAreaDesc') },
+        { key: 'area_asc', label: t('sortAreaAsc') },
+    ];
+
+    const currentLabel = sortOptions.find(opt => opt.key === sortOrder)?.label;
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center justify-between w-full sm:w-56 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-900"
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+            >
+                <span className="truncate">{t('sortBy')}: {currentLabel}</span>
+                <svg className={`w-5 h-5 ml-2 -mr-1 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+            </button>
+            {isOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 dark:ring-slate-700 z-10 animate-fade-in-up-short">
+                    <div className="py-1" role="listbox" aria-orientation="vertical">
+                        {sortOptions.map(option => (
+                            <button
+                                key={option.key}
+                                onClick={() => {
+                                    setSortOrder(option.key);
+                                    setIsOpen(false);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                role="option"
+                                aria-selected={sortOrder === option.key}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+interface MainContentProps {
+    view: View;
+    setView: (view: View) => void;
+    countries: Country[];
+    filteredCountries: Country[];
+    isLoading: boolean;
+    error: string | null;
+    flagOfTheDay: FlagOfTheDayData | null;
+    isFlagOfTheDayLoading: boolean;
+    collectionsData: CollectionData[] | null;
+    isCollectionsLoading: boolean;
+    handleCardClick: (country: Country) => void;
+    favorites: Set<string>;
+    onToggleFavorite: (country: Country) => void;
+    selectedContinent: string;
+    setSelectedContinent: (continent: string) => void;
+    searchQuery: string;
+    setSearchQuery: (query: string) => void;
+    isCompareModeActive: boolean;
+    handleToggleCompareMode: () => void;
+    sortOrder: SortOrder;
+    setSortOrder: (order: SortOrder) => void;
+    comparisonList: Country[];
+}
+
+const MainContent: React.FC<MainContentProps> = ({
+    view,
+    setView,
+    countries,
+    filteredCountries,
+    isLoading,
+    error,
+    flagOfTheDay,
+    isFlagOfTheDayLoading,
+    collectionsData,
+    isCollectionsLoading,
+    handleCardClick,
+    favorites,
+    onToggleFavorite,
+    selectedContinent,
+    setSelectedContinent,
+    searchQuery,
+    setSearchQuery,
+    isCompareModeActive,
+    handleToggleCompareMode,
+    sortOrder,
+    setSortOrder,
+    comparisonList,
+}) => {
+    const { t } = useLanguage();
+
+    if (view === 'quiz') {
+        return <QuizView countries={countries} onBackToExplorer={() => setView('explorer')} />;
+    }
+
+    return (
+        <>
+            <Hero 
+                flagOfTheDay={flagOfTheDay} 
+                isLoading={isFlagOfTheDayLoading}
+                onFlagClick={handleCardClick}
+            />
+
+            <DiscoverHub 
+                collections={collectionsData}
+                isLoading={isCollectionsLoading} 
+                onCardClick={handleCardClick}
+                favorites={favorites}
+                onToggleFavorite={onToggleFavorite}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
+                <aside className="md:col-span-1">
+                    <div className="md:sticky top-24">
+                       <FilterNavigator
+                            continents={CONTINENTS_API_VALUES}
+                            selectedContinent={selectedContinent}
+                            setSelectedContinent={setSelectedContinent}
+                            searchQuery={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            isCompareModeActive={isCompareModeActive}
+                            onToggleCompareMode={handleToggleCompareMode}
+                       />
+                    </div>
+                </aside>
+                <main className="md:col-span-3">
+                    {isCompareModeActive && <CompareModeIndicator onDisable={handleToggleCompareMode} />}
+                    
+                    <div className="flex justify-end mb-6">
+                        <SortControl sortOrder={sortOrder} setSortOrder={setSortOrder} />
+                    </div>
+
+                    {isLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {Array.from({ length: 12 }).map((_, index) => <SkeletonCard key={index} />)}
+                        </div>
+                    ) : filteredCountries.length > 0 ? (
+                        <VirtualFlagGrid
+                            countries={filteredCountries}
+                            onCardClick={handleCardClick}
+                            isCompareModeActive={isCompareModeActive}
+                            comparisonList={comparisonList}
+                            favorites={favorites}
+                            onToggleFavorite={onToggleFavorite}
+                        />
+                    ) : error ? (
+                        <div className="col-span-full text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                            <p className="text-red-600 dark:text-red-400 font-semibold">{t('errorOops')}</p>
+                            <p className="text-red-500 dark:text-red-400 mt-1">{error}</p>
+                        </div>
+                    ) : (
+                        <div className="col-span-full">
+                            {selectedContinent === 'Favorites' ? (
+                                <div className="text-center py-12 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                    <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-slate-200">{t('noFavorites')}</h3>
+                                    <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{t('noFavoritesDescription')}</p>
+                                </div>
+                            ) : (
+                                 <NoResults />
+                            )}
+                        </div>
+                    )}
+                </main>
+            </div>
+        </>
+    );
+};
+
+
 const App: React.FC = () => {
     const { t, language } = useLanguage();
     const [countries, setCountries] = useState<Country[]>([]);
@@ -380,150 +579,6 @@ const App: React.FC = () => {
         });
     }, [countries, selectedContinent, language, searchQuery, favorites, sortOrder]);
     
-    const SortControl: React.FC<{ sortOrder: SortOrder; setSortOrder: (order: SortOrder) => void; }> = ({ sortOrder, setSortOrder }) => {
-        const [isOpen, setIsOpen] = useState(false);
-        const dropdownRef = useRef<HTMLDivElement>(null);
-
-        const sortOptions: { key: SortOrder; label: string; }[] = [
-            { key: 'name_asc', label: t('sortNameAsc') },
-            { key: 'name_desc', label: t('sortNameDesc') },
-            { key: 'pop_desc', label: t('sortPopDesc') },
-            { key: 'pop_asc', label: t('sortPopAsc') },
-            { key: 'area_desc', label: t('sortAreaDesc') },
-            { key: 'area_asc', label: t('sortAreaAsc') },
-        ];
-
-        const currentLabel = sortOptions.find(opt => opt.key === sortOrder)?.label;
-
-        useEffect(() => {
-            const handleClickOutside = (event: MouseEvent) => {
-                if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                    setIsOpen(false);
-                }
-            };
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
-        }, []);
-
-        return (
-            <div className="relative" ref={dropdownRef}>
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center justify-between w-full sm:w-56 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-900"
-                    aria-haspopup="listbox"
-                    aria-expanded={isOpen}
-                >
-                    <span className="truncate">{t('sortBy')}: {currentLabel}</span>
-                    <svg className={`w-5 h-5 ml-2 -mr-1 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                </button>
-                {isOpen && (
-                    <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 dark:ring-slate-700 z-10 animate-fade-in-up-short">
-                        <div className="py-1" role="listbox" aria-orientation="vertical">
-                            {sortOptions.map(option => (
-                                <button
-                                    key={option.key}
-                                    onClick={() => {
-                                        setSortOrder(option.key);
-                                        setIsOpen(false);
-                                    }}
-                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
-                                    role="option"
-                                    aria-selected={sortOrder === option.key}
-                                >
-                                    {option.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-
-    const MainContent: React.FC = () => {
-        if (view === 'quiz') {
-            return <QuizView countries={countries} onBackToExplorer={() => setView('explorer')} />;
-        }
-
-        return (
-            <>
-                <Hero 
-                    flagOfTheDay={flagOfTheDay} 
-                    isLoading={isFlagOfTheDayLoading}
-                    onFlagClick={handleCardClick}
-                />
-
-                <DiscoverHub 
-                    collections={collectionsData}
-                    isLoading={isCollectionsLoading} 
-                    onCardClick={handleCardClick}
-                    favorites={favorites}
-                    onToggleFavorite={handleToggleFavorite}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
-                    <aside className="md:col-span-1">
-                        <div className="md:sticky top-24">
-                           <FilterNavigator
-                                continents={CONTINENTS_API_VALUES}
-                                selectedContinent={selectedContinent}
-                                setSelectedContinent={setSelectedContinent}
-                                searchQuery={searchQuery}
-                                onSearchChange={setSearchQuery}
-                                isCompareModeActive={isCompareModeActive}
-                                onToggleCompareMode={handleToggleCompareMode}
-                           />
-                        </div>
-                    </aside>
-                    <main className="md:col-span-3">
-                        {isCompareModeActive && <CompareModeIndicator onDisable={handleToggleCompareMode} />}
-                        
-                        <div className="flex justify-end mb-6">
-                            <SortControl sortOrder={sortOrder} setSortOrder={setSortOrder} />
-                        </div>
-
-                        {isLoading ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {Array.from({ length: 12 }).map((_, index) => <SkeletonCard key={index} />)}
-                            </div>
-                        ) : filteredCountries.length > 0 ? (
-                            <VirtualFlagGrid
-                                countries={filteredCountries}
-                                onCardClick={handleCardClick}
-                                isCompareModeActive={isCompareModeActive}
-                                comparisonList={comparisonList}
-                                favorites={favorites}
-                                onToggleFavorite={handleToggleFavorite}
-                            />
-                        ) : error ? (
-                            <div className="col-span-full text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                                <p className="text-red-600 dark:text-red-400 font-semibold">{t('errorOops')}</p>
-                                <p className="text-red-500 dark:text-red-400 mt-1">{error}</p>
-                            </div>
-                        ) : (
-                            <div className="col-span-full">
-                                {selectedContinent === 'Favorites' ? (
-                                    <div className="text-center py-12 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                        </svg>
-                                        <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-slate-200">{t('noFavorites')}</h3>
-                                        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{t('noFavoritesDescription')}</p>
-                                    </div>
-                                ) : (
-                                     <NoResults />
-                                )}
-                            </div>
-                        )}
-                    </main>
-                </div>
-            </>
-        );
-    };
-
     return (
         <div className="min-h-screen flex flex-col">
             <Header currentView={view} setView={setView} scrollProgress={scrollProgress} />
@@ -537,7 +592,30 @@ const App: React.FC = () => {
                 )}
                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24 md:py-8">
                      <Suspense fallback={<PageLoader />}>
-                        <MainContent />
+                        <MainContent
+                            view={view}
+                            setView={setView}
+                            countries={countries}
+                            filteredCountries={filteredCountries}
+                            isLoading={isLoading}
+                            error={error}
+                            flagOfTheDay={flagOfTheDay}
+                            isFlagOfTheDayLoading={isFlagOfTheDayLoading}
+                            collectionsData={collectionsData}
+                            isCollectionsLoading={isCollectionsLoading}
+                            handleCardClick={handleCardClick}
+                            favorites={favorites}
+                            onToggleFavorite={handleToggleFavorite}
+                            selectedContinent={selectedContinent}
+                            setSelectedContinent={setSelectedContinent}
+                            searchQuery={searchQuery}
+                            setSearchQuery={setSearchQuery}
+                            isCompareModeActive={isCompareModeActive}
+                            handleToggleCompareMode={handleToggleCompareMode}
+                            sortOrder={sortOrder}
+                            setSortOrder={setSortOrder}
+                            comparisonList={comparisonList}
+                        />
                     </Suspense>
                  </div>
             </main>
