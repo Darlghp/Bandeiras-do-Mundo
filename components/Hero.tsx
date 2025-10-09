@@ -53,6 +53,8 @@ const Hero: React.FC<HeroProps> = ({ flagOfTheDay, isLoading, onFlagClick }) => 
                             src={country.flags.svg} 
                             alt={country.flags.alt || `Flag of ${commonName}`}
                             className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                         />
                     </div>
                 </div>

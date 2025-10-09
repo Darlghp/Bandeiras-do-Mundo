@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { CONTINENT_NAMES } from '../constants';
@@ -21,6 +21,7 @@ const Stat: React.FC<{ icon: React.ReactNode, label: string, value: string | num
 const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onToggleFavorite }) => {
     const { t, language } = useLanguage();
     const [isShowing, setIsShowing] = useState(false);
+    const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setIsShowing(!!country);
@@ -30,15 +31,48 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                 onClose();
             }
         };
+
+        const handleFocusTrap = (event: KeyboardEvent) => {
+            if (event.key === 'Tab' && modalRef.current) {
+                const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                if (focusableElements.length === 0) return;
+
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (event.shiftKey) { // Shift+Tab
+                    if (document.activeElement === firstElement) {
+                        lastElement.focus();
+                        event.preventDefault();
+                    }
+                } else { // Tab
+                    if (document.activeElement === lastElement) {
+                        firstElement.focus();
+                        event.preventDefault();
+                    }
+                }
+            }
+        };
+
         if (country) {
             document.body.style.overflow = 'hidden';
             window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keydown', handleFocusTrap);
+            
+            // Focus the first focusable element on open
+            setTimeout(() => {
+                modalRef.current?.querySelector<HTMLElement>('button')?.focus();
+            }, 100);
         } else {
             document.body.style.overflow = '';
         }
+
         return () => {
             document.body.style.overflow = '';
             window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keydown', handleFocusTrap);
         }
     }, [country, onClose]);
 
@@ -62,6 +96,7 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
             aria-labelledby="flag-modal-title"
         >
             <div 
+                ref={modalRef}
                 className={`bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-4xl w-full relative transform transition-all duration-300 ease-out overflow-y-auto max-h-[90vh] no-scrollbar ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} 
                 onClick={e => e.stopPropagation()}
             >
@@ -81,6 +116,8 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                             src={country.flags.svg} 
                             alt={`Flag of ${commonName}`} 
                             className="w-full h-full object-contain drop-shadow-lg"
+                            loading="lazy"
+                            decoding="async"
                         />
                     </div>
                 </div>
@@ -109,7 +146,7 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                             </button>
                             {country.coatOfArms.svg && (
                                  <div className="flex-shrink-0 bg-gray-200 dark:bg-slate-700 p-2 rounded-md">
-                                     <img src={country.coatOfArms.svg} alt={t('coatOfArms')} className="h-16 w-auto" />
+                                     <img src={country.coatOfArms.svg} alt={t('coatOfArms')} className="h-16 w-auto" loading="lazy" decoding="async" />
                                  </div>
                             )}
                         </div>

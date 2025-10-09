@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { CONTINENT_NAMES } from '../constants';
@@ -11,21 +11,55 @@ interface CompareModalProps {
 const CompareModal: React.FC<CompareModalProps> = ({ countries, onClose }) => {
     const { t, language } = useLanguage();
     const [isShowing, setIsShowing] = useState(false);
+    const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setIsShowing(!!countries);
+
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') onClose();
         };
+
+        const handleFocusTrap = (event: KeyboardEvent) => {
+            if (event.key === 'Tab' && modalRef.current) {
+                const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                if (focusableElements.length === 0) return;
+
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (event.shiftKey) { // Shift+Tab
+                    if (document.activeElement === firstElement) {
+                        lastElement.focus();
+                        event.preventDefault();
+                    }
+                } else { // Tab
+                    if (document.activeElement === lastElement) {
+                        firstElement.focus();
+                        event.preventDefault();
+                    }
+                }
+            }
+        };
+
         if (countries) {
             document.body.style.overflow = 'hidden';
             window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keydown', handleFocusTrap);
+            
+            // Focus the first focusable element on open
+            setTimeout(() => {
+                modalRef.current?.querySelector<HTMLElement>('button')?.focus();
+            }, 100);
         } else {
             document.body.style.overflow = '';
         }
         return () => {
             document.body.style.overflow = '';
             window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keydown', handleFocusTrap);
         }
     }, [countries, onClose]);
 
@@ -52,6 +86,7 @@ const CompareModal: React.FC<CompareModalProps> = ({ countries, onClose }) => {
             aria-labelledby="compare-modal-title"
         >
             <div 
+                ref={modalRef}
                 className={`bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-4xl w-full relative transform transition-all duration-300 ease-out overflow-y-auto max-h-[90vh] ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} 
                 onClick={e => e.stopPropagation()}
             >
@@ -70,7 +105,13 @@ const CompareModal: React.FC<CompareModalProps> = ({ countries, onClose }) => {
                         {[country1, country2].map((c, i) => (
                              <div key={c.cca3} className="text-center">
                                 <div className="aspect-w-4 aspect-h-3 bg-gray-100 dark:bg-gray-900/50 rounded-lg p-2 shadow-md">
-                                    <img src={c.flags.svg} alt={c.name.common} className="w-full h-full object-contain drop-shadow-lg" />
+                                    <img 
+                                        src={c.flags.svg} 
+                                        alt={c.name.common} 
+                                        className="w-full h-full object-contain drop-shadow-lg" 
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
                                 </div>
                                 <h3 className="mt-4 text-lg font-bold text-gray-800 dark:text-gray-200">{getCountryName(c)}</h3>
                              </div>

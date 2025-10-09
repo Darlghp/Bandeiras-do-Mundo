@@ -4,7 +4,6 @@ import { fetchCountries } from './services/countryService';
 import { fetchAllCollections } from './services/collectionService';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import FlagModal from './components/FlagModal';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import SkeletonCard from './components/SkeletonCard';
 import DiscoverHub from './components/DiscoverHub';
@@ -13,14 +12,16 @@ import { CONTINENTS_API_VALUES } from './constants';
 import { FLAG_OF_THE_DAY_TITLES } from './constants/flagOfTheDayTitles';
 import { useLanguage } from './context/LanguageContext';
 import CompareTray from './components/CompareTray';
-import CompareModal from './components/CompareModal';
 import ViewNavigator from './components/ViewNavigator';
 import FilterNavigator from './components/FilterNavigator';
 import VirtualFlagGrid from './components/VirtualFlagGrid';
 import BottomNav from './components/BottomNav';
 
-// Lazy load views that are not part of the initial screen
+// Lazy load views and modals that are not part of the initial screen
 const QuizView = lazy(() => import('./components/QuizView'));
+const FlagModal = lazy(() => import('./components/FlagModal'));
+const CompareModal = lazy(() => import('./components/CompareModal'));
+
 
 export type View = 'explorer' | 'quiz';
 export type SortOrder = 
@@ -540,20 +541,22 @@ const App: React.FC = () => {
                     </Suspense>
                  </div>
             </main>
-            {selectedCountry && (
-                <FlagModal 
-                    country={selectedCountry}
-                    onClose={handleCloseModal}
-                    isFavorite={favorites.has(selectedCountry.cca3)}
-                    onToggleFavorite={handleToggleFavorite}
-                />
-            )}
-            {isCompareModalOpen && comparisonList.length === 2 && (
-                 <CompareModal 
-                    countries={[comparisonList[0], comparisonList[1]]}
-                    onClose={handleCloseCompareModal}
-                />
-            )}
+            <Suspense fallback={null}>
+                {selectedCountry && (
+                    <FlagModal 
+                        country={selectedCountry}
+                        onClose={handleCloseModal}
+                        isFavorite={favorites.has(selectedCountry.cca3)}
+                        onToggleFavorite={handleToggleFavorite}
+                    />
+                )}
+                {isCompareModalOpen && comparisonList.length === 2 && (
+                     <CompareModal 
+                        countries={[comparisonList[0], comparisonList[1]]}
+                        onClose={handleCloseCompareModal}
+                    />
+                )}
+            </Suspense>
             <Footer />
             <ScrollToTopButton />
             {isCompareModeActive && (
