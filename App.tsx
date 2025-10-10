@@ -12,18 +12,20 @@ import { CONTINENTS_API_VALUES } from './constants';
 import { FLAG_OF_THE_DAY_TITLES } from './constants/flagOfTheDayTitles';
 import { useLanguage } from './context/LanguageContext';
 import CompareTray from './components/CompareTray';
-import ViewNavigator from './components/ViewNavigator';
 import FilterNavigator from './components/FilterNavigator';
 import VirtualFlagGrid from './components/VirtualFlagGrid';
 import BottomNav from './components/BottomNav';
+import { useDebounce } from './hooks/useDebounce';
+import { COUNTRY_COLORS } from './constants/colorData';
 
 // Lazy load views and modals that are not part of the initial screen
 const QuizView = lazy(() => import('./components/QuizView'));
+const DiscoverView = lazy(() => import('./components/DiscoverView'));
 const FlagModal = lazy(() => import('./components/FlagModal'));
 const CompareModal = lazy(() => import('./components/CompareModal'));
 
 
-export type View = 'explorer' | 'quiz';
+export type View = 'explorer' | 'quiz' | 'discover';
 export type SortOrder = 
     | 'name_asc' 
     | 'name_desc' 
@@ -46,6 +48,17 @@ interface StoredFlagOfTheDay {
     date: string;
     country: Country;
     title: string;
+}
+
+interface UniqueFlagOfTheDayData {
+    country: Country;
+    descriptionKey: 'nepalFlagDesc' | 'switzerlandFlagDesc' | 'vaticanFlagDesc';
+}
+
+interface StoredUniqueFlagOfTheDay {
+    date: string;
+    country: Country;
+    descriptionKey: 'nepalFlagDesc' | 'switzerlandFlagDesc' | 'vaticanFlagDesc';
 }
 
 const getDeterministicCountryForDate = (date: string, countries: Country[]): Country | undefined => {
@@ -190,17 +203,13 @@ const SortControl: React.FC<SortControlProps> = ({ sortOrder, setSortOrder }) =>
     );
 };
 
-interface MainContentProps {
-    view: View;
-    setView: (view: View) => void;
+interface ExplorerContentProps {
     countries: Country[];
     filteredCountries: Country[];
     isLoading: boolean;
     error: string | null;
     flagOfTheDay: FlagOfTheDayData | null;
     isFlagOfTheDayLoading: boolean;
-    collectionsData: CollectionData[] | null;
-    isCollectionsLoading: boolean;
     handleCardClick: (country: Country) => void;
     favorites: Set<string>;
     onToggleFavorite: (country: Country) => void;
@@ -213,19 +222,16 @@ interface MainContentProps {
     sortOrder: SortOrder;
     setSortOrder: (order: SortOrder) => void;
     comparisonList: Country[];
+    selectedColors: string[];
+    setSelectedColors: (colors: string[]) => void;
 }
 
-const MainContent: React.FC<MainContentProps> = ({
-    view,
-    setView,
-    countries,
+const ExplorerContent: React.FC<ExplorerContentProps> = ({
     filteredCountries,
     isLoading,
     error,
     flagOfTheDay,
     isFlagOfTheDayLoading,
-    collectionsData,
-    isCollectionsLoading,
     handleCardClick,
     favorites,
     onToggleFavorite,
@@ -238,12 +244,10 @@ const MainContent: React.FC<MainContentProps> = ({
     sortOrder,
     setSortOrder,
     comparisonList,
+    selectedColors,
+    setSelectedColors,
 }) => {
     const { t } = useLanguage();
-
-    if (view === 'quiz') {
-        return <QuizView countries={countries} onBackToExplorer={() => setView('explorer')} />;
-    }
 
     return (
         <>
@@ -251,14 +255,6 @@ const MainContent: React.FC<MainContentProps> = ({
                 flagOfTheDay={flagOfTheDay} 
                 isLoading={isFlagOfTheDayLoading}
                 onFlagClick={handleCardClick}
-            />
-
-            <DiscoverHub 
-                collections={collectionsData}
-                isLoading={isCollectionsLoading} 
-                onCardClick={handleCardClick}
-                favorites={favorites}
-                onToggleFavorite={onToggleFavorite}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
@@ -272,6 +268,8 @@ const MainContent: React.FC<MainContentProps> = ({
                             onSearchChange={setSearchQuery}
                             isCompareModeActive={isCompareModeActive}
                             onToggleCompareMode={handleToggleCompareMode}
+                            selectedColors={selectedColors}
+                            setSelectedColors={setSelectedColors}
                        />
                     </div>
                 </aside>
@@ -321,12 +319,15 @@ const MainContent: React.FC<MainContentProps> = ({
     );
 };
 
+const UNIQUE_FLAG_CCAS = ['NPL', 'CHE', 'VAT'];
 
 const App: React.FC = () => {
     const { t, language } = useLanguage();
     const [countries, setCountries] = useState<Country[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const [selectedContinent, setSelectedContinent] = useState<string>('All');
+    const [selectedColors, setSelectedColors] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
@@ -337,6 +338,9 @@ const App: React.FC = () => {
     const [isCollectionsLoading, setIsCollectionsLoading] = useState<boolean>(false);
     const [flagOfTheDay, setFlagOfTheDay] = useState<FlagOfTheDayData | null>(null);
     const [isFlagOfTheDayLoading, setIsFlagOfTheDayLoading] = useState<boolean>(true);
+
+    const [uniqueFlagOfTheDay, setUniqueFlagOfTheDay] = useState<UniqueFlagOfTheDayData | null>(null);
+    const [isUniqueFlagOfTheDayLoading, setIsUniqueFlagOfTheDayLoading] = useState<boolean>(true);
 
     const [isCompareModeActive, setIsCompareModeActive] = useState(false);
     const [comparisonList, setComparisonList] = useState<Country[]>([]);
@@ -480,6 +484,60 @@ const App: React.FC = () => {
     
     }, [language]);
 
+    const manageUniqueFlagOfTheDay = useCallback((countryData: Country[]) => {
+        if (countryData.length === 0) {
+            setIsUniqueFlagOfTheDayLoading(false);
+            return;
+        }
+
+        const uniqueCountries = countryData.filter(c => UNIQUE_FLAG_CCAS.includes(c.cca3));
+        if (uniqueCountries.length === 0) {
+            setIsUniqueFlagOfTheDayLoading(false);
+            return;
+        }
+
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        const countryForToday = getDeterministicCountryForDate(today, uniqueCountries);
+        if (!countryForToday) return;
+
+        const storageKey = `uniqueFlagOfTheDay_${language}`;
+        const storedFlagRaw = localStorage.getItem(storageKey);
+        if (storedFlagRaw) {
+            try {
+                const storedFlag: StoredUniqueFlagOfTheDay = JSON.parse(storedFlagRaw);
+                if (storedFlag.date === today && storedFlag.country.cca3 === countryForToday.cca3) {
+                    setUniqueFlagOfTheDay({ country: storedFlag.country, descriptionKey: storedFlag.descriptionKey });
+                    setIsUniqueFlagOfTheDayLoading(false);
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem(storageKey);
+            }
+        }
+
+        const descriptionKeyMap: { [key: string]: 'nepalFlagDesc' | 'switzerlandFlagDesc' | 'vaticanFlagDesc' } = {
+            'NPL': 'nepalFlagDesc',
+            'CHE': 'switzerlandFlagDesc',
+            'VAT': 'vaticanFlagDesc',
+        };
+        const descriptionKey = descriptionKeyMap[countryForToday.cca3];
+
+        const uniqueFlagData = { country: countryForToday, descriptionKey };
+        setUniqueFlagOfTheDay(uniqueFlagData);
+        
+        try {
+            const newStoredFlag: StoredUniqueFlagOfTheDay = { date: today, ...uniqueFlagData };
+            localStorage.setItem(storageKey, JSON.stringify(newStoredFlag));
+        } catch (error) {
+            console.error("Failed to cache unique flag of the day data.", error);
+        }
+        
+        setIsUniqueFlagOfTheDayLoading(false);
+
+    }, [language]);
+
     useEffect(() => {
         const getCountries = async () => {
             try {
@@ -490,6 +548,7 @@ const App: React.FC = () => {
                 setCountries(data);
                 fetchCollections(data);
                 manageFlagOfTheDay(data);
+                manageUniqueFlagOfTheDay(data);
             } catch (err) {
                 setError(t('fetchError'));
                 console.error(err);
@@ -498,7 +557,7 @@ const App: React.FC = () => {
             }
         };
         getCountries();
-    }, [t, fetchCollections, manageFlagOfTheDay]);
+    }, [t, fetchCollections, manageFlagOfTheDay, manageUniqueFlagOfTheDay]);
 
     const handleCardClick = (country: Country) => {
         if (isCompareModeActive) {
@@ -545,9 +604,16 @@ const App: React.FC = () => {
                 result = result.filter(country => country.continents.includes(selectedContinent));
             }
         }
+
+        if (selectedColors.length > 0) {
+            result = result.filter(country => {
+                const countryColors = COUNTRY_COLORS[country.cca3] || [];
+                return selectedColors.every(color => countryColors.includes(color));
+            });
+        }
         
-        if (searchQuery.trim()) {
-            const lowerCaseQuery = searchQuery.toLowerCase();
+        if (debouncedSearchQuery.trim()) {
+            const lowerCaseQuery = debouncedSearchQuery.toLowerCase();
             result = result.filter(country => {
                  const commonName = language === 'pt' ? country.translations.por.common : country.name.common;
                  const officialName = language === 'pt' ? country.translations.por.official : country.name.official;
@@ -577,45 +643,59 @@ const App: React.FC = () => {
                     return nameA.localeCompare(nameB);
             }
         });
-    }, [countries, selectedContinent, language, searchQuery, favorites, sortOrder]);
+    }, [countries, selectedContinent, language, debouncedSearchQuery, favorites, sortOrder, selectedColors]);
+
+    const renderContent = () => {
+        switch (view) {
+            case 'explorer':
+                return (
+                    <ExplorerContent
+                        countries={countries}
+                        filteredCountries={filteredCountries}
+                        isLoading={isLoading}
+                        error={error}
+                        flagOfTheDay={flagOfTheDay}
+                        isFlagOfTheDayLoading={isFlagOfTheDayLoading}
+                        handleCardClick={handleCardClick}
+                        favorites={favorites}
+                        onToggleFavorite={handleToggleFavorite}
+                        selectedContinent={selectedContinent}
+                        setSelectedContinent={setSelectedContinent}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        isCompareModeActive={isCompareModeActive}
+                        handleToggleCompareMode={handleToggleCompareMode}
+                        sortOrder={sortOrder}
+                        setSortOrder={setSortOrder}
+                        comparisonList={comparisonList}
+                        selectedColors={selectedColors}
+                        setSelectedColors={setSelectedColors}
+                    />
+                );
+            case 'quiz':
+                return <QuizView countries={countries} onBackToExplorer={() => setView('explorer')} />;
+            case 'discover':
+                return <DiscoverView 
+                    collections={collectionsData}
+                    isLoading={isCollectionsLoading}
+                    onCardClick={handleCardClick}
+                    favorites={favorites}
+                    onToggleFavorite={handleToggleFavorite}
+                    uniqueFlagOfTheDay={uniqueFlagOfTheDay}
+                    isUniqueFlagOfTheDayLoading={isUniqueFlagOfTheDayLoading}
+                />;
+            default:
+                return null;
+        }
+    }
     
     return (
         <div className="min-h-screen flex flex-col">
             <Header currentView={view} setView={setView} scrollProgress={scrollProgress} />
-            <main className="flex-grow pt-16"> {/* Adjusted pt for header height */}
-                {view !== 'explorer' && (
-                     <div className="bg-gray-100 dark:bg-slate-950/50 border-b border-gray-200 dark:border-slate-800">
-                        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                             <ViewNavigator currentView={view} setView={setView} />
-                        </div>
-                    </div>
-                )}
-                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24 md:py-8">
+            <main className="flex-grow pt-16">
+                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                      <Suspense fallback={<PageLoader />}>
-                        <MainContent
-                            view={view}
-                            setView={setView}
-                            countries={countries}
-                            filteredCountries={filteredCountries}
-                            isLoading={isLoading}
-                            error={error}
-                            flagOfTheDay={flagOfTheDay}
-                            isFlagOfTheDayLoading={isFlagOfTheDayLoading}
-                            collectionsData={collectionsData}
-                            isCollectionsLoading={isCollectionsLoading}
-                            handleCardClick={handleCardClick}
-                            favorites={favorites}
-                            onToggleFavorite={handleToggleFavorite}
-                            selectedContinent={selectedContinent}
-                            setSelectedContinent={setSelectedContinent}
-                            searchQuery={searchQuery}
-                            setSearchQuery={setSearchQuery}
-                            isCompareModeActive={isCompareModeActive}
-                            handleToggleCompareMode={handleToggleCompareMode}
-                            sortOrder={sortOrder}
-                            setSortOrder={setSortOrder}
-                            comparisonList={comparisonList}
-                        />
+                        {renderContent()}
                     </Suspense>
                  </div>
             </main>
@@ -637,14 +717,14 @@ const App: React.FC = () => {
             </Suspense>
             <Footer />
             <ScrollToTopButton />
-            {isCompareModeActive && (
+            {view === 'explorer' && isCompareModeActive && (
                 <CompareTray 
                     comparisonList={comparisonList}
                     onCompare={handleOpenCompareModal}
                     onClear={handleClearComparison}
                 />
             )}
-            {!isCompareModeActive && <BottomNav currentView={view} setView={setView} />}
+            {!(view === 'explorer' && isCompareModeActive) && <BottomNav currentView={view} setView={setView} />}
             <Toast info={toastInfo} isVisible={isToastVisible} />
         </div>
     );

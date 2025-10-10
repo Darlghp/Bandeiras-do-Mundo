@@ -8,6 +8,12 @@ const ExplorerIcon: React.FC = () => (
     </svg>
 );
 
+const InsightsIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+        <path fillRule="evenodd" d="M12 2a10 10 0 100 20 10 10 0 000-20zM.464 11.5A10.038 10.038 0 0110 2.036V10h7.964A10.039 10.039 0 0112 21.536V12H.464z" clipRule="evenodd" />
+    </svg>
+);
+
 const QuizIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -29,7 +35,7 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string; isActive: boolea
             className={`flex-1 flex flex-col items-center justify-center p-2 text-xs font-medium transition-colors duration-200 ease-in-out focus:outline-none relative h-full ${isActive ? activeClasses : inactiveClasses}`}
             aria-current={isActive ? 'page' : undefined}
         >
-            <div className={`flex flex-col items-center justify-center gap-1 p-2 rounded-full transition-all duration-300 ${isActive ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-transparent'}`}>
+            <div className={`flex flex-col items-center justify-center gap-1 p-2 rounded-full transition-all duration-300 w-16 ${isActive ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-transparent'}`}>
                 {icon}
                 <span className={`transition-all duration-300 ${isActive ? 'font-bold' : ''}`}>{label}</span>
             </div>
@@ -41,6 +47,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
     const { t } = useLanguage();
     const navItems = [
         { id: 'explorer', label: t('explorer'), icon: <ExplorerIcon /> },
+        { id: 'discover', label: t('discoverTitle'), icon: <InsightsIcon /> },
         { id: 'quiz', label: t('quizTitle'), icon: <QuizIcon /> },
     ];
 

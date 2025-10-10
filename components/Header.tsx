@@ -43,20 +43,25 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, scrollProgress })
 
     const navItems = [
         { id: 'explorer', label: t('explorer') },
+        { id: 'discover', label: t('discoverTitle') },
         { id: 'quiz', label: t('quizTitle') },
     ];
 
     useEffect(() => {
-        if (navRef.current) {
-            const activeItem = navRef.current.querySelector(`[data-nav-id="${currentView}"]`) as HTMLElement;
-            if (activeItem) {
-                setMagicLineStyle({
-                    left: activeItem.offsetLeft,
-                    width: activeItem.offsetWidth,
-                });
+        // A small delay to allow for font loading and accurate measurement
+        const timer = setTimeout(() => {
+            if (navRef.current) {
+                const activeItem = navRef.current.querySelector(`[data-nav-id="${currentView}"]`) as HTMLElement;
+                if (activeItem) {
+                    setMagicLineStyle({
+                        left: activeItem.offsetLeft,
+                        width: activeItem.offsetWidth,
+                    });
+                }
             }
-        }
-    }, [currentView, t]);
+        }, 50);
+        return () => clearTimeout(timer);
+    }, [currentView, t, navItems.length]); // Re-run when t changes (language switch) or items change
 
     return (
         <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-20 border-b border-gray-200 dark:border-slate-700">
