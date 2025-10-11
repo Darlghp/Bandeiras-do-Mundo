@@ -50,15 +50,25 @@ interface StoredFlagOfTheDay {
     title: string;
 }
 
+type UniqueFlagDescriptionKey =
+    | 'nepalFlagDesc'
+    | 'switzerlandFlagDesc'
+    | 'vaticanFlagDesc'
+    | 'paraguayFlagDesc'
+    | 'denmarkFlagDesc'
+    | 'philippinesFlagDesc'
+    | 'mozambiqueFlagDesc'
+    | 'qatarFlagDesc';
+
 interface UniqueFlagOfTheDayData {
     country: Country;
-    descriptionKey: 'nepalFlagDesc' | 'switzerlandFlagDesc' | 'vaticanFlagDesc';
+    descriptionKey: UniqueFlagDescriptionKey;
 }
 
 interface StoredUniqueFlagOfTheDay {
     date: string;
     country: Country;
-    descriptionKey: 'nepalFlagDesc' | 'switzerlandFlagDesc' | 'vaticanFlagDesc';
+    descriptionKey: UniqueFlagDescriptionKey;
 }
 
 const getDeterministicCountryForDate = (date: string, countries: Country[]): Country | undefined => {
@@ -319,7 +329,7 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     );
 };
 
-const UNIQUE_FLAG_CCAS = ['NPL', 'CHE', 'VAT'];
+const UNIQUE_FLAG_CCAS = ['NPL', 'CHE', 'VAT', 'PRY', 'DNK', 'PHL', 'MOZ', 'QAT'];
 
 const App: React.FC = () => {
     const { t, language } = useLanguage();
@@ -517,10 +527,15 @@ const App: React.FC = () => {
             }
         }
 
-        const descriptionKeyMap: { [key: string]: 'nepalFlagDesc' | 'switzerlandFlagDesc' | 'vaticanFlagDesc' } = {
+        const descriptionKeyMap: { [key: string]: UniqueFlagDescriptionKey } = {
             'NPL': 'nepalFlagDesc',
             'CHE': 'switzerlandFlagDesc',
             'VAT': 'vaticanFlagDesc',
+            'PRY': 'paraguayFlagDesc',
+            'DNK': 'denmarkFlagDesc',
+            'PHL': 'philippinesFlagDesc',
+            'MOZ': 'mozambiqueFlagDesc',
+            'QAT': 'qatarFlagDesc',
         };
         const descriptionKey = descriptionKeyMap[countryForToday.cca3];
 
