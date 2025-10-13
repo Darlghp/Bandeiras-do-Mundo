@@ -6,7 +6,6 @@ import { CONTINENT_NAMES } from '../constants';
 type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'country-to-capital' | 'shape-to-country';
 type QuizDifficulty = 'easy' | 'medium' | 'hard';
 
-const QUIZ_LENGTH = 10;
 const OPTIONS_COUNT = 4;
 const HINTS_PER_QUIZ = 3;
 const FIFTY_FIFTY_HINTS_PER_QUIZ = 1;
@@ -34,10 +33,11 @@ interface QuizGameProps {
     countries: Country[];
     mode: QuizMode;
     difficulty: QuizDifficulty;
+    quizLength: number;
     onBackToMenu: () => void;
 }
 
-const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBackToMenu }) => {
+const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLength, onBackToMenu }) => {
     const { t, language } = useLanguage();
     const [quizState, setQuizState] = useState<'playing' | 'results'>('playing');
     const [quizQuestions, setQuizQuestions] = useState<Country[]>([]);
@@ -49,7 +49,6 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
     const [endTime, setEndTime] = useState(Date.now());
     const [error, setError] = useState<string | null>(null);
 
-    // New state for enhancements
     const [quizHistory, setQuizHistory] = useState<QuizHistoryItem[]>([]);
     const [streak, setStreak] = useState(0);
     const [bestStreak, setBestStreak] = useState(0);
@@ -60,6 +59,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
     const [disabledOptions, setDisabledOptions] = useState<string[]>([]);
     const [isReviewing, setIsReviewing] = useState(false);
     const reviewListRef = useRef<HTMLDivElement>(null);
+    const [actualQuizLength, setActualQuizLength] = useState(0);
+
 
     const startNewQuiz = useCallback(() => {
         let difficultyPool: Country[];
@@ -86,9 +87,12 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
             setError('Not enough countries available for this mode and difficulty.');
             return;
         }
+        
+        const finalQuizLength = Math.min(quizLength, questionPool.length);
+        setActualQuizLength(finalQuizLength);
 
         const shuffled = shuffleArray(questionPool);
-        setQuizQuestions(shuffled.slice(0, QUIZ_LENGTH));
+        setQuizQuestions(shuffled.slice(0, finalQuizLength));
         setCurrentQuestionIndex(0);
         setScore(0);
         setSelectedAnswer(null);
@@ -105,7 +109,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         setIsFiftyFiftyUsedThisTurn(false);
         setDisabledOptions([]);
         setIsReviewing(false);
-    }, [countries, mode, difficulty]);
+    }, [countries, mode, difficulty, quizLength]);
 
     useEffect(() => {
         startNewQuiz();
@@ -187,7 +191,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
     };
 
     const handleNextQuestion = () => {
-        if (currentQuestionIndex < QUIZ_LENGTH - 1) {
+        if (currentQuestionIndex < actualQuizLength - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
             setSelectedAnswer(null);
             setIsAnswered(false);
@@ -223,7 +227,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
     };
 
     const getScoreFeedback = () => {
-        const percentage = (score / QUIZ_LENGTH) * 100;
+        if (actualQuizLength === 0) return t('scoreFeedbackPoor');
+        const percentage = (score / actualQuizLength) * 100;
         if (percentage >= 90) return t('scoreFeedbackExcellent');
         if (percentage >= 70) return t('scoreFeedbackGood');
         if (percentage >= 50) return t('scoreFeedbackAverage');
@@ -258,8 +263,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
 
     if (quizState === 'results') {
         const totalTime = ((endTime - startTime) / 1000).toFixed(1);
-        const avgTime = (parseFloat(totalTime) / QUIZ_LENGTH).toFixed(1);
-        const percentage = Math.round((score / QUIZ_LENGTH) * 100);
+        const avgTime = actualQuizLength > 0 ? (parseFloat(totalTime) / actualQuizLength).toFixed(1) : '0.0';
+        const percentage = actualQuizLength > 0 ? Math.round((score / actualQuizLength) * 100) : 0;
 
         const getRank = () => {
             if (percentage >= 95) return { title: t('rankMaster'), color: 'text-amber-400' };
@@ -284,7 +289,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
                     <div className="space-y-6">
                         {quizHistory.map((item, index) => (
                             <div key={index} className="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-lg">
-                                <p className="font-bold text-gray-800 dark:text-gray-200 mb-3">{t('questionOf', { current: (index + 1).toString(), total: QUIZ_LENGTH.toString() })}</p>
+                                <p className="font-bold text-gray-800 dark:text-gray-200 mb-3">{t('questionOf', { current: (index + 1).toString(), total: actualQuizLength.toString() })}</p>
                                 <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-slate-700 rounded-lg mb-4 flex items-center justify-center p-2">
                                     <img src={item.question.flags.svg} alt="Flag" className="w-full h-full object-contain drop-shadow-md max-h-32"/>
                                 </div>
@@ -336,7 +341,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                         <span className="text-4xl font-extrabold text-gray-800 dark:text-gray-100">{score}</span>
-                        <span className="text-lg text-gray-500 dark:text-gray-400">/ {QUIZ_LENGTH}</span>
+                        <span className="text-lg text-gray-500 dark:text-gray-400">/ {actualQuizLength}</span>
                     </div>
                 </div>
                 
@@ -357,7 +362,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         );
     }
     
-    const progressPercentage = ((currentQuestionIndex + 1) / QUIZ_LENGTH) * 100;
+    const progressPercentage = actualQuizLength > 0 ? ((currentQuestionIndex + 1) / actualQuizLength) * 100 : 0;
 
     const questionTitle = {
         'flag-to-country': t('whichCountry'),
@@ -373,7 +378,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, onBack
         <div className="max-w-2xl mx-auto">
             <div className="mb-4">
                 <div className="flex justify-between items-center mb-1 text-sm font-semibold">
-                    <p className="text-blue-600 dark:text-blue-400 uppercase tracking-wider">{t('questionOf', { current: (currentQuestionIndex + 1).toString(), total: QUIZ_LENGTH.toString() })}</p>
+                    <p className="text-blue-600 dark:text-blue-400 uppercase tracking-wider">{t('questionOf', { current: (currentQuestionIndex + 1).toString(), total: actualQuizLength.toString() })}</p>
                     <div className="flex items-center gap-4">
                         {streak > 1 && <p className="text-orange-500 animate-fade-in-up-short">{t('quizStreak', { count: streak.toString() })}</p>}
                         <p className="text-gray-600 dark:text-gray-400">{score} / {currentQuestionIndex}</p>
@@ -467,6 +472,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
     const { t } = useLanguage();
     const [mode, setMode] = useState<QuizMode | null>(null);
     const [difficulty, setDifficulty] = useState<QuizDifficulty | null>(null);
+    const [quizLength, setQuizLength] = useState<number>(20);
     const [isQuizStarted, setIsQuizStarted] = useState(false);
 
     const gameModes: { id: QuizMode, title: string, desc: string, icon: React.ReactNode }[] = [
@@ -484,7 +490,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
     ];
 
     if (isQuizStarted && mode && difficulty) {
-        return <QuizGame countries={countries} mode={mode} difficulty={difficulty} onBackToMenu={() => setIsQuizStarted(false)} />;
+        return <QuizGame countries={countries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
     }
 
     return (
@@ -518,6 +524,41 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{d.desc}</p>
                             </button>
                         ))}
+                    </div>
+                </div>
+
+                 <div>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('selectNumberOfQuestions')}</h2>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border-2 border-gray-200 dark:border-slate-700">
+                        <div className="relative px-2">
+                             <input
+                                type="range"
+                                min="10"
+                                max="55"
+                                step="5"
+                                value={quizLength >= 55 ? 55 : quizLength}
+                                onChange={(e) => {
+                                    const value = Number(e.target.value);
+                                    // Use a large number to signify "All" questions.
+                                    setQuizLength(value === 55 ? 999 : value);
+                                }}
+                                className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-sky-500"
+                                id="quiz-length-slider"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 px-1">
+                                <span>10</span>
+                                <span>20</span>
+                                <span>30</span>
+                                <span>40</span>
+                                <span>50</span>
+                                <span>{t('all')}</span>
+                            </div>
+                        </div>
+                        <div className="text-center text-xl font-bold text-gray-900 dark:text-gray-100 mt-4">
+                            {quizLength >= 55
+                                ? t('allQuestions')
+                                : t('numberOfQuestions', { count: quizLength.toString() })}
+                        </div>
                     </div>
                 </div>
             </div>

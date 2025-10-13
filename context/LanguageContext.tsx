@@ -156,6 +156,10 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     colorsTab: "Colors",
     flagFactsTitle: "Vexillology Vignettes",
     showAnotherFact: "Show another fact",
+    selectNumberOfQuestions: "Select Number of Questions",
+    numberOfQuestions: "{{count}} Questions",
+    all: "All",
+    allQuestions: "All Questions",
     flagFactsList: JSON.stringify([
       "The study of flags is called **vexillology**. The term was coined in 1957 by American scholar Whitney Smith.",
       "The flag of the Philippines is flown with the red stripe up in times of war and the blue stripe up in times of peace.",
@@ -295,7 +299,7 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
       "The flag of **Kosovo** features a map of its territory under six stars, which represent the six major ethnic groups of the country.",
       "The flag of **Mauritania** added two red bands in 2017 to honor the blood shed fighting for independence from France.",
       "The flag of **Moldova** is a tricolor of blue, yellow, and red, with the national coat of arms to distinguish it from Romania's flag.",
-      "The flag of **Mongolia** has three vertical bands. The symbol on the left is the Soyombo, a national emblem representing freedom and independence.",
+      "The flag of **Mongolia** has three vertical bands. The symbol on the left is the Soyombo, a national emblem that represents freedom and independence.",
       "The flag of **Montenegro** was adopted in 2004, restoring a traditional design with a double-headed eagle.",
       "The flag of **Namibia**'s colors are from the flag of SWAPO, the liberation movement that brought independence.",
       "The flag of **Nauru**, an island nation, features a line representing the equator and a star showing its location just south of it.",
@@ -438,7 +442,22 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
       "The flag of **Timor-Leste** was adopted in 2002 when it became the first new sovereign state of the 21st century.",
       "The national flag of **Thailand** has five horizontal stripes in the colours red, white, blue, white and red. The central blue stripe is twice as wide as the others.",
       "A triangular flag is called a **pennant** or **pennon**.",
-      "The flag of the **Faroe Islands** is called 'Merkið' and is an inverse of the Norwegian flag's colors, reflecting its close ties."
+      "The flag of the **Faroe Islands** is called 'Merkið' and is an inverse of the Norwegian flag's colors, reflecting its close ties.",
+      "The flag of **Andorra** is a tricolor of blue, yellow, and red, with the nation's coat of arms in the center. The design reflects the country's dual protection by France and Spain.",
+      "The eight-pointed star on the flag of **Azerbaijan** represents the eight branches of the Turkic peoples.",
+      "The flag of **Benin** was readopted in 1990 after the end of Marxist rule, restoring the original design from independence in 1960.",
+      "The coat of arms on the flag of **Bolivia**, sometimes shown in the center, features an alpaca, a breadfruit tree, and a mountain, representing the nation's diverse wealth.",
+      "The three stars in the center of the flag of **Burundi** officially represent the three ethnic groups: the Hutu, the Tutsi, and the Twa.",
+      "The yellow stripe on the flag of **Colombia** is twice as wide as the blue and red stripes, symbolizing the nation's golden riches.",
+      "The state version of the flag of **Costa Rica** includes its coat of arms, depicting three volcanoes and ships on two oceans, symbolizing its geography.",
+      "The design of the flag of **Cuba**, with its 'La Estrella Solitaria' (The Lone Star), influenced the design of the flag of Puerto Rico.",
+      "The flag of **Greece** is known as the 'Galanolefki' or 'Kyanolefki', meaning 'the blue and white'.",
+      "The Y-shape on the flag of **Vanuatu** represents the shape of the islands on a map.",
+      "A 2015 proposal to change the flag of **Fiji** was ultimately dropped in 2016 after public feedback favored keeping the historic design.",
+      "The flag of **Saint Vincent and the Grenadines** is nicknamed 'The Gems' because the three diamonds on it form a 'V' and look like gems.",
+      "The flag of **Micronesia** features four stars on a blue field, representing the four states of the federation and the Pacific Ocean.",
+      "A flag at **half-mast** (or half-staff in the US) is a symbol of respect, mourning, or distress. The tradition is said to have originated in the 17th century.",
+      "A **vexilloid** is a flag-like object used by ancient civilizations, such as the Roman Eagle standard, as a precursor to modern flags."
     ])
   },
   pt: {
@@ -588,6 +607,10 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     colorsTab: "Cores",
     flagFactsTitle: "Vignetas de Vexilologia",
     showAnotherFact: "Mostrar outro fato",
+    selectNumberOfQuestions: "Selecione o Número de Perguntas",
+    numberOfQuestions: "{{count}} Perguntas",
+    all: "Todas",
+    allQuestions: "Todas as Perguntas",
     flagFactsList: JSON.stringify([
       "O estudo das bandeiras é chamado de **vexilologia**. O termo foi cunhado em 1957 pelo estudioso americano Whitney Smith.",
       "A bandeira das Filipinas é hasteada com a faixa vermelha para cima em tempos de guerra e a faixa azul para cima em tempos de paz.",
@@ -870,7 +893,22 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
       "A bandeira de **Timor-Leste** foi adotada em 2002, quando se tornou o primeiro novo estado soberano do século XXI.",
       "A bandeira nacional da **Tailândia** tem cinco faixas horizontais nas cores vermelho, branco, azul, branco e vermelho. A faixa azul central é duas vezes mais larga que as outras.",
       "Uma bandeira triangular é chamada de **flâmula** ou **galhardete**.",
-      "A bandeira das **Ilhas Faroe** é chamada 'Merkið' e é uma inversão das cores da bandeira norueguesa, refletindo seus laços estreitos."
+      "A bandeira das **Ilhas Faroe** é chamada 'Merkið' e é uma inversão das cores da bandeira norueguesa, refletindo seus laços estreitos.",
+      "A bandeira de **Andorra** é um tricolor de azul, amarelo e vermelho, com o brasão de armas da nação no centro. O design reflete a dupla proteção do país pela França e Espanha.",
+      "A estrela de oito pontas na bandeira do **Azerbaijão** representa os oito ramos dos povos túrquicos.",
+      "A bandeira do **Benin** foi readotada em 1990 após o fim do regime marxista, restaurando o design original da independência em 1960.",
+      "O brasão de armas da **Bolívia**, por vezes exibido no centro, apresenta uma alpaca, uma árvore-do-pão e uma montanha, representando a diversa riqueza da nação.",
+      "As três estrelas no centro da bandeira do **Burundi** representam oficialmente os três grupos étnicos: os Hutus, os Tutsis e os Twas.",
+      "A faixa amarela da bandeira da **Colômbia** é duas vezes mais larga que as faixas azul e vermelha, simbolizando as riquezas douradas da nação.",
+      "A versão de estado da bandeira da **Costa Rica** inclui seu brasão de armas, retratando três vulcões e navios em dois oceanos, simbolizando sua geografia.",
+      "O design da bandeira de **Cuba**, com sua 'La Estrella Solitaria' (A Estrela Solitária), influenciou o design da bandeira de Porto Rico.",
+      "A bandeira da **Grécia** é conhecida como 'Galanolefki' ou 'Kyanolefki', que significa 'a azul e branca'.",
+      "A forma de Y na bandeira de **Vanuatu** representa a forma das ilhas em um mapa.",
+      "Uma proposta de 2015 para mudar a bandeira de **Fiji** foi finalmente abandonada em 2016 após a opinião pública favorecer a manutenção do design histórico.",
+      "A bandeira de **São Vicente e Granadinas** é apelidada de 'As Gemas' porque os três diamantes nela formam um 'V' e parecem gemas.",
+      "A bandeira da **Micronésia** apresenta quatro estrelas em um campo azul, representando os quatro estados da federação e o Oceano Pacífico.",
+      "Uma bandeira a **meio-mastro** (ou meia-haste) é um símbolo de respeito, luto ou perigo. Diz-se que a tradição se originou no século XVII.",
+      "Um **vexiloide** é um objeto semelhante a uma bandeira usado por civilizações antigas, como o estandarte da Águia Romana, como um precursor das bandeiras modernas."
     ])
   }
 };
