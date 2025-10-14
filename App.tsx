@@ -59,7 +59,22 @@ type UniqueFlagDescriptionKey =
     | 'denmarkFlagDesc'
     | 'philippinesFlagDesc'
     | 'mozambiqueFlagDesc'
-    | 'qatarFlagDesc';
+    | 'qatarFlagDesc'
+    | 'belizeFlagDesc'
+    | 'cyprusFlagDesc'
+    | 'brazilFlagDesc'
+    | 'austriaFlagDesc'
+    | 'lesothoFlagDesc'
+    | 'cambodiaFlagDesc'
+    | 'turkmenistanFlagDesc'
+    | 'sriLankaFlagDesc'
+    | 'canadaFlagDesc'
+    | 'southAfricaFlagDesc'
+    | 'dominicanRepublicFlagDesc'
+    | 'jamaicaFlagDesc'
+    | 'norwayFlagDesc'
+    | 'ugandaFlagDesc';
+
 
 interface UniqueFlagOfTheDayData {
     country: Country;
@@ -342,7 +357,11 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     );
 };
 
-const UNIQUE_FLAG_CCAS = ['NPL', 'CHE', 'VAT', 'PRY', 'DNK', 'PHL', 'MOZ', 'QAT'];
+const UNIQUE_FLAG_CCAS = [
+    'NPL', 'CHE', 'VAT', 'PRY', 'DNK', 'PHL', 'MOZ', 'QAT', // Original
+    'BLZ', 'CYP', 'BRA', 'AUT', 'LSO', 'KHM', 'TKM', 'LKA', // New
+    'CAN', 'ZAF', 'DOM', 'JAM', 'NOR', 'UGA'               // New
+];
 
 const App: React.FC = () => {
     const { t, language } = useLanguage();
@@ -549,6 +568,20 @@ const App: React.FC = () => {
             'PHL': 'philippinesFlagDesc',
             'MOZ': 'mozambiqueFlagDesc',
             'QAT': 'qatarFlagDesc',
+            'BLZ': 'belizeFlagDesc',
+            'CYP': 'cyprusFlagDesc',
+            'BRA': 'brazilFlagDesc',
+            'AUT': 'austriaFlagDesc',
+            'LSO': 'lesothoFlagDesc',
+            'KHM': 'cambodiaFlagDesc',
+            'TKM': 'turkmenistanFlagDesc',
+            'LKA': 'sriLankaFlagDesc',
+            'CAN': 'canadaFlagDesc',
+            'ZAF': 'southAfricaFlagDesc',
+            'DOM': 'dominicanRepublicFlagDesc',
+            'JAM': 'jamaicaFlagDesc',
+            'NOR': 'norwayFlagDesc',
+            'UGA': 'ugandaFlagDesc',
         };
         const descriptionKey = descriptionKeyMap[countryForToday.cca3];
 
