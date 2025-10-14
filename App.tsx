@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import type { Country } from './types';
 import { fetchCountries } from './services/countryService';
@@ -73,7 +74,19 @@ interface StoredUniqueFlagOfTheDay {
 
 const getDeterministicCountryForDate = (date: string, countries: Country[]): Country | undefined => {
     if (countries.length === 0) return undefined;
-    const index = date.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % countries.length;
+    
+    // Use a simple but effective string hashing algorithm (djb2) for better distribution.
+    const stringToHash = (str: string): number => {
+        let hash = 5381;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) + hash) + char; /* hash * 33 + char */
+        }
+        return hash;
+    };
+
+    const hash = stringToHash(date);
+    const index = Math.abs(hash) % countries.length;
     return countries[index];
 };
 

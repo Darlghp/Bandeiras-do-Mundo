@@ -54,7 +54,8 @@ const ContinentFilter: React.FC<ContinentFilterProps> = ({ continents, selectedC
                     return (
                         <button
                             key={continentKey}
-                            ref={el => itemsRef.current.set(continentKey, el)}
+                            // Fix: The callback ref should not return a value. Wrap in braces to ensure a void return.
+                            ref={el => { itemsRef.current.set(continentKey, el); }}
                             onClick={() => setSelectedContinent(continentKey)}
                             className={`relative z-10 w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ease-in-out flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 
                                 ${isActive 
