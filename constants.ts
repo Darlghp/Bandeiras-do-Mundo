@@ -15,20 +15,21 @@ export const CONTINENT_NAMES: { [key: string]: { en: string; pt: string } } = {
 
 export const CONTINENTS_API_VALUES: string[] = Object.keys(CONTINENT_NAMES);
 
-export const FLAG_COLORS = {
-    Red: '#EF4444',
-    Blue: '#3B82F6',
-    Green: '#22C55E',
-    Yellow: '#EAB308',
+// Fix: Export FLAG_COLORS and COLOR_TRANSLATIONS to resolve import errors.
+export const FLAG_COLORS: { [key: string]: string } = {
+    Red: '#D52B1E',
     White: '#FFFFFF',
-    Black: '#1F2937'
+    Blue: '#0039A6',
+    Green: '#007A3D',
+    Yellow: '#FFD700',
+    Black: '#000000',
 };
 
-export const COLOR_TRANSLATIONS: { [key: string]: { en: string, pt: string } } = {
-    'Red': { en: 'Red', pt: 'Vermelho' },
-    'Blue': { en: 'Blue', pt: 'Azul' },
-    'Green': { en: 'Green', pt: 'Verde' },
-    'Yellow': { en: 'Yellow', pt: 'Amarelo' },
-    'White': { en: 'White', pt: 'Branco' },
-    'Black': { en: 'Black', pt: 'Preto' }
+export const COLOR_TRANSLATIONS: { [key: string]: { en: string; pt: string } } = {
+    Red: { en: 'Red', pt: 'Vermelho' },
+    White: { en: 'White', pt: 'Branco' },
+    Blue: { en: 'Blue', pt: 'Azul' },
+    Green: { en: 'Green', pt: 'Verde' },
+    Yellow: { en: 'Yellow', pt: 'Amarelo' },
+    Black: { en: 'Black', pt: 'Preto' },
 };

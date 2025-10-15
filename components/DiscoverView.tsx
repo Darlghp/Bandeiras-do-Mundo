@@ -1,23 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { FLAG_COLORS, COLOR_TRANSLATIONS } from '../constants';
-import { COUNTRY_COLORS } from '../constants/colorData';
-import DiscoverHub from './DiscoverHub';
+import CollectionShowcase from './CollectionShowcase';
 import type { Country } from '../types';
+import SymbolismExplorer from './SymbolismExplorer';
 
-const InfoCard: React.FC<{ title: string; children: React.ReactNode; icon?: React.ReactNode }> = ({ title, children, icon }) => (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700">
-        <div className="flex items-center gap-3 mb-3">
-            {icon && <span className="text-blue-500 dark:text-sky-400">{icon}</span>}
-            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">{title}</h2>
-        </div>
-        <div className="text-gray-600 dark:text-slate-400 space-y-2">
-            {children}
-        </div>
-    </div>
-);
-
-const FlagFacts: React.FC = () => {
+const VexillologyVignettes: React.FC = () => {
     const { t } = useLanguage();
 
     const facts = useMemo(() => {
@@ -44,64 +31,49 @@ const FlagFacts: React.FC = () => {
     
     const parsedFact = useMemo(() => {
         return currentFact.split('**').map((part: string, index: number) => 
-            index % 2 === 1 ? <strong key={index} className="text-gray-800 dark:text-slate-100">{part}</strong> : part
+            index % 2 === 1 ? <strong key={index} className="text-white">{part}</strong> : part
         );
     }, [currentFact]);
 
     if (facts.length === 0) return null;
 
     return (
-        <InfoCard 
-            title={t('flagFactsTitle')}
-            icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>}
-        >
-            <div className="min-h-[90px] flex items-center">
-                <blockquote className="text-lg italic text-gray-700 dark:text-slate-300 border-l-4 border-blue-200 dark:border-sky-800 pl-4 py-2">
-                    {parsedFact}
-                </blockquote>
+        <div className="relative bg-slate-800 dark:bg-black rounded-2xl shadow-xl p-8 h-full flex flex-col justify-between overflow-hidden">
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="a" patternUnits="userSpaceOnUse" width="20" height="20" patternTransform="scale(2) rotate(45)"><rect x="0" y="0" width="100%" height="100%" fill="hsla(0,0%,100%,1)"/><path d="M10-5V5M10 15v10" strokeLinecap="square" strokeWidth="1" stroke="hsla(215, 28%, 17%, 1)" fill="none"/></pattern></defs><rect width="800%" height="800%" transform="translate(0,0)" fill="url(#a)"/></svg>
             </div>
-            <div className="mt-4 text-right">
-                <button 
+             <div className="relative z-10">
+                <div className="flex items-center gap-3">
+                    <span className="text-sky-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                    </span>
+                    <h2 className="text-xl font-bold text-white">{t('flagFactsTitle')}</h2>
+                </div>
+                <div className="min-h-[120px] flex items-center justify-center my-6">
+                    <blockquote className="text-xl text-center italic text-slate-300">
+                        {parsedFact}
+                    </blockquote>
+                </div>
+            </div>
+            <div className="relative z-10 mt-auto text-center">
+                 <button 
                     onClick={showNewFact} 
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800 transition-all transform hover:scale-105"
+                    className="inline-flex items-center gap-2 px-6 py-2 border border-transparent text-sm font-semibold rounded-full text-sky-200 bg-white/10 hover:bg-white/20 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-400 dark:focus:ring-offset-slate-900 transition-all transform hover:scale-105"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.546A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.546-1.276z" clipRule="evenodd" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        <path d="M5.5 5.5a.5.5 0 11-1 0 .5.5 0 011 0zM7.5 3.5a.5.5 0 11-1 0 .5.5 0 011 0zM3.5 7.5a.5.5 0 11-1 0 .5.5 0 011 0z" />
                     </svg>
                     {t('showAnotherFact')}
                 </button>
             </div>
-        </InfoCard>
+        </div>
     );
 };
 
-
-const Symbolism: React.FC = () => {
-    const { t } = useLanguage();
-    const symbols = [
-        { key: 'sun', title: t('sunSymbol'), desc: t('sunSymbolDesc'), icon: '☀️' },
-        { key: 'moon', title: t('moonSymbol'), desc: t('moonSymbolDesc'), icon: '🌙' },
-        { key: 'cross', title: t('crossSymbol'), desc: t('crossSymbolDesc'), icon: '✝️' },
-        { key: 'stars', title: t('starsSymbol'), desc: t('starsSymbolDesc'), icon: '⭐' },
-    ];
-    return (
-        <InfoCard title={t('symbolism')}>
-            <div className="space-y-4">
-                {symbols.map(s => (
-                     <div key={s.key} className="flex items-start gap-4">
-                        <span className="text-3xl mt-1">{s.icon}</span>
-                        <div>
-                            <h3 className="font-bold text-gray-800 dark:text-slate-200">{s.title}</h3>
-                            <p className="text-sm">{s.desc}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </InfoCard>
-    );
-};
 
 interface DiscoverViewProps {
+    countries: Country[];
     collections: { title: string; countries: Country[] }[] | null;
     isLoading: boolean;
     onCardClick: (country: Country) => void;
@@ -191,16 +163,16 @@ const UniqueFlagFeature: React.FC<{
 };
 
 
-const DiscoverView: React.FC<DiscoverViewProps> = ({ collections, isLoading, onCardClick, favorites, onToggleFavorite, uniqueFlagOfTheDay, isUniqueFlagOfTheDayLoading }) => {
+const DiscoverView: React.FC<DiscoverViewProps> = ({ countries, collections, isLoading, onCardClick, favorites, onToggleFavorite, uniqueFlagOfTheDay, isUniqueFlagOfTheDayLoading }) => {
     const { t } = useLanguage();
     return (
-        <div className="max-w-7xl mx-auto animate-fade-in-up">
+        <div className="animate-fade-in-up">
             <div className="text-center mb-10">
                 <h1 className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">{t('discoverTitle')}</h1>
                 <p className="mt-2 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">{t('discoverIntro')}</p>
             </div>
 
-            <DiscoverHub
+            <CollectionShowcase
                 collections={collections}
                 isLoading={isLoading}
                 onCardClick={onCardClick}
@@ -213,10 +185,17 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ collections, isLoading, onC
                 isLoading={isUniqueFlagOfTheDayLoading}
                 onClick={onCardClick}
             />
-
-            <div className="max-w-4xl mx-auto space-y-8 mt-12">
-                <FlagFacts />
-                <Symbolism />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mt-12">
+                <div className="lg:col-span-3">
+                    <VexillologyVignettes />
+                </div>
+                <div className="lg:col-span-2">
+                    <SymbolismExplorer 
+                        countries={countries}
+                        onCardClick={onCardClick}
+                    />
+                </div>
             </div>
         </div>
     );

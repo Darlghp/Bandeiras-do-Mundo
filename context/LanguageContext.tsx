@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 
 type Language = 'en' | 'pt';
@@ -160,21 +159,49 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     ugandaFlagDesc: "Features a grey crowned crane, a gentle bird that is the country's national symbol.",
     symbolism: "Common Symbols",
     sunSymbol: "Sun",
-    sunSymbolDesc: "Represents unity, life, and energy. Prominently featured on the flags of Japan and Argentina.",
     moonSymbol: "Moon / Crescent",
     moonSymbolDesc: "Often represents divinity and is a key symbol in many Muslim-majority nations like Turkey.",
     crossSymbol: "Cross",
     crossSymbolDesc: "A symbol of Christianity, central to the design of many European flags, especially in Scandinavia.",
     starsSymbol: "Stars",
     starsSymbolDesc: "Can represent states (USA), constellations (Brazil), or aspirations (China).",
-    filterByColor: "Filter by Color",
-    colorsTab: "Colors",
     flagFactsTitle: "Vexillology Vignettes",
     showAnotherFact: "Show another fact",
     selectNumberOfQuestions: "Select Number of Questions",
     numberOfQuestions: "{{count}} Questions",
     all: "All",
     allQuestions: "All Questions",
+    designer: "Designer",
+    flagDesignerTitle: "Flag Designer",
+    flagDesignerSubtitle: "Unleash your creativity and design your own flag. Choose layouts, colors, and symbols to craft a unique banner.",
+    layout: "Layout",
+    bicolorHorizontal: "Bicolor (Horizontal)",
+    bicolorVertical: "Bicolor (Vertical)",
+    tricolorHorizontal: "Tricolor (Horizontal)",
+    tricolorVertical: "Tricolor (Vertical)",
+    nordicCross: "Nordic Cross",
+    colors: "Colors",
+    colorN: "Color {{n}}",
+    mainColor: "Main Color",
+    crossColor: "Cross Color",
+    symbol: "Symbol",
+    noSymbol: "No Symbol",
+    star: "Star",
+    circle: "Circle",
+    symbolColor: "Symbol Color",
+    actions: "Actions",
+    randomize: "Randomize",
+    download: "Download SVG",
+    symbolismExplorerTitle: "Symbolism Explorer",
+    symbolSun: "Sun",
+    symbolCrescent: "Crescent",
+    symbolCross: "Cross",
+    symbolStar: "Star",
+    symbolAnimal: "Animal",
+    symbolWeapon: "Weapon",
+    symbolMap: "Map",
+    symbolBuilding: "Building",
+    noFlagsForSymbol: "No flags found for this symbol.",
     flagFactsList: JSON.stringify([
       "The study of flags is called **vexillology**. The term was coined in 1957 by American scholar Whitney Smith.",
       "The flag of the Philippines is flown with the red stripe up in times of war and the blue stripe up in times of peace.",
@@ -625,21 +652,49 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     ugandaFlagDesc: "Apresenta um grou-coroado-cinzento, uma ave gentil que é o símbolo nacional do país.",
     symbolism: "Símbolos Comuns",
     sunSymbol: "Sol",
-    sunSymbolDesc: "Representa unidade, vida e energia. Destaca-se nas bandeiras do Japão e da Argentina.",
     moonSymbol: "Lua / Crescente",
     moonSymbolDesc: "Frequentemente representa divindade e é um símbolo chave em muitas nações de maioria muçulmana como a Turquia.",
     crossSymbol: "Cruz",
     crossSymbolDesc: "Um símbolo do Cristianismo, central no design de muitas bandeiras europeias, especialmente na Escandinávia.",
     starsSymbol: "Estrelas",
     starsSymbolDesc: "Podem representar estados (EUA), constelações (Brasil) ou aspirações (China).",
-    filterByColor: "Filtrar por Cor",
-    colorsTab: "Cores",
     flagFactsTitle: "Vignetas de Vexilologia",
     showAnotherFact: "Mostrar outro fato",
     selectNumberOfQuestions: "Selecione o Número de Perguntas",
     numberOfQuestions: "{{count}} Perguntas",
     all: "Todas",
     allQuestions: "Todas as Perguntas",
+    designer: "Designer",
+    flagDesignerTitle: "Designer de Bandeiras",
+    flagDesignerSubtitle: "Solte sua criatividade e desenhe sua própria bandeira. Escolha layouts, cores e símbolos para criar um estandarte único.",
+    layout: "Layout",
+    bicolorHorizontal: "Bicolor (Horizontal)",
+    bicolorVertical: "Bicolor (Vertical)",
+    tricolorHorizontal: "Tricolor (Horizontal)",
+    tricolorVertical: "Tricolor (Vertical)",
+    nordicCross: "Cruz Nórdica",
+    colors: "Cores",
+    colorN: "Cor {{n}}",
+    mainColor: "Cor Principal",
+    crossColor: "Cor da Cruz",
+    symbol: "Símbolo",
+    noSymbol: "Nenhum Símbolo",
+    star: "Estrela",
+    circle: "Círculo",
+    symbolColor: "Cor do Símbolo",
+    actions: "Ações",
+    randomize: "Aleatório",
+    download: "Baixar SVG",
+    symbolismExplorerTitle: "Explorador de Símbolos",
+    symbolSun: "Sol",
+    symbolCrescent: "Crescente",
+    symbolCross: "Cruz",
+    symbolStar: "Estrela",
+    symbolAnimal: "Animal",
+    symbolWeapon: "Arma",
+    symbolMap: "Mapa",
+    symbolBuilding: "Edifício",
+    noFlagsForSymbol: "Nenhuma bandeira encontrada para este símbolo.",
     flagFactsList: JSON.stringify([
       "O estudo das bandeiras é chamado de **vexilologia**. O termo foi cunhado em 1957 pelo estudioso americano Whitney Smith.",
       "A bandeira das Filipinas é hasteada com a faixa vermelha para cima em tempos de guerra e a faixa azul para cima em tempos de paz.",
@@ -756,188 +811,7 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
       "A bandeira nacional da **Tailândia** é chamada de 'Thong Trairong', que significa bandeira tricolor. A faixa azul central representa a monarquia.",
       "A bandeira do **Togo** foi desenhada por um artista e tem cinco faixas que representam as cinco regiões do país.",
       "A bandeira do **Butão** é uma das poucas bandeiras nacionais a apresentar um dragão, conhecido como Druk, o Dragão do Trovão.",
-      "A bandeira do estado de **Ohio** nos EUA é a única bandeira estadual não retangular. É uma flâmula em formato de cauda de andorinha.",
-      "A cor roxa é extremamente rara em bandeiras nacionais. Apenas as bandeiras da **Dominica** e da **Nicarágua** a apresentam.",
-      "A **Bandeira Olímpica** apresenta cinco anéis entrelaçados sobre um fundo branco, representando os cinco continentes habitados do mundo.",
-      "A bandeira da **Antártida** não é oficial, mas uma proposta amplamente utilizada apresenta um mapa branco do continente sobre um fundo azul, simbolizando paz e neutralidade.",
-      "A bandeira de **Barbados** mostra o tridente quebrado de Netuno, simbolizando a ruptura do país com seu passado colonial.",
-      "O design da bandeira da **Costa Rica** foi inspirado no tricolor francês, com as cores representando o céu, as oportunidades, a paz e o calor do povo.",
-      "A bandeira de **Angola** apresenta uma roda dentada e um facão, refletindo os trabalhadores industriais e agrícolas e o passado revolucionário da nação.",
-      "Em **vexilologia**, os elementos de design de uma bandeira são frequentemente descritos em termos heráldicos, como 'cantão' para o canto superior esquerdo.",
-      "A bandeira da **Guiana** é conhecida como 'A Ponta de Flecha Dourada', projetada por Whitney Smith, o vexilólogo que cunhou o termo.",
-      "A bandeira das **Bahamas** tem um triângulo preto representando a força do povo, com faixas para a areia e o mar.",
-      "As cores pan-africanas da bandeira do **Benin** contam uma história: verde para a esperança, amarelo para a riqueza e vermelho para a coragem dos ancestrais.",
-      "A bandeira da **Bósnia e Herzegovina** foi escolhida pelo Alto Representante da ONU, apresentando azul e amarelo neutros para representar a Europa e a paz.",
-      "A estrela vermelha da bandeira da **Coreia do Norte** é um símbolo do comunismo, situada num painel vermelho que representa as tradições revolucionárias.",
-      "A bandeira de **Eswatini (Suazilândia)** apresenta um escudo e lanças tradicionais Nguni, simbolizando proteção contra inimigos.",
-      "A bandeira da **Guiné Equatorial** apresenta uma sumaúma em seu brasão de armas, sob a qual foi assinado o primeiro tratado com a Espanha.",
-      "A bandeira da **Finlândia** também é conhecida como 'Siniristilippu' (Bandeira da Cruz Azul).",
-      "As faixas horizontais da bandeira do **Gabão** simbolizam o equador que atravessa o país (amarelo), o sol e o mar circundante (azul).",
-      "A bandeira da **Guiné-Bissau** é fortemente influenciada pela bandeira de Gana e também usa cores pan-africanas.",
-      "A bandeira de **Honduras** apresenta cinco estrelas que representam as cinco nações da antiga República Federal da América Central.",
-      "A bandeira da **Jordânia** inclui uma estrela de sete pontas que representa os primeiros sete versículos do Alcorão.",
-      "A bandeira do **Kosovo** apresenta um mapa de seu território sob seis estrelas, que representam os seis principais grupos étnicos do país.",
-      "A bandeira da **Mauritânia** adicionou duas faixas vermelhas em 2017 para honrar o sangue derramado na luta pela independência da França.",
-      "A bandeira da **Moldávia** é um tricolor de azul, amarelo e vermelho, com o brasão de armas nacional para distingui-la da bandeira da Romênia.",
-      "A bandeira da **Mongólia** tem três faixas verticais. O símbolo à esquerda é o Soyombo, um emblema nacional que representa liberdade e independência.",
-      "A bandeira de **Montenegro** foi adotada em 2004, restaurando um design tradicional com uma águia de duas cabeças.",
-      "As cores da bandeira da **Namíbia** são da bandeira da SWAPO, o movimento de libertação que trouxe a independência.",
-      "A bandeira de **Nauru**, uma nação insular, apresenta uma linha que representa o equador e uma estrela que mostra sua localização logo ao sul dele.",
-      "A bandeira de **Palau** mostra uma lua cheia descentralizada, simbolizando a época das festividades nacionais e a importância da lua na cultura local.",
-      "A bandeira de **Papua-Nova Guiné** foi projetada por uma menina de 15 anos em uma competição nacional em 1971.",
-      "A bandeira de **Ruanda** foi adotada em 2001 para evitar conotações com o genocídio de 1994, representando paz e desenvolvimento econômico.",
-      "A bandeira de **São Cristóvão e Nevis** apresenta duas estrelas em uma faixa diagonal preta, simbolizando esperança e liberdade.",
-      "A bandeira de **Samoa** apresenta a constelação do Cruzeiro do Sul, um símbolo comum no Hemisfério Sul.",
-      "A bandeira de **São Tomé e Príncipe** usa cores pan-africanas, com duas estrelas representando as duas ilhas principais do país.",
-      "A bandeira do **Suriname** tem cinco faixas de verde, branco e vermelho. A grande estrela amarela representa a unidade de todos os grupos étnicos.",
-      "A bandeira de **Trindade e Tobago** é um campo vermelho com uma faixa diagonal preta com bordas brancas, representando a vitalidade da terra, a riqueza do sol e o mar.",
-      "A bandeira de **Uzbequistão** tem 12 estrelas que representam as 12 regiões administrativas, ou 'viloyatlar', do país.",
-      "Um **sautor** é uma cruz diagonal, como a das bandeiras da Escócia, Jamaica e Burundi.",
-      "A bandeira da **Somália**, com sua única estrela branca em um campo azul, foi inspirada na bandeira das Nações Unidas.",
-      "A bandeira de **El Salvador** apresenta a frase 'DIOS, UNION, LIBERTAD' (Deus, União, Liberdade).",
-      "A estrela única da bandeira de **Cuba**, 'La Estrella Solitaria', deveria ser uma das estrelas na bandeira dos EUA, pois os ativistas da independência esperavam pela anexação.",
-      "O lema da bandeira do **Brasil**, 'Ordem e Progresso', é derivado do lema do positivismo de Auguste Comte: 'O Amor por princípio e a Ordem por base; o Progresso por fim.'",
-      "A bandeira de **Belarus** é a única bandeira nacional atual de uma ex-república soviética que foi modificada a partir de seu design da era soviética de 1951.",
-      "As cores da bandeira da **Armênia** simbolizam o sangue derramado pelos soldados armênios (vermelho), o céu (azul) e a terra fértil e a coragem de seu povo (laranja).",
-      "A bandeira da **Austrália** apresenta três símbolos principais: a Union Jack, a Estrela da Commonwealth e o Cruzeiro do Sul.",
-      "O tricolor da bandeira do **Azerbaijão** representa a herança túrquica (azul), a modernização (vermelho) e a civilização islâmica (verde).",
-      "As listras verticais da bandeira da **Bélgica** são baseadas no brasão de armas do Ducado de Brabante.",
-      "O branco e o verde da bandeira da **Bulgária** representam a paz e a riqueza agrícola do país, enquanto o vermelho significa a bravura do povo.",
-      "A bandeira do **Chile** é conhecida como 'La Estrella Solitaria'. A estrela representa um guia para o progresso e a honra.",
-      "O padrão quadriculado da bandeira da **Croácia**, a 'šahovnica', é um símbolo tradicional da nação croata.",
-      "A atual bandeira do **Egito** foi adotada em 1984. A Águia de Saladino central é um símbolo do nacionalismo árabe.",
-      "A bandeira de **Gana** foi a primeira nação africana depois da Etiópia a adotar as cores pan-africanas.",
-      "A bandeira do **Iraque** passou por várias mudanças. O design atual foi adotado em 2008, removendo as estrelas da era Ba'athista.",
-      "A bandeira da **Jamaica** é a única bandeira nacional atual que não contém as cores vermelho, branco ou azul.",
-      "A bandeira do **Laos** é uma das poucas bandeiras de estados comunistas que não usa a estrela de cinco pontas como emblema.",
-      "A árvore de cedro da bandeira do **Líbano** deve tocar ambas as faixas vermelhas, de acordo com a constituição.",
-      "A bandeira da **Libéria** é modelada de perto na bandeira dos Estados Unidos, refletindo suas origens como uma colônia para escravos americanos libertos.",
-      "O design atual da bandeira da **Líbia** foi a bandeira do Reino da Líbia de 1951-1969 e foi readotada após a revolução de 2011.",
-      "O branco e o vermelho da bandeira de **Madagáscar** eram as cores do reino Merina, enquanto o verde representa os Hova, a antiga classe camponesa.",
-      "Os dois triângulos da bandeira **Nepalesa** representam as montanhas do Himalaia e as duas principais religiões, Hinduísmo e Budismo.",
-      "A bandeira da **Nova Zelândia** foi objeto de um referendo em 2016 para alterá-la, mas os cidadãos votaram para manter o design existente.",
-      "A bandeira da **Nigéria** foi projetada por um estudante, Michael Taiwo Akinkunmi, em 1959.",
-      "A borda serrilhada de nove pontas da bandeira do **Catar** significa que ele é o 9º membro dos 'Emirados reconciliados' do Golfo Pérsico.",
-      "O tricolor da bandeira da **Rússia** foi usado pela primeira vez por navios mercantes e só se tornou a bandeira oficial do estado em 1896.",
-      "A bandeira do **Senegal** apresenta uma estrela verde, simbolizando esperança e unidade africana.",
-      "O tricolor da bandeira da **Sérvia** é uma versão invertida da bandeira russa, refletindo os laços históricos entre as duas nações.",
-      "As duas estrelas da bandeira da **Síria** representavam originalmente as duas nações da República Árabe Unida, Síria e Egito.",
-      "A bandeira da **Turquia** é conhecida como 'Ay Yıldız' (Lua Estrela) e é uma das bandeiras mais famosas com um símbolo islâmico.",
-      "A bandeira de **Kiribati** é uma das poucas que retrata uma cena: uma fragata voando sobre um sol nascente.",
-      "A bandeira da **Ilha de Man**, uma Dependência da Coroa Britânica, apresenta um 'tríscele' – três pernas armaduradas unidas na coxa.",
-      "A bandeira da **Sicília** também apresenta um tríscele, mas com a cabeça da Medusa em seu centro.",
-      "A cruz diagonal branca na bandeira da **Jamaica** é conhecida como sautor.",
-      "A bandeira de **Tannu Tuva**, uma república de curta duração absorvida pela União Soviética, tinha um dos designs mais complexos e artísticos de sua época.",
-      "A bandeira da província da **Frísia**, nos Países Baixos, apresenta sete folhas de nenúfar vermelhas, muitas vezes confundidas com corações.",
-      "A bandeira de **Bermudas** é um Pavilhão Vermelho, incomum para um território britânico, e apresenta um escudo mostrando um navio afundando, referenciando a fundação da ilha.",
-      "O termo **'cantão'** em vexilologia refere-se ao quarto superior esquerdo de uma bandeira, onde a Union Jack está na bandeira da Austrália.",
-      "A bandeira do **Tibete**, usada pelo governo no exílio, é proibida na China.",
-      "A bandeira das **Astúrias**, Espanha, apresenta a Cruz da Vitória, um símbolo da monarquia asturiana.",
-      "A bandeira de **Guam** retrata uma proa (uma canoa local) navegando na Baía de Agana, com uma palmeira em primeiro plano.",
-      "A cor preta na bandeira da **Alemanha** representa a escuridão da opressão, o vermelho a luta sangrenta pela liberdade, e o ouro a luz da liberdade.",
-      "A bandeira da **Estônia** foi proibida durante o domínio soviético, e os cidadãos que a hasteavam enfrentavam punições severas.",
-      "A bandeira da **Guatemala** apresenta dois fuzis, simbolizando a vontade de defender a nação, e um pássaro quetzal, representando a liberdade.",
-      "A bandeira da **Cidade do Vaticano** usa amarelo e branco, as cores das chaves de São Pedro.",
-      "A bandeira da **Macedônia** foi alterada em 1995 depois que a Grécia se opôs ao uso do símbolo 'Sol de Vergina'.",
-      "Os quatro trigramas da bandeira da **Coreia do Sul** representam céu, terra, fogo e água.",
-      "A bandeira do **País de Gales** apresenta um dragão vermelho, o 'Y Ddraig Goch', um símbolo de Gales por séculos.",
-      "O dragão da bandeira do **Butão** está segurando joias, que representam a riqueza e a segurança nacional.",
-      "A bandeira do **Quirguistão** mostra um 'tunduk', a parte superior de uma iurta tradicional, simbolizando o lar e a unidade.",
-      "O brasão da bandeira de **Brunei** inclui um guarda-chuva, simbolizando a realeza, e asas, simbolizando a justiça.",
-      "A bandeira de **Antígua e Barbuda** retrata um sol nascente, simbolizando o amanhecer de uma nova era.",
-      "A bandeira do **País Basco**, a Ikurriña, foi projetada pelos fundadores do Partido Nacionalista Basco.",
-      "A bandeira do **Quebec**, Canadá, é conhecida como Fleurdelisé e apresenta quatro flores-de-lis brancas.",
-      "A bandeira de **St. Pierre e Miquelon**, um território francês, exibe símbolos que representam a herança de seus habitantes bascos, bretões e normandos.",
-      "O povo **Sami**, indígena do norte da Escandinávia, tem uma bandeira com um círculo que representa o sol e a lua.",
-      "A bandeira da **República do Congo** usa as cores pan-africanas tradicionais, mas em um arranjo diagonal único.",
-      "As faixas diagonais da bandeira de **Trindade e Tobago** representam 'o fogo da terra, a riqueza do sol e a água do mar.'",
-      "A borda serrilhada da bandeira do **Bahrein** era originalmente uma linha reta simples, mas foi alterada para distingui-la de seus vizinhos.",
-      "As estrelas da bandeira da **Bósnia e Herzegovina** são intencionalmente infinitas; elas saem da borda da bandeira para sugerir continuidade.",
-      "As dez estrelas da bandeira de **Cabo Verde** representam as dez ilhas principais do arquipélago.",
-      "A bandeira de **Comores** tem quatro listras e quatro estrelas representando suas quatro ilhas principais.",
-      "A bandeira da **República Tcheca** é idêntica à bandeira da antiga Tchecoslováquia.",
-      "A bandeira de **Gibraltar** é uma versão alongada do brasão de armas da cidade, o mais antigo em uso contínuo.",
-      "A bandeira de **Hong Kong** apresenta uma flor Bauhinia blakeana estilizada, uma espécie que foi descoberta pela primeira vez no território.",
-      "A bandeira de **Macau** apresenta uma flor de lótus sobre uma ponte e água estilizada, com cinco estrelas representando sua ligação com a China.",
-      "A bandeira do **Cazaquistão** é uma das poucas a apresentar um tom de azul, 'azul-celeste', como seu campo principal.",
-      "O sol nascente da bandeira do **Malawi** foi brevemente substituído por um sol branco pleno em 2010, mas o design original foi restaurado em 2012.",
-      "O design da bandeira de **Nauru** é um mapa: a linha amarela é o equador, e a posição da estrela mostra a localização da ilha logo ao sul dele.",
-      "O disco laranja da bandeira do **Níger** representa o sol e o deserto do Saara.",
-      "A lua descentralizada de **Palau** representa sua importância cultural, pois a lua cheia é tempo de pesca, plantio e festivais.",
-      "O povo **Romani** (ciganos) tem uma bandeira com fundo azul e verde representando os céus e a terra, e uma roda vermelha (chakra) representando sua história nômade.",
-      "O brasão de armas da bandeira de **San Marino** apresenta três torres em três picos, representando as cidadelas do microestado.",
-      "A bandeira de **Seicheles** é uma das mais coloridas, com suas faixas oblíquas simbolizando um país dinâmico movendo-se para o futuro.",
-      "A bandeira do **Tajiquistão** apresenta uma coroa com sete estrelas, um símbolo da mitologia tadjique e persa.",
-      "A bandeira das **Ilhas Turks e Caicos** apresenta um escudo com uma concha, uma lagosta e um cacto.",
-      "A bandeira do **Turcomenistão** tem uma faixa vertical de cinco desenhos de tapetes tradicionais, ou 'guls', tornando-se o design de bandeira nacional mais complexo do mundo.",
-      "A bandeira da **Zâmbia** é incomum porque seus símbolos principais são colocados no batente (lado direito) em vez de na tralha.",
-      "A bandeira da **OTAN** tem uma estrela de quatro pontas em um círculo, simbolizando a bússola que guia a aliança no caminho da paz.",
-      "A bandeira da **Cruz Vermelha** é uma inversão da bandeira suíça, em homenagem ao fundador suíço da organização, Henry Dunant.",
-      "A bandeira da **RD Congo** apresenta uma grande estrela amarela representando um futuro brilhante e seis estrelas menores representando as seis províncias da época da independência.",
-      "A bandeira de **El Salvador** contém o lema nacional 'DIOS, UNION, LIBERTAD' (Deus, União, Liberdade).",
-      "A bandeira da **Groenlândia** é chamada de 'Erfalasorput', que significa 'nossa bandeira'. Ela simboliza a calota de gelo e o sol se pondo sobre ela.",
-      "A bandeira da **Índia** deve ser feita de 'khadi', um tipo especial de tecido fiado à mão.",
-      "A bandeira das **Nações Unidas** apresenta um mapa-múndi centrado no Polo Norte, cercado por ramos de oliveira que simbolizam a paz.",
-      "Os símbolos da bandeira de **Angola** lembram a foice e o martelo, representando os trabalhadores industriais e agrícolas.",
-      "A bandeira de **Barbados** apresenta um tridente quebrado, simbolizando a 'ruptura' da nação com seu passado colonial com a Grã-Bretanha.",
-      "A bandeira de **Chipre** omite intencionalmente as cores das bandeiras grega (azul) e turca (vermelha) para promover a unidade.",
-      "O movimento **Esperanto** tem uma bandeira com um campo verde representando a esperança e um cantão branco com uma estrela verde representando os cinco continentes.",
-      "As cores do tricolor **francês** por vezes representam os três estados do Antigo Regime: o clero (branco), a nobreza (vermelho) e a burguesia (azul).",
-      "O chapéu preto Basotho, ou 'mokorotlo', na bandeira do **Lesoto** é um símbolo da identidade da nação.",
-      "**Liechtenstein** e **Haiti** tinham bandeiras idênticas até as Olimpíadas de 1936, após as quais Liechtenstein adicionou uma coroa.",
-      "As cores da bandeira de **Madagáscar** (vermelho e branco) são da bandeira da última monarca Merina, a Rainha Ranavalona III.",
-      "O design da **Cruz Nórdica** representa o Cristianismo e é usado por todos os países escandinavos, exceto a Groenlândia.",
-      "A bandeira do **Panamá** foi projetada para refletir a situação política da época, com o azul para o Partido Conservador e o vermelho para o Partido Liberal.",
-      "A bandeira de **Ruanda** foi redesenhada após o genocídio de 1994 para remover qualquer associação com o evento e promover a reconciliação nacional.",
-      "A bandeira da **Arábia Saudita** é fabricada com anverso e reverso diferentes para garantir que a Shahada (credo islâmico) seja lida corretamente de ambos os lados.",
-      "A lua crescente na bandeira de **Singapura** representa uma nação jovem em ascensão, não o Islã.",
-      "A bandeira do **Sri Lanka** também é conhecida como a Bandeira do Leão. As quatro folhas nos cantos representam as virtudes budistas.",
-      "O símbolo do **Sol de Maio**, encontrado nas bandeiras da Argentina e do Uruguai, é uma representação do deus-sol inca, Inti.",
-      "A bandeira de **Tonga** foi adotada em 1875 e sua constituição afirma que ela nunca pode ser alterada.",
-      "A bandeira dos **Estados Unidos** é apelidada de 'Old Glory', 'The Star-Spangled Banner' e 'The Stars and Stripes'.",
-      "Uma bandeira é considerada 'desfigurada' (defaced) quando um símbolo ou emblema é adicionado a ela. A bandeira australiana é um Pavilhão Azul desfigurado.",
-      "**Burkina Faso** significa 'Terra do Povo Incorruptível', e as cores de sua bandeira representam a revolução e a riqueza natural.",
-      "A bandeira do **Camboja** é a única bandeira nacional atual que apresenta um edifício, o templo de Angkor Wat.",
-      "A bandeira da **União Europeia** tem 12 estrelas, que representam os ideais de unidade, solidariedade e harmonia entre os povos da Europa, não o número de estados membros.",
-      "A bandeira da **Guiana**, conhecida como A Ponta de Flecha Dourada, foi projetada pelo vexilólogo americano Whitney Smith.",
-      "As cinco estrelas da bandeira de **Honduras** representam a esperança de reunir a antiga República Federal da América Central.",
-      "A estrela de sete pontas da bandeira da **Jordânia** representa os sete versículos da primeira sura do Alcorão.",
-      "A bandeira da **Libéria** é modelada na bandeira dos EUA porque o país foi fundado por escravos americanos libertos.",
-      "A Cruz de Jorge na bandeira de **Malta** foi concedida ao povo da ilha por sua bravura na Segunda Guerra Mundial.",
-      "O símbolo Soyombo da bandeira da **Mongólia** é um emblema nacional que inclui representações de fogo, sol, lua, terra, água e o yin-yang.",
-      "A bandeira da **Coreia do Norte** é uma das poucas bandeiras nacionais de um estado comunista que não usa nenhum simbolismo abertamente comunista, além da estrela vermelha.",
-      "A bandeira do **Paraguai** é única por ter emblemas diferentes em seus lados anverso e reverso.",
-      "As cores da bandeira da **Polônia**, branco e vermelho, são derivadas do brasão de armas da Comunidade Polaco-Lituana.",
-      "A esfera armilar na bandeira de **Portugal** era um instrumento de navegação que representa a era dos descobrimentos da nação.",
-      "A bandeira da **África do Sul** foi projetada para simbolizar a unidade após o fim do apartheid, incorporando cores de várias bandeiras.",
-      "O brasão de armas da **Espanha** inclui os Pilares de Hércules com o lema 'Plus Ultra' (Mais Além).",
-      "Acredita-se que as cores da bandeira da **Suécia**, azul e amarelo, foram inspiradas no brasão de armas nacional.",
-      "A **Guarda Suíça** no Vaticano tem sua própria bandeira, que inclui o brasão de armas do papa atual.",
-      "As nove estrelas da bandeira de **Tuvalu** representam suas nove ilhas, mas uma das ilhas é desabitada.",
-      "O grou-coroado-cinzento na bandeira de **Uganda** fica em uma perna, simbolizando o país avançando.",
-      "A bandeira de **Vanuatu** apresenta a presa de um javali, um símbolo de prosperidade, envolvendo duas folhas de samambaia, um símbolo de paz.",
-      "A prática de inclinar uma bandeira nacional como sinal de respeito é proibida em muitos países, incluindo EUA e Reino Unido.",
-      "Nas **Filipinas**, a bandeira é hasteada com a faixa vermelha para cima em tempos de guerra.",
-      "A bandeira da **República da China (Taiwan)** apresenta um sol branco com 12 raios, representando os meses do ano e as 12 horas tradicionais chinesas.",
-      "A bandeira de **Timor-Leste** foi adotada em 2002, quando se tornou o primeiro novo estado soberano do século XXI.",
-      "A bandeira nacional da **Tailândia** tem cinco faixas horizontais nas cores vermelho, branco, azul, branco e vermelho. A faixa azul central é duas vezes mais larga que as outras.",
-      "Uma bandeira triangular é chamada de **flâmula** ou **galhardete**.",
-      "A bandeira das **Ilhas Faroe** é chamada 'Merkið' e é uma inversão das cores da bandeira norueguesa, refletindo seus laços estreitos.",
-      "A bandeira de **Andorra** é um tricolor de azul, amarelo e vermelho, com o brasão de armas da nação no centro. O design reflete a dupla proteção do país pela França e Espanha.",
-      "A estrela de oito pontas na bandeira do **Azerbaijão** representa os oito ramos dos povos túrquicos.",
-      "A bandeira do **Benin** foi readotada em 1990 após o fim do regime marxista, restaurando o design original da independência em 1960.",
-      "O brasão de armas da **Bolívia**, por vezes exibido no centro, apresenta uma alpaca, uma árvore-do-pão e uma montanha, representando a diversa riqueza da nação.",
-      "As três estrelas no centro da bandeira do **Burundi** representam oficialmente os três grupos étnicos: os Hutus, os Tutsis e os Twas.",
-      "A faixa amarela da bandeira da **Colômbia** é duas vezes mais larga que as faixas azul e vermelha, simbolizando as riquezas douradas da nação.",
-      "A versão de estado da bandeira da **Costa Rica** inclui seu brasão de armas, retratando três vulcões e navios em dois oceanos, simbolizando sua geografia.",
-      "O design da bandeira de **Cuba**, com sua 'La Estrella Solitaria' (A Estrela Solitária), influenciou o design da bandeira de Porto Rico.",
-      "A bandeira da **Grécia** é conhecida como 'Galanolefki' ou 'Kyanolefki', que significa 'a azul e branca'.",
-      "A forma de Y na bandeira de **Vanuatu** representa a forma das ilhas em um mapa.",
-      "Uma proposta de 2015 para mudar a bandeira de **Fiji** foi finalmente abandonada em 2016 após a opinião pública favorecer a manutenção do design histórico.",
-      "A bandeira de **São Vicente e Granadinas** é apelidada de 'As Gemas' porque os três diamantes nela formam um 'V' e parecem gemas.",
-      "A bandeira da **Micronésia** apresenta quatro estrelas em um campo azul, representando os quatro estados da federação e o Oceano Pacífico.",
-      "Uma bandeira a **meio-mastro** (ou meia-haste) é um símbolo de respeito, luto ou perigo. Diz-se que a tradição se originou no século XVII.",
-      "Um **vexiloide** é um objeto semelhante a uma bandeira usado por civilizações antigas, como o estandarte da Águia Romana, como um precursor das bandeiras modernas."
+      "A bandeira do estado de **Ohio** nos EUA é a única bandeira de estado não retangular. É um galhardete de cauda de andorinha."
     ])
   }
 };
@@ -946,17 +820,29 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [language, setLanguageState] = useState<Language>(() => {
-        const savedLang = localStorage.getItem('language') as Language;
-        return savedLang || 'en';
+        try {
+            const savedLang = localStorage.getItem('language');
+            return (savedLang === 'en' || savedLang === 'pt') ? savedLang : 'en';
+        } catch {
+            return 'en';
+        }
     });
 
+    useEffect(() => {
+        try {
+            localStorage.setItem('language', language);
+            document.documentElement.lang = language;
+        } catch (error) {
+            console.error("Failed to save language to localStorage", error);
+        }
+    }, [language]);
+
     const setLanguage = (lang: Language) => {
-        localStorage.setItem('language', lang);
         setLanguageState(lang);
     };
 
     const t = useCallback((key: string, replacements?: { [key: string]: string }) => {
-        let translation = translations[language][key] || key;
+        let translation = translations[language][key] || translations['en'][key] || key;
         if (replacements) {
             Object.keys(replacements).forEach(placeholder => {
                 translation = translation.replace(`{{${placeholder}}}`, replacements[placeholder]);
@@ -965,21 +851,15 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         return translation;
     }, [language]);
     
-    useEffect(() => {
-        document.documentElement.lang = language;
-        document.title = t('title');
-    }, [language, t]);
 
-    return (
-        <LanguageContext.Provider value={{ language, setLanguage, t }}>
-            {children}
-        </LanguageContext.Provider>
-    );
+    const value = { language, setLanguage, t };
+
+    return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
 
-export const useLanguage = (): LanguageContextType => {
+export const useLanguage = () => {
     const context = useContext(LanguageContext);
-    if (!context) {
+    if (context === undefined) {
         throw new Error('useLanguage must be used within a LanguageProvider');
     }
     return context;

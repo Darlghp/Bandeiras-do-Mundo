@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import type { Country } from './types';
 import { fetchCountries } from './services/countryService';
@@ -8,7 +6,6 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import SkeletonCard from './components/SkeletonCard';
-import DiscoverHub from './components/DiscoverHub';
 import Hero from './components/Hero';
 import { CONTINENTS_API_VALUES } from './constants';
 import { FLAG_OF_THE_DAY_TITLES } from './constants/flagOfTheDayTitles';
@@ -18,16 +15,16 @@ import FilterNavigator from './components/FilterNavigator';
 import VirtualFlagGrid from './components/VirtualFlagGrid';
 import BottomNav from './components/BottomNav';
 import { useDebounce } from './hooks/useDebounce';
-import { COUNTRY_COLORS } from './constants/colorData';
 
 // Lazy load views and modals that are not part of the initial screen
 const QuizView = lazy(() => import('./components/QuizView'));
 const DiscoverView = lazy(() => import('./components/DiscoverView'));
+const DesignerView = lazy(() => import('./components/DesignerView'));
 const FlagModal = lazy(() => import('./components/FlagModal'));
 const CompareModal = lazy(() => import('./components/CompareModal'));
 
 
-export type View = 'explorer' | 'quiz' | 'discover';
+export type View = 'explorer' | 'quiz' | 'discover' | 'designer';
 export type SortOrder = 
     | 'name_asc' 
     | 'name_desc' 
@@ -261,8 +258,6 @@ interface ExplorerContentProps {
     sortOrder: SortOrder;
     setSortOrder: (order: SortOrder) => void;
     comparisonList: Country[];
-    selectedColors: string[];
-    setSelectedColors: (colors: string[]) => void;
 }
 
 const ExplorerContent: React.FC<ExplorerContentProps> = ({
@@ -283,8 +278,6 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     sortOrder,
     setSortOrder,
     comparisonList,
-    selectedColors,
-    setSelectedColors,
 }) => {
     const { t } = useLanguage();
 
@@ -307,8 +300,6 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                             onSearchChange={setSearchQuery}
                             isCompareModeActive={isCompareModeActive}
                             onToggleCompareMode={handleToggleCompareMode}
-                            selectedColors={selectedColors}
-                            setSelectedColors={setSelectedColors}
                        />
                     </div>
                 </aside>
@@ -370,7 +361,6 @@ const App: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState<string>('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const [selectedContinent, setSelectedContinent] = useState<string>('All');
-    const [selectedColors, setSelectedColors] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
@@ -504,7 +494,7 @@ const App: React.FC = () => {
                     return;
                 }
             } catch (e) {
-                console.error("Corrupted flag of the day in cache, removing.", e);
+                console.error("Corrupted flag of the day in cache, removing it.", e);
                 localStorage.removeItem(storageKey);
             }
         }
@@ -666,13 +656,6 @@ const App: React.FC = () => {
                 result = result.filter(country => country.continents.includes(selectedContinent));
             }
         }
-
-        if (selectedColors.length > 0) {
-            result = result.filter(country => {
-                const countryColors = COUNTRY_COLORS[country.cca3] || [];
-                return selectedColors.every(color => countryColors.includes(color));
-            });
-        }
         
         if (debouncedSearchQuery.trim()) {
             const lowerCaseQuery = debouncedSearchQuery.toLowerCase();
@@ -705,7 +688,7 @@ const App: React.FC = () => {
                     return nameA.localeCompare(nameB);
             }
         });
-    }, [countries, selectedContinent, language, debouncedSearchQuery, favorites, sortOrder, selectedColors]);
+    }, [countries, selectedContinent, language, debouncedSearchQuery, favorites, sortOrder]);
 
     const renderContent = () => {
         switch (view) {
@@ -730,14 +713,13 @@ const App: React.FC = () => {
                         sortOrder={sortOrder}
                         setSortOrder={setSortOrder}
                         comparisonList={comparisonList}
-                        selectedColors={selectedColors}
-                        setSelectedColors={setSelectedColors}
                     />
                 );
             case 'quiz':
                 return <QuizView countries={countries} onBackToExplorer={() => setView('explorer')} />;
             case 'discover':
                 return <DiscoverView 
+                    countries={countries}
                     collections={collectionsData}
                     isLoading={isCollectionsLoading}
                     onCardClick={handleCardClick}
@@ -746,6 +728,8 @@ const App: React.FC = () => {
                     uniqueFlagOfTheDay={uniqueFlagOfTheDay}
                     isUniqueFlagOfTheDayLoading={isUniqueFlagOfTheDayLoading}
                 />;
+            case 'designer':
+                return <DesignerView />;
             default:
                 return null;
         }
