@@ -142,6 +142,75 @@
      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80"><rect fill="%23020617" width="80" height="80"/><g fill-rule="evenodd"><g fill="%230f172a" fill-opacity="0.4"><path d="M0 0h40v40H0zM40 40h40v40H40z"/></g></g></svg>');
   }
 
+  /* Floating animation for the unique flag feature */
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* Glint effect on hover for the unique flag */
+  .glint-container {
+    position: relative;
+    overflow: hidden;
+  }
+  .glint-container::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 20%;
+    height: 200%;
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: rotate(25deg) translateX(-250%);
+    transition: transform 0.8s ease-in-out;
+  }
+  .glint-container:hover::after {
+    transform: rotate(25deg) translateX(250%);
+  }
+
+  /* Glowing background for UniqueFlagFeature */
+  .unique-flag-glow {
+    position: relative;
+    overflow: hidden;
+  }
+  .unique-flag-glow::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 800px;
+    height: 800px;
+    background-image: radial-gradient(circle, rgba(29, 78, 216, 0.3) 0%, rgba(29, 78, 216, 0) 60%);
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
+    animation: spin-glow 20s linear infinite;
+  }
+
+  @keyframes spin-glow {
+    from {
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    to {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
+  }
+
 </style>
 <script>
   // Initialize theme before React loads to prevent FOUC (Flash of Unstyled Content)

@@ -113,17 +113,17 @@ interface DiscoverViewProps {
 
 const UniqueFlagSkeleton: React.FC = () => {
     return (
-        <div className="bg-white dark:bg-slate-900/60 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-slate-700/50 my-12">
-            <div className="flex flex-col md:flex-row items-center gap-8 animate-pulse">
-                <div className="w-full md:w-1/2 lg:w-2/5">
-                    <div className="aspect-w-4 aspect-h-3 bg-gray-300 dark:bg-slate-700 rounded-lg"></div>
+        <div className="bg-slate-900 dark:bg-black p-8 md:p-12 rounded-3xl my-12">
+            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 animate-pulse">
+                <div className="w-full md:w-1/2">
+                    <div className="aspect-[5/3] bg-slate-700/50 rounded-xl"></div>
                 </div>
-                <div className="w-full md:w-1/2 lg:w-3/5 text-center md:text-left space-y-4">
-                    <div className="h-4 bg-gray-300 dark:bg-slate-700 rounded-md w-1/3 mx-auto md:mx-0"></div>
-                    <div className="h-10 bg-gray-300 dark:bg-slate-700 rounded-md w-full"></div>
-                    <div className="h-5 bg-gray-300 dark:bg-slate-700 rounded-md w-4/5 mx-auto md:mx-0"></div>
-                    <div className="h-5 bg-gray-300 dark:bg-slate-700 rounded-md w-3/5 mx-auto md:mx-0"></div>
-                    <div className="h-12 bg-gray-300 dark:bg-slate-700 rounded-md w-1/2 mx-auto md:mx-0 mt-2"></div>
+                <div className="w-full md:w-1/2 text-center md:text-left space-y-4">
+                    <div className="h-4 bg-slate-700/50 rounded-md w-1/3 mx-auto md:mx-0"></div>
+                    <div className="h-12 bg-slate-700/50 rounded-md w-full"></div>
+                    <div className="h-6 bg-slate-700/50 rounded-md w-4/5 mx-auto md:mx-0"></div>
+                    <div className="h-6 bg-slate-700/50 rounded-md w-3/5 mx-auto md:mx-0"></div>
+                    <div className="h-12 bg-slate-700/50 rounded-full w-1/2 mx-auto md:mx-0 mt-4"></div>
                 </div>
             </div>
         </div>
@@ -147,38 +147,43 @@ const UniqueFlagFeature: React.FC<{
     const commonName = language === 'pt' ? country.translations.por.common : country.name.common;
     
     return (
-        <div className="bg-white dark:bg-slate-900/60 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-slate-700/50 my-12 animate-fade-in-up">
-            <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="w-full md:w-1/2 lg:w-2/5">
-                    <div 
-                        className="aspect-w-4 aspect-h-3 rounded-lg overflow-hidden shadow-md cursor-pointer group transform hover:scale-105 transition-transform duration-300 bg-gray-100 dark:bg-slate-800 flex items-center justify-center"
-                        onClick={() => onClick(country)}
-                        aria-label={t('viewDetailsFor', { countryName: commonName })}
-                        role="button"
-                        tabIndex={0}
-                        onKeyPress={(e) => { if (e.key === 'Enter') onClick(country) }}
-                    >
-                        <img 
-                            src={country.flags.svg} 
-                            alt={country.flags.alt || `Flag of ${commonName}`}
-                            className="w-full h-full object-contain max-h-48"
-                            loading="lazy"
-                            decoding="async"
-                        />
+        <div className="unique-flag-glow bg-slate-900 dark:bg-black my-12 animate-fade-in-up rounded-3xl">
+             <div className="relative z-10 p-8 md:p-12">
+                <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+                    <div className="w-full md:w-1/2 animate-float">
+                        <div 
+                            className="glint-container aspect-[5/3] rounded-xl overflow-hidden shadow-2xl cursor-pointer group bg-black/20"
+                            onClick={() => onClick(country)}
+                            aria-label={t('viewDetailsFor', { countryName: commonName })}
+                            role="button"
+                            tabIndex={0}
+                            onKeyPress={(e) => { if (e.key === 'Enter') onClick(country) }}
+                        >
+                            <img 
+                                src={country.flags.svg} 
+                                alt={country.flags.alt || `Flag of ${commonName}`}
+                                className="w-full h-full object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.4)]"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="w-full md:w-1/2 lg:w-3/5 text-center md:text-left">
-                    <p className="text-sm font-bold text-blue-600 dark:text-sky-400 uppercase tracking-widest">{t('uniqueFlagOfTheDayTitle')}</p>
-                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-slate-100 mt-2 leading-tight">
-                        {commonName}
-                    </h1>
-                     <p className="mt-4 text-gray-600 dark:text-slate-300">{t(descriptionKey)}</p>
-                    <button 
-                        onClick={() => onClick(country)}
-                        className="mt-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800 transition-all"
-                    >
-                        {t('viewDetailsFor', { countryName: commonName })}
-                    </button>
+                    <div className="w-full md:w-1/2 text-center md:text-left text-white">
+                        <p className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-300 to-violet-300 uppercase tracking-widest">{t('uniqueFlagOfTheDayTitle')}</p>
+                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mt-2 leading-tight" style={{ textShadow: '2px 2px 12px rgba(0,0,0,0.5)'}}>
+                            {commonName}
+                        </h1>
+                         <p className="mt-4 text-slate-300 text-lg">{t(descriptionKey)}</p>
+                        <button 
+                            onClick={() => onClick(country)}
+                            className="mt-8 inline-flex items-center gap-2 px-8 py-3 border-2 border-transparent text-base font-bold rounded-full text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-400 dark:focus:ring-offset-slate-900 transition-all transform hover:scale-105"
+                        >
+                            {t('discoverTitle')}
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
