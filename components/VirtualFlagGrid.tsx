@@ -11,8 +11,18 @@ const getColumnCount = () => {
     return 1;
 };
 
-// These are estimates for calculation. They should be generous to avoid blank space.
-const CARD_ESTIMATED_HEIGHT = 320; // A bit more than actual height
+// Estimates for calculation. They should be generous to avoid blank space.
+// We make them dynamic based on column count because card height changes with width due to aspect ratio.
+const getCardEstimatedHeight = (columns: number) => {
+    switch (columns) {
+        case 1: return 540; // Mobile, card is wide, so tall.
+        case 2: return 420; // sm screens
+        case 3: return 320; // lg screens
+        case 4: return 300; // xl screens
+        default: return 400;
+    }
+};
+
 const GAP = 24; // from gap-6 class
 
 interface VirtualFlagGridProps {
@@ -31,7 +41,8 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
     const [columnCount, setColumnCount] = useState(getColumnCount());
     const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
 
-    const rowHeight = CARD_ESTIMATED_HEIGHT + GAP;
+    const cardEstimatedHeight = getCardEstimatedHeight(columnCount);
+    const rowHeight = cardEstimatedHeight + GAP;
 
     // Update column count on window resize
     const handleResize = useCallback(() => {
