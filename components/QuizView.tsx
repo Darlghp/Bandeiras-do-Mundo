@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { CONTINENT_NAMES } from '../constants';
 
-type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'country-to-capital' | 'shape-to-country';
+const FlagleGame = lazy(() => import('./FlagleGame'));
+
+type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'country-to-capital' | 'shape-to-country' | 'flagle';
 type QuizDifficulty = 'easy' | 'medium' | 'hard';
 
 const OPTIONS_COUNT = 4;
@@ -370,6 +372,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
         'flag-to-capital': t('whichCapital'),
         'country-to-capital': t('whichCapitalForCountry', { country: getCountryName(currentCountry) }),
         'shape-to-country': t('whichCoatOfArms'),
+        'flagle': 'Should not be used here'
     }[mode];
 
     const correctAnswerText = (mode === 'flag-to-capital' || mode === 'country-to-capital') ? currentCountry.capital[0] : getCountryName(currentCountry);
@@ -468,6 +471,14 @@ const BuildingIcon: React.FC = () => (
     </svg>
 );
 
+const FlagleIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M0 0h4v4H0zM5 0h4v4H5zM10 0h4v4h-4zM15 0h4v4h-4zM0 5h4v4H0zM5 5h4v4H5zM10 5h4v4h-4zM15 5h4v4h-4zM0 10h4v4H0zM5 10h4v4H5zM10 10h4v4h-4zM15 10h4v4h-4zM0 15h4v4H0zM5 15h4v4H5zM10 15h4v4h-4zM15 15h4v4h-4z" opacity="0.4" />
+        <path d="M5 5h4v4H5zM10 5h4v4h-4zM5 10h4v4H5z" />
+    </svg>
+);
+
+
 const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
     const { t } = useLanguage();
     const [mode, setMode] = useState<QuizMode | null>(null);
@@ -481,6 +492,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
         { id: 'flag-to-capital', title: t('modeFlagToCapital'), desc: t('modeFlagToCapitalDesc'), icon: <BuildingIcon /> },
         { id: 'country-to-capital', title: t('modeCountryToCapital'), desc: t('modeCountryToCapitalDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>},
         { id: 'shape-to-country', title: t('modeShapeToCountry'), desc: t('modeShapeToCountryDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg> },
+        { id: 'flagle', title: t('modeFlagle'), desc: t('modeFlagleDesc'), icon: <FlagleIcon /> },
     ];
 
     const difficultyLevels: { id: QuizDifficulty, title: string, desc: string }[] = [
@@ -489,8 +501,13 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
         { id: 'hard', title: t('difficultyHard'), desc: t('difficultyHardDesc') },
     ];
 
-    if (isQuizStarted && mode && difficulty) {
-        return <QuizGame countries={countries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
+    if (isQuizStarted) {
+        if (mode === 'flagle') {
+            return <Suspense fallback={<div>Loading...</div>}><FlagleGame countries={countries} onBackToMenu={() => setIsQuizStarted(false)} /></Suspense>;
+        }
+        if (mode && difficulty) {
+            return <QuizGame countries={countries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
+        }
     }
 
     return (
@@ -502,7 +519,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
             <div className="space-y-10">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('chooseMode')}</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {gameModes.map(m => (
                             <button key={m.id} onClick={() => setMode(m.id)} className={`p-6 text-left rounded-xl border-2 transition-all duration-200 ${mode === m.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-600'}`}>
                                 <div className="flex items-center gap-3">
@@ -515,49 +532,51 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
                     </div>
                 </div>
 
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('selectDifficulty')}</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                         {difficultyLevels.map(d => (
-                            <button key={d.id} onClick={() => setDifficulty(d.id)} className={`p-6 text-center rounded-xl border-2 transition-all duration-200 ${difficulty === d.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-600'}`}>
-                                <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{d.title}</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{d.desc}</p>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('selectNumberOfQuestions')}</h2>
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border-2 border-gray-200 dark:border-slate-700">
-                        <div className="relative px-2">
-                             <input
-                                type="range"
-                                min="10"
-                                max="55"
-                                step="5"
-                                value={quizLength >= 55 ? 55 : quizLength}
-                                onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    // Use a large number to signify "All" questions.
-                                    setQuizLength(value === 55 ? 999 : value);
-                                }}
-                                className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-sky-500"
-                                id="quiz-length-slider"
-                            />
-                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 px-1">
-                                <span>10</span>
-                                <span>20</span>
-                                <span>30</span>
-                                <span>40</span>
-                                <span>50</span>
-                                <span>{t('all')}</span>
-                            </div>
+                <div className={`transition-opacity duration-500 space-y-10 ${mode === 'flagle' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('selectDifficulty')}</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {difficultyLevels.map(d => (
+                                <button key={d.id} onClick={() => setDifficulty(d.id)} className={`p-6 text-center rounded-xl border-2 transition-all duration-200 ${difficulty === d.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-600'}`}>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{d.title}</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{d.desc}</p>
+                                </button>
+                            ))}
                         </div>
-                        <div className="text-center text-xl font-bold text-gray-900 dark:text-gray-100 mt-4">
-                            {quizLength >= 55
-                                ? t('allQuestions')
-                                : t('numberOfQuestions', { count: quizLength.toString() })}
+                    </div>
+
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('selectNumberOfQuestions')}</h2>
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border-2 border-gray-200 dark:border-slate-700">
+                            <div className="relative px-2">
+                                <input
+                                    type="range"
+                                    min="10"
+                                    max="55"
+                                    step="5"
+                                    value={quizLength >= 55 ? 55 : quizLength}
+                                    onChange={(e) => {
+                                        const value = Number(e.target.value);
+                                        // Use a large number to signify "All" questions.
+                                        setQuizLength(value === 55 ? 999 : value);
+                                    }}
+                                    className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-sky-500"
+                                    id="quiz-length-slider"
+                                />
+                                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 px-1">
+                                    <span>10</span>
+                                    <span>20</span>
+                                    <span>30</span>
+                                    <span>40</span>
+                                    <span>50</span>
+                                    <span>{t('all')}</span>
+                                </div>
+                            </div>
+                            <div className="text-center text-xl font-bold text-gray-900 dark:text-gray-100 mt-4">
+                                {quizLength >= 55
+                                    ? t('allQuestions')
+                                    : t('numberOfQuestions', { count: quizLength.toString() })}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -566,7 +585,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
             <div className="mt-12 text-center">
                 <button 
                     onClick={() => setIsQuizStarted(true)} 
-                    disabled={!mode || !difficulty}
+                    disabled={!mode || (mode !== 'flagle' && !difficulty)}
                     className="px-12 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-900 transition-all transform hover:scale-105"
                 >
                     {t('startQuiz')}
