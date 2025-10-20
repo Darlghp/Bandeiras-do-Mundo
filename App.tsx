@@ -590,6 +590,36 @@ const App: React.FC = () => {
 
     }, [language]);
 
+    // Effect to schedule a refresh at midnight
+    useEffect(() => {
+        const scheduleMidnightRefresh = () => {
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(now.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+
+            // Time until midnight + a small buffer to ensure we are in the next day
+            const msUntilMidnight = tomorrow.getTime() - now.getTime() + 1000;
+
+            const timerId = setTimeout(() => {
+                if (countries.length > 0) {
+                    manageFlagOfTheDay(countries);
+                    manageUniqueFlagOfTheDay(countries);
+                }
+                // Schedule the next refresh for the following day
+                scheduleMidnightRefresh();
+            }, msUntilMidnight);
+
+            return timerId;
+        };
+
+        const timerId = scheduleMidnightRefresh();
+
+        // Cleanup on component unmount or when dependencies change
+        return () => clearTimeout(timerId);
+
+    }, [countries, manageFlagOfTheDay, manageUniqueFlagOfTheDay]);
+
     useEffect(() => {
         const getCountries = async () => {
             try {
