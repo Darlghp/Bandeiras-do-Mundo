@@ -60,17 +60,17 @@ const collectionGenerators: {
     {
         title: { en: "Island Nations", pt: "Nações Insulares" },
         getCountries: (countries: Country[]) => {
-            const countryCodes = ['JPN', 'GBR', 'CUB', 'IDN', 'PHL', 'MDG', 'NZL', 'IRL', 'ISL', 'JAM', 'FJI', 'CYP', 'MUS', 'COM', 'CPV'];
+            const countryCodes = ['JPN', 'GBR', 'CUB', 'IDN', 'PHL', 'MDG', 'NZL', 'IRL', 'ISL', 'JAM', 'FJI', 'CYP', 'MUS', 'COM', 'CPV', 'LKA', 'SGP', 'MLT', 'BHS', 'BRB'];
             const available = countries.filter(c => countryCodes.includes(c.cca3));
-            return shuffleArray(available).slice(0, 10);
+            return shuffleArray(available).slice(0, 15);
         }
     },
     {
         title: { en: "Landlocked & Surrounded", pt: "Cercados por Terra" },
         getCountries: (countries: Country[]) => {
-            const countryCodes = ['CHE', 'AUT', 'CZE', 'HUN', 'BOL', 'PRY', 'NPL', 'MNG', 'RWA', 'BFA', 'LUX', 'SVK', 'BTN', 'LAO', 'ZWE'];
+            const countryCodes = ['CHE', 'AUT', 'CZE', 'HUN', 'BOL', 'PRY', 'NPL', 'MNG', 'RWA', 'BFA', 'LUX', 'SVK', 'BTN', 'LAO', 'ZWE', 'AND', 'ARM', 'ETH', 'KAZ', 'UGA', 'BDI', 'CAF', 'TCD', 'LSO', 'LIE', 'MKD', 'MDA', 'NER', 'SMR', 'SRB', 'SSD', 'TJK', 'TKM', 'UZB'];
             const available = countries.filter(c => countryCodes.includes(c.cca3));
-            return shuffleArray(available).slice(0, 10);
+            return shuffleArray(available).slice(0, 15);
         }
     },
 
@@ -127,6 +127,14 @@ const collectionGenerators: {
         title: { en: "Green for Nature", pt: "Verde pela Natureza" },
         getCountries: (countries: Country[]) => {
             const countryCodes = ['BRA', 'NGA', 'PAK', 'SAU', 'BGD', 'IRL', 'ITA', 'HUN', 'BGR', 'MEX', 'BOL', 'ZMB', 'ETH', 'JAM'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 10);
+        }
+    },
+    {
+        title: { en: "Bold in Black", pt: "Ousadia em Preto" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['DEU', 'BEL', 'EGY', 'JAM', 'AGO', 'KEN', 'UGA', 'ZAF', 'PNG', 'EST', 'ARE', 'YEM', 'TTO', 'BWA', 'SSD', 'SYR', 'KWT', 'JOR'];
             const available = countries.filter(c => countryCodes.includes(c.cca3));
             return shuffleArray(available).slice(0, 10);
         }
@@ -218,13 +226,20 @@ const collectionGenerators: {
             return countries.filter(c => countryCodes.includes(c.cca3));
         }
     },
-
+    {
+        title: { en: "Flags with Writing", pt: "Bandeiras com Escrita" },
+        getCountries: (countries: Country[]) => {
+            const countryCodes = ['SAU', 'IRQ', 'BRA', 'ESP', 'SLV', 'DOM', 'BLZ', 'PRY', 'VAT', 'SMR', 'HND', 'NIC', 'GTM'];
+            const available = countries.filter(c => countryCodes.includes(c.cca3));
+            return shuffleArray(available).slice(0, 8);
+        }
+    },
 
     // --- Design: Layouts ---
     {
-        title: { en: "Vertical Tricolors", pt: "Tricolores Verticais" },
+        title: { en: "The Tricolore Tradition", pt: "A Tradição Tricolor" },
         getCountries: (countries: Country[]) => {
-            const countryCodes = ['FRA', 'ITA', 'BEL', 'IRL', 'ROU', 'MLI', 'GIN', 'CIV', 'TCD', 'AND', 'MDA'];
+            const countryCodes = ['FRA', 'ITA', 'BEL', 'IRL', 'ROU', 'MLI', 'GIN', 'CIV', 'TCD', 'AND', 'MDA', 'SEN', 'CMR'];
             const available = countries.filter(c => countryCodes.includes(c.cca3));
             return shuffleArray(available).slice(0, 10);
         }
@@ -449,7 +464,7 @@ export const fetchAllCollections = (allCountries: Country[], language: string): 
     }
     
     // Select a smaller random subset of collections to display
-    const generatorsToUse = shuffleArray(collectionGenerators).slice(0, 5);
+    const generatorsToUse = shuffleArray(collectionGenerators).slice(0, 8);
 
     return generatorsToUse.map(generator => {
         const title = generator.title[language as 'en' | 'pt'];

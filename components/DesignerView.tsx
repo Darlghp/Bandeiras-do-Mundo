@@ -98,7 +98,8 @@ const ColorPicker: React.FC<{ label: string, selectedColor: Color, onChange: (co
                         onClick={() => onChange(color)}
                         className={`w-full aspect-square rounded-md border-2 transition-transform transform hover:scale-110 ${selectedColor === color ? 'border-blue-500 ring-2 ring-blue-500' : 'border-transparent'}`}
                         style={{ backgroundColor: FLAG_COLORS[color] }}
-                        aria-label={color}
+                        // FIX: Explicitly cast `color` to a string for the `aria-label` attribute to resolve the type error.
+                        aria-label={String(color)}
                         aria-pressed={selectedColor === color}
                     />
                 ))}
