@@ -5,7 +5,7 @@ import { CONTINENT_NAMES } from '../constants';
 
 const FlagleGame = lazy(() => import('./FlagleGame'));
 
-type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'country-to-capital' | 'shape-to-country' | 'flagle';
+type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'country-to-capital' | 'shape-to-country' | 'flagle' | 'odd-one-out';
 type QuizDifficulty = 'easy' | 'medium' | 'hard';
 
 const OPTIONS_COUNT = 4;
@@ -129,6 +129,31 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
 
     const options = useMemo(() => {
         if (!currentCountry) return [];
+        
+        if (mode === 'odd-one-out') {
+            const intruder = currentCountry;
+            const intruderContinents = new Set(intruder.continents);
+            const allContinents = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania'];
+            const shuffledContinents = shuffleArray(allContinents);
+            
+            let decoys: Country[] = [];
+            for (const continent of shuffledContinents) {
+                if (intruderContinents.has(continent)) continue;
+                const decoyPool = countries.filter(c => c.continents.includes(continent) && c.cca3 !== intruder.cca3);
+                if (decoyPool.length >= OPTIONS_COUNT - 1) {
+                    decoys = shuffleArray(decoyPool).slice(0, OPTIONS_COUNT - 1);
+                    break;
+                }
+            }
+            
+            if (decoys.length < OPTIONS_COUNT - 1) {
+                 const fallbackPool = countries.filter(c => c.cca3 !== intruder.cca3 && !c.continents.some(cont => intruderContinents.has(cont)));
+                 decoys = shuffleArray(fallbackPool).slice(0, OPTIONS_COUNT - 1);
+            }
+    
+            const optionCountries = shuffleArray([intruder, ...decoys]);
+            return optionCountries.map(c => getCountryName(c));
+        }
 
         let correctAnswer: string;
         let wrongOptionPool: Country[];
@@ -372,7 +397,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
         'flag-to-capital': t('whichCapital'),
         'country-to-capital': t('whichCapitalForCountry', { country: getCountryName(currentCountry) }),
         'shape-to-country': t('whichCoatOfArms'),
-        'flagle': 'Should not be used here'
+        'flagle': 'Should not be used here',
+        'odd-one-out': t('whichIsTheOddOneOut'),
     }[mode];
 
     const correctAnswerText = (mode === 'flag-to-capital' || mode === 'country-to-capital') ? currentCountry.capital[0] : getCountryName(currentCountry);
@@ -431,7 +457,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                         ))}
                     </div>
                 }
-                { mode === 'country-to-flag' &&
+                { (mode === 'country-to-flag' || mode === 'odd-one-out') &&
                      <div className="grid grid-cols-2 gap-4 mb-8">
                         {options.map(option => {
                             const countryOption = countries.find(c => getCountryName(c) === option);
@@ -478,6 +504,14 @@ const FlagleIcon: React.FC = () => (
     </svg>
 );
 
+const OddOneOutIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M3 3h4v4H3V3zm5 0h4v4H8V3zM3 8h4v4H3V8zm5 0h4v4H8V8z" opacity="0.6"/>
+        <path d="M13 3h4v4h-4V3zm0 5h4v4h-4V8z"/>
+        <path d="M3 13h4v4H3v-4zm5 0h4v4H8v-4z" opacity="0.6"/>
+    </svg>
+);
+
 
 const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
     const { t } = useLanguage();
@@ -492,6 +526,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
         { id: 'flag-to-capital', title: t('modeFlagToCapital'), desc: t('modeFlagToCapitalDesc'), icon: <BuildingIcon /> },
         { id: 'country-to-capital', title: t('modeCountryToCapital'), desc: t('modeCountryToCapitalDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>},
         { id: 'shape-to-country', title: t('modeShapeToCountry'), desc: t('modeShapeToCountryDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg> },
+        { id: 'odd-one-out', title: t('modeOddOneOut'), desc: t('modeOddOneOutDesc'), icon: <OddOneOutIcon /> },
         { id: 'flagle', title: t('modeFlagle'), desc: t('modeFlagleDesc'), icon: <FlagleIcon /> },
     ];
 
