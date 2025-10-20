@@ -71,7 +71,13 @@ type UniqueFlagDescriptionKey =
     | 'dominicanRepublicFlagDesc'
     | 'jamaicaFlagDesc'
     | 'norwayFlagDesc'
-    | 'ugandaFlagDesc';
+    | 'ugandaFlagDesc'
+    | 'bhutanFlagDesc'
+    | 'libyaFlagDesc'
+    | 'saudiArabiaFlagDesc'
+    | 'kiribatiFlagDesc'
+    | 'dominicaFlagDesc'
+    | 'eswatiniFlagDesc';
 
 
 interface UniqueFlagOfTheDayData {
@@ -352,7 +358,8 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
 const UNIQUE_FLAG_CCAS = [
     'NPL', 'CHE', 'VAT', 'PRY', 'DNK', 'PHL', 'MOZ', 'QAT', // Original
     'BLZ', 'CYP', 'BRA', 'AUT', 'LSO', 'KHM', 'TKM', 'LKA', // New
-    'CAN', 'ZAF', 'DOM', 'JAM', 'NOR', 'UGA'               // New
+    'CAN', 'ZAF', 'DOM', 'JAM', 'NOR', 'UGA',               // New
+    'BTN', 'LBY', 'SAU', 'KIR', 'DMA', 'SWZ'                // More new flags
 ];
 
 const App: React.FC = () => {
@@ -573,6 +580,12 @@ const App: React.FC = () => {
             'JAM': 'jamaicaFlagDesc',
             'NOR': 'norwayFlagDesc',
             'UGA': 'ugandaFlagDesc',
+            'BTN': 'bhutanFlagDesc',
+            'LBY': 'libyaFlagDesc',
+            'SAU': 'saudiArabiaFlagDesc',
+            'KIR': 'kiribatiFlagDesc',
+            'DMA': 'dominicaFlagDesc',
+            'SWZ': 'eswatiniFlagDesc',
         };
         const descriptionKey = descriptionKeyMap[countryForToday.cca3];
 
