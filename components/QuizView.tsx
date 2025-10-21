@@ -12,8 +12,14 @@ const OPTIONS_COUNT = 4;
 const HINTS_PER_QUIZ = 3;
 const FIFTY_FIFTY_HINTS_PER_QUIZ = 1;
 
+// FIX: Replaced the simple sort-based shuffle with a more robust Fisher-Yates shuffle to fix type inference issues.
 function shuffleArray<T>(array: T[]): T[] {
-    return [...array].sort(() => Math.random() - 0.5);
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
 }
 
 const Stat: React.FC<{ label: string, value: string }> = ({ label, value }) => (
@@ -520,6 +526,17 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
     const [quizLength, setQuizLength] = useState<number>(20);
     const [isQuizStarted, setIsQuizStarted] = useState(false);
 
+    const quizCountries = useMemo(() => {
+        const countriesToExclude = new Set([
+            'Bouvet Island',
+            'Heard Island and McDonald Islands',
+            'United States Minor Outlying Islands',
+            'Svalbard and Jan Mayen',
+            'Saint Martin',
+        ]);
+        return countries.filter(country => !countriesToExclude.has(country.name.common));
+    }, [countries]);
+
     const gameModes: { id: QuizMode, title: string, desc: string, icon: React.ReactNode }[] = [
         { id: 'flag-to-country', title: t('modeFlagToCountry'), desc: t('modeFlagToCountryDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" /><path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" /></svg> },
         { id: 'country-to-flag', title: t('modeCountryToFlag'), desc: t('modeCountryToFlagDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4a1 1 0 001 1h10a1 1 0 100-2H5a1 1 0 00-1 1zM2 9a1 1 0 001 1h14a1 1 0 100-2H3a1 1 0 00-1 1zm1 3a1 1 0 100 2h14a1 1 0 100-2H3zm-1 4a1 1 0 001 1h14a1 1 0 100-2H3a1 1 0 00-1 1z" clipRule="evenodd" /></svg> },
@@ -538,10 +555,10 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
 
     if (isQuizStarted) {
         if (mode === 'flagle') {
-            return <Suspense fallback={<div>Loading...</div>}><FlagleGame countries={countries} onBackToMenu={() => setIsQuizStarted(false)} /></Suspense>;
+            return <Suspense fallback={<div>Loading...</div>}><FlagleGame countries={quizCountries} onBackToMenu={() => setIsQuizStarted(false)} /></Suspense>;
         }
         if (mode && difficulty) {
-            return <QuizGame countries={countries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
+            return <QuizGame countries={quizCountries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
         }
     }
 
