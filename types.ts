@@ -1,3 +1,4 @@
+
 export interface CountryName {
   common: string;
   official: string;
@@ -26,4 +27,5 @@ export interface Country {
     png?: string;
     svg?: string;
   };
+  latlng: [number, number];
 }

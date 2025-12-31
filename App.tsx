@@ -19,7 +19,7 @@ import BottomNav from './components/BottomNav';
 import { useDebounce } from './hooks/useDebounce';
 import AchievementToast from './components/AchievementToast';
 
-// Lazy load views com extensões explícitas para garantir resolução no build
+// Lazy load views
 const QuizView = lazy(() => import('./components/QuizView.tsx'));
 const DiscoverView = lazy(() => import('./components/DiscoverView.tsx'));
 const DesignerView = lazy(() => import('./components/DesignerView.tsx'));

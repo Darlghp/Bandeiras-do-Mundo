@@ -12,33 +12,30 @@ const AchievementToast: React.FC = () => {
   const isAnimating = useRef(false);
 
   useEffect(() => {
-    // Processar o próximo item da fila se não houver nada rodando
     if (notificationQueue.length > 0 && !isAnimating.current) {
       isAnimating.current = true;
       
       const nextAchievement = { ...notificationQueue[0] };
       setCurrent(nextAchievement);
-      
-      // Remove da fila global IMEDIATAMENTE. O componente agora gerencia o "current" localmente.
       popNotification();
 
-      // Sequência de entrada
+      // Trigger entrance animation
       const showTimeout = setTimeout(() => {
         setVisible(true);
-      }, 100);
+      }, 50);
 
-      // Sequência de saída (10 segundos depois)
+      // Display for 8 seconds
       const hideTimeout = setTimeout(() => {
         setVisible(false);
         
-        // Limpeza após animação de saída (700ms é o tempo da transição no CSS)
+        // Cleanup after exit transition
         const cleanupTimeout = setTimeout(() => {
           setCurrent(null);
           isAnimating.current = false;
-        }, 800);
+        }, 1000);
 
         return () => clearTimeout(cleanupTimeout);
-      }, 10000);
+      }, 8000);
 
       return () => {
         clearTimeout(showTimeout);
@@ -51,36 +48,49 @@ const AchievementToast: React.FC = () => {
 
   return (
     <div 
-      className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] transition-all duration-700 transform ease-out
-        ${visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-90 pointer-events-none'}`}
+      className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] px-4 w-full max-w-sm pointer-events-none transition-all duration-1000
+        ${visible ? 'animate-achievement opacity-100' : 'opacity-0 translate-y-12 scale-90'}`}
     >
-      <div className="bg-white dark:bg-slate-800 border-2 border-amber-400 shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex items-center gap-4 min-w-[320px] max-w-[90vw] overflow-hidden relative">
-        {/* Barra de progresso visual de 10s */}
+      <div className="relative overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-2 border-amber-400/60 shadow-[0_25px_60px_rgba(251,191,36,0.3)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.6)] rounded-[2.5rem] p-6 flex items-center gap-5 pointer-events-auto">
+        
+        {/* Progress Bar */}
         <div 
-          className="absolute top-0 left-0 h-1 bg-amber-400 transition-all duration-[10000ms] ease-linear origin-left"
+          className={`absolute top-0 left-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 origin-left transition-all duration-[8000ms] ease-linear`}
           style={{ width: visible ? '100%' : '0%' }}
         ></div>
+
+        {/* Dynamic Metallic Shimmer */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[2.5rem]">
+            <div className="absolute top-0 -left-[100%] w-[40%] h-full bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-25deg] animate-metal-shimmer"></div>
+        </div>
         
-        <div className="text-4xl flex-shrink-0 animate-bounce">{current.icon}</div>
+        {/* Icon with Glowing Pulse */}
+        <div className="relative flex-shrink-0">
+            <div className="absolute inset-0 bg-amber-400 blur-2xl opacity-40 animate-pulse"></div>
+            <div className="relative text-5xl bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/20 w-16 h-16 rounded-3xl flex items-center justify-center shadow-lg border border-amber-200/50 dark:border-amber-700/30">
+                {current.icon}
+            </div>
+        </div>
+
         <div className="flex-grow min-w-0">
-          <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest truncate">
+          <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.25em] mb-1">
             {t('achievementUnlocked')}
           </p>
-          <h4 className="text-base font-bold text-slate-900 dark:text-white leading-tight truncate">
+          <h4 className="text-xl font-black text-slate-900 dark:text-white leading-tight truncate mb-1">
             {t(current.titleKey)}
           </h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 line-clamp-2 leading-tight opacity-90">
             {t(current.descKey)}
           </p>
         </div>
         
         <button 
           onClick={() => setVisible(false)}
-          className="ml-2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          className="flex-shrink-0 p-2 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
           aria-label="Fechar"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
