@@ -356,7 +356,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
 
             {/* Main Question Card */}
             <div className={`relative bg-white dark:bg-slate-900 p-6 sm:p-10 rounded-[2.5rem] shadow-2xl transition-all duration-300 ${shake ? 'animate-bounce' : ''}`}>
-                 <h2 className="text-center text-2xl font-black text-slate-800 dark:text-white mb-8 min-h-[60px] flex items-center justify-center">
+                 <h2 className="text-center text-2xl font-black text-slate-800 dark:text-white mb-8 min-h-[60px] flex items-center justify-center px-4">
                     {mode === 'flag-to-country' ? t('whichCountry') : 
                      mode === 'flag-to-capital' ? t('whichCapital') :
                      mode === 'country-to-flag' ? t('whichFlag', { country: getCountryName(currentCountry) }) :
@@ -413,30 +413,35 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                         const isWrong = isAnswered && opt === selectedAnswer && !isCorrect;
                         const isDisabled = disabledOptions.includes(opt);
                         const countryForFlag = mode === 'country-to-flag' || mode === 'odd-one-out' ? countries.find(c => getCountryName(c) === opt) : null;
+                        const isVisualMode = mode === 'country-to-flag' || mode === 'odd-one-out';
 
                         return (
                             <button
                                 key={i}
                                 onClick={() => handleAnswer(opt)}
                                 disabled={isAnswered || isDisabled}
-                                className={`relative group p-4 rounded-2xl border-2 transition-all duration-200 active:scale-95 text-left
+                                className={`relative group rounded-2xl border-2 transition-all duration-200 active:scale-95 text-left overflow-hidden flex flex-col items-center justify-center
+                                    ${isVisualMode ? 'aspect-[3/2] p-0' : 'p-4'}
                                     ${isDisabled ? 'opacity-0 pointer-events-none' : 'opacity-100'}
                                     ${!isAnswered ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''}
-                                    ${isCorrect ? 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20 ring-4 ring-green-500/10' : ''}
-                                    ${isWrong ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20' : ''}
+                                    ${isCorrect ? 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20 ring-4 ring-green-500/10 z-10' : ''}
+                                    ${isWrong ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20 z-10' : ''}
                                     ${isAnswered && !isCorrect && !isWrong ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-transparent opacity-60' : ''}
                                 `}
                             >
-                                <div className="flex items-center gap-3">
-                                    {countryForFlag && (
-                                        <div className="w-16 h-10 rounded shadow-sm overflow-hidden flex-shrink-0">
-                                            <img src={countryForFlag.flags.svg} alt="" className="w-full h-full object-cover" />
+                                <div className={`flex items-center gap-3 w-full h-full ${isVisualMode ? 'p-0' : 'p-1'}`}>
+                                    {countryForFlag ? (
+                                        <div className="w-full h-full overflow-hidden">
+                                            <img src={countryForFlag.flags.svg} alt={t('flagOf', {country: opt})} className="w-full h-full object-cover" />
                                         </div>
+                                    ) : (
+                                        <span className="font-black text-sm tracking-tight w-full text-center">{opt}</span>
                                     )}
-                                    <span className="font-black text-sm tracking-tight">{opt}</span>
+                                    {/* Hide text in visual mode so user has to guess by flag alone */}
+                                    {isVisualMode && <span className="sr-only">{opt}</span>}
                                 </div>
-                                {isCorrect && <div className="absolute -top-2 -right-2 bg-white text-green-500 rounded-full p-1 shadow-md animate-bounce"><CheckIcon /></div>}
-                                {isWrong && <div className="absolute -top-2 -right-2 bg-white text-red-500 rounded-full p-1 shadow-md"><CrossIcon /></div>}
+                                {isCorrect && <div className="absolute top-2 right-2 bg-white text-green-500 rounded-full p-1.5 shadow-xl animate-bounce z-20"><CheckIcon /></div>}
+                                {isWrong && <div className="absolute top-2 right-2 bg-white text-red-500 rounded-full p-1.5 shadow-xl z-20"><CrossIcon /></div>}
                             </button>
                         );
                     })}
@@ -464,8 +469,8 @@ interface QuizViewProps {
     onBackToExplorer: () => void;
 }
 
-const CheckIcon = () => <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
-const CrossIcon = () => <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
+const CheckIcon = () => <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
+const CrossIcon = () => <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
 
 
 const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
@@ -496,7 +501,7 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in-up pb-20">
+        <div className="max-w-4xl mx-auto animate-fade-in-up pb-20 px-4">
             <div className="text-center mb-12">
                 <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">{t('quizSetupTitle')}</h1>
                 <div className="h-1.5 w-24 bg-blue-600 mx-auto rounded-full"></div>
