@@ -145,7 +145,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                  decoys = shuffleArray<Country>(fallbackPool).slice(0, OPTIONS_COUNT - 1);
             }
             const optionCountries = shuffleArray([intruder, ...decoys]);
-            return optionCountries.map(c => getCountryName(c));
+            // Importante: No modo visual, usamos cca3 para evitar problemas de matching de nomes
+            return optionCountries.map(c => c.cca3);
         }
 
         let correctAnswer: string;
@@ -158,6 +159,11 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                 correctAnswer = currentCountry.capital[0];
                 wrongOptionPool = countries.filter(c => c.capital && c.capital.length > 0 && c.cca3 !== currentCountry.cca3);
                 getOptionValue = c => c.capital[0];
+                break;
+            case 'country-to-flag':
+                correctAnswer = currentCountry.cca3;
+                wrongOptionPool = countries.filter(c => c.cca3 !== currentCountry.cca3);
+                getOptionValue = c => c.cca3;
                 break;
             default:
                 correctAnswer = getCountryName(currentCountry);
@@ -177,7 +183,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
         
         const correctAnswer = (mode === 'flag-to-capital' || mode === 'country-to-capital') 
             ? currentCountry.capital[0] 
-            : getCountryName(currentCountry);
+            : (mode === 'country-to-flag' || mode === 'odd-one-out') ? currentCountry.cca3 : getCountryName(currentCountry);
         
         const isCorrect = answer === correctAnswer;
         setSelectedAnswer(answer);
@@ -230,7 +236,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
             setIsFiftyFiftyUsedThisTurn(true);
             const correctAnswer = (mode === 'flag-to-capital' || mode === 'country-to-capital')
                 ? currentCountry.capital[0]
-                : getCountryName(currentCountry);
+                : (mode === 'country-to-flag' || mode === 'odd-one-out') ? currentCountry.cca3 : getCountryName(currentCountry);
             const wrongOptions = options.filter(opt => opt !== correctAnswer);
             setDisabledOptions(shuffleArray(wrongOptions).slice(0, 2));
         }
@@ -267,8 +273,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                         {quizHistory.map((item, idx) => (
                             <div key={idx} className={`p-5 rounded-3xl border-2 ${item.isCorrect ? 'bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30' : 'bg-red-50/50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30'}`}>
                                 <div className="flex gap-4 items-start">
-                                    <div className="w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 shadow-sm border border-white/40">
-                                        <img src={item.question.flags.svg} alt="" className="w-full h-full object-cover" />
+                                    <div className="w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 shadow-sm border border-white/40 bg-white">
+                                        <img src={item.question.flags.svg} alt="" className="w-full h-full object-contain" />
                                     </div>
                                     <div className="flex-grow">
                                         <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Question {idx + 1}</p>
@@ -367,8 +373,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
 
                 <div className="flex flex-col items-center gap-8">
                     {currentCountry && (mode === 'flag-to-country' || mode === 'flag-to-capital') && (
-                        <div className="w-full max-w-sm aspect-[3/2] rounded-2xl overflow-hidden shadow-xl border-4 border-slate-50 dark:border-slate-800 transform transition-transform hover:scale-105">
-                            <img src={currentCountry.flags.svg} alt="" className="w-full h-full object-cover" />
+                        <div className="w-full max-w-sm aspect-[3/2] rounded-2xl overflow-hidden shadow-xl border-4 border-slate-50 dark:border-slate-800 transform transition-transform hover:scale-105 bg-white">
+                            <img src={currentCountry.flags.svg} alt="" className="w-full h-full object-contain" />
                         </div>
                     )}
                     {currentCountry && mode === 'shape-to-country' && (
@@ -409,11 +415,15 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                 {/* Answers Grid */}
                 <div className={`mt-10 grid gap-4 ${mode === 'country-to-flag' || mode === 'odd-one-out' ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
                     {options.map((opt, i) => {
-                        const isCorrect = isAnswered && opt === ((mode === 'flag-to-capital' || mode === 'country-to-capital') ? currentCountry.capital[0] : getCountryName(currentCountry));
+                        const isVisualMode = mode === 'country-to-flag' || mode === 'odd-one-out';
+                        const correctAnswer = (mode === 'flag-to-capital' || mode === 'country-to-capital') ? currentCountry.capital[0] : (isVisualMode ? currentCountry.cca3 : getCountryName(currentCountry));
+                        
+                        const isCorrect = isAnswered && opt === correctAnswer;
                         const isWrong = isAnswered && opt === selectedAnswer && !isCorrect;
                         const isDisabled = disabledOptions.includes(opt);
-                        const countryForFlag = mode === 'country-to-flag' || mode === 'odd-one-out' ? countries.find(c => getCountryName(c) === opt) : null;
-                        const isVisualMode = mode === 'country-to-flag' || mode === 'odd-one-out';
+                        
+                        // Para modos visuais, opt é o cca3. Para outros, é o nome/capital.
+                        const countryForFlag = isVisualMode ? countries.find(c => c.cca3 === opt) : null;
 
                         return (
                             <button
@@ -423,22 +433,22 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                                 className={`relative group rounded-2xl border-2 transition-all duration-200 active:scale-95 text-left overflow-hidden flex flex-col items-center justify-center
                                     ${isVisualMode ? 'aspect-[3/2] p-0' : 'p-4'}
                                     ${isDisabled ? 'opacity-0 pointer-events-none' : 'opacity-100'}
-                                    ${!isAnswered ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''}
+                                    ${!isAnswered ? 'bg-slate-100 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''}
                                     ${isCorrect ? 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20 ring-4 ring-green-500/10 z-10' : ''}
                                     ${isWrong ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20 z-10' : ''}
-                                    ${isAnswered && !isCorrect && !isWrong ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-transparent opacity-60' : ''}
+                                    ${isAnswered && !isCorrect && !isWrong ? 'bg-slate-200 dark:bg-slate-900 text-slate-400 border-transparent opacity-60' : ''}
                                 `}
                             >
                                 <div className={`flex items-center gap-3 w-full h-full ${isVisualMode ? 'p-0' : 'p-1'}`}>
                                     {countryForFlag ? (
-                                        <div className="w-full h-full overflow-hidden">
-                                            <img src={countryForFlag.flags.svg} alt={t('flagOf', {country: opt})} className="w-full h-full object-cover" />
+                                        <div className="w-full h-full overflow-hidden bg-white flex items-center justify-center">
+                                            <img src={countryForFlag.flags.svg} alt={t('flagOf', {country: getCountryName(countryForFlag)})} className="w-full h-full object-contain" />
                                         </div>
                                     ) : (
                                         <span className="font-black text-sm tracking-tight w-full text-center">{opt}</span>
                                     )}
-                                    {/* Hide text in visual mode so user has to guess by flag alone */}
-                                    {isVisualMode && <span className="sr-only">{opt}</span>}
+                                    {/* Acessibilidade: Hide text in visual mode so user has to guess by flag alone */}
+                                    {isVisualMode && <span className="sr-only">{countryForFlag ? getCountryName(countryForFlag) : opt}</span>}
                                 </div>
                                 {isCorrect && <div className="absolute top-2 right-2 bg-white text-green-500 rounded-full p-1.5 shadow-xl animate-bounce z-20"><CheckIcon /></div>}
                                 {isWrong && <div className="absolute top-2 right-2 bg-white text-red-500 rounded-full p-1.5 shadow-xl z-20"><CrossIcon /></div>}
