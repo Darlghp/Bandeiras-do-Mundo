@@ -1,0 +1,109 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z'/%3E%3C/svg%3E" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flags of the World Explorer</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://cdn.jsdelivr.net/npm/@google/genai@latest/+esm"
+  }
+}
+</script>
+<style>
+  @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+  .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+
+  @keyframes fade-in-up { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+  .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
+
+  @keyframes fade-in-up-short { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+  .animate-fade-in-up-short { animation: fade-in-up-short 0.4s ease-out forwards; }
+
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .shimmer-bg { position: relative; overflow: hidden; }
+  .shimmer-bg::after {
+    content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%);
+    background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.2) 20%, rgba(255, 255, 255, 0.5) 60%, rgba(255, 255, 255, 0));
+    animation: shimmer 1.5s infinite;
+  }
+  .dark .shimmer-bg::after {
+    background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0));
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  body.keyboard-visible .hide-on-keyboard { display: none; }
+
+  .magic-line {
+    position: absolute; bottom: 0; height: 3px; background-color: #3b82f6; border-radius: 9999px;
+    transition: left 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+  .dark .magic-line { background-color: #38bdf8; }
+
+  @keyframes pulse-light {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+  }
+  .animate-pulse-light { animation: pulse-light 2s infinite; }
+  
+  /* Modern Mesh Background */
+  body::before {
+    content: ''; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80"><rect fill="%23f8fafc" width="80" height="80"/><g fill-rule="evenodd"><g fill="%23f1f5f9" fill-opacity="0.5"><path d="M0 0h40v40H0zM40 40h40v40H40z"/></g></g></svg>');
+    z-index: -1;
+  }
+  
+  .dark body::before {
+     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80"><rect fill="%23020617" width="80" height="80"/><g fill-rule="evenodd"><g fill="%230f172a" fill-opacity="0.3"><path d="M0 0h40v40H0zM40 40h40v40H40z"/></g></g></svg>');
+  }
+
+  @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+  .animate-float { animation: float 6s ease-in-out infinite; }
+
+  .glint-container { position: relative; overflow: hidden; }
+  .glint-container::after {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 20%; height: 200%;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+    transform: rotate(25deg) translateX(-250%); transition: transform 0.8s ease-in-out;
+  }
+  .glint-container:hover::after { transform: rotate(25deg) translateX(250%); }
+
+  .unique-flag-glow::before {
+    content: ''; position: absolute; top: 50%; left: 50%; width: 800px; height: 800px;
+    background-image: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(56, 189, 248, 0) 60%);
+    transform: translate(-50%, -50%); z-index: 0; pointer-events: none; animation: spin-glow 20s linear infinite;
+  }
+  @keyframes spin-glow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+</style>
+<script>
+  (function() {
+    try {
+      const theme = localStorage.getItem('theme');
+      if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (_) {}
+  })();
+</script>
+</head>
+  <body class="bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+    <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
+  </body>
+</html>

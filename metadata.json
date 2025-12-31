@@ -1,0 +1,5 @@
+{
+  "name": "Flags of the World Explorer",
+  "description": "An interactive web application to explore flags from countries all around the world. Discover insights, test your knowledge with the quiz, and compare nations side-by-side.",
+  "requestFramePermissions": []
+}
