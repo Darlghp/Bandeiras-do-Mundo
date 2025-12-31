@@ -252,7 +252,11 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     all: "All",
     allQuestions: "All Questions",
     numberOfQuestions: "{{count}} Questions",
-    selectNumberOfQuestions: "Select Number of Questions"
+    selectNumberOfQuestions: "Select Number of Questions",
+    combo: "COMBO X{{n}}",
+    timeLeft: "{{n}}s",
+    speedBonus: "Speed Bonus: +{{n}}",
+    outOfTime: "Out of time!"
   },
   pt: {
     title: "Explorador de Bandeiras do Mundo",
@@ -496,7 +500,11 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     all: "Todas",
     allQuestions: "Todas as Questões",
     numberOfQuestions: "{{count}} Questões",
-    selectNumberOfQuestions: "Selecione o Número de Questões"
+    selectNumberOfQuestions: "Selecione o Número de Questões",
+    combo: "COMBO X{{n}}",
+    timeLeft: "{{n}}s",
+    speedBonus: "Bônus de Velocidade: +{{n}}",
+    outOfTime: "Tempo Esgotado!"
   }
 };
 

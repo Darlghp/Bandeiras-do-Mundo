@@ -14,7 +14,6 @@ const OPTIONS_COUNT = 4;
 const HINTS_PER_QUIZ = 3;
 const FIFTY_FIFTY_HINTS_PER_QUIZ = 1;
 
-// FIX: Replaced the simple sort-based shuffle with a more robust Fisher-Yates shuffle to fix type inference issues.
 function shuffleArray<T>(array: T[]): T[] {
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -24,16 +23,16 @@ function shuffleArray<T>(array: T[]): T[] {
     return newArray;
 }
 
-const Stat: React.FC<{ label: string, value: string }> = ({ label, value }) => (
-    <div className="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-slate-700/50 rounded-lg">
-        <h4 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">{label}</h4>
-        <p className="text-2xl font-bold text-gray-800 dark:text-slate-200 mt-1">{value}</p>
+const Stat: React.FC<{ label: string, value: string | number, color?: string }> = ({ label, value, color = "text-gray-800 dark:text-slate-200" }) => (
+    <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800/50 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+        <h4 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">{label}</h4>
+        <p className={`text-xl font-black mt-1 ${color}`}>{value}</p>
     </div>
 );
 
 interface QuizHistoryItem {
     question: Country;
-    userAnswer: string;
+    userAnswer: string | null;
     correctAnswer: string;
     isCorrect: boolean;
     options: string[];
@@ -59,7 +58,6 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
     const [startTime, setStartTime] = useState(Date.now());
     const [endTime, setEndTime] = useState(Date.now());
     const [error, setError] = useState<string | null>(null);
-
     const [quizHistory, setQuizHistory] = useState<QuizHistoryItem[]>([]);
     const [streak, setStreak] = useState(0);
     const [bestStreak, setBestStreak] = useState(0);
@@ -69,9 +67,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
     const [isFiftyFiftyUsedThisTurn, setIsFiftyFiftyUsedThisTurn] = useState(false);
     const [disabledOptions, setDisabledOptions] = useState<string[]>([]);
     const [isReviewing, setIsReviewing] = useState(false);
-    const reviewListRef = useRef<HTMLDivElement>(null);
     const [actualQuizLength, setActualQuizLength] = useState(0);
-
+    const [shake, setShake] = useState(false);
 
     const startNewQuiz = useCallback(() => {
         let difficultyPool: Country[];
@@ -115,26 +112,15 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
         setStreak(0);
         setBestStreak(0);
         setHintsRemaining(HINTS_PER_QUIZ);
-        setIsHintUsedThisTurn(false);
         setFiftyFiftyHintsRemaining(FIFTY_FIFTY_HINTS_PER_QUIZ);
-        setIsFiftyFiftyUsedThisTurn(false);
-        setDisabledOptions([]);
-        setIsReviewing(false);
     }, [countries, mode, difficulty, quizLength]);
 
     useEffect(() => {
         startNewQuiz();
     }, [startNewQuiz]);
-    
-    useEffect(() => {
-        if (isReviewing && reviewListRef.current) {
-            reviewListRef.current.scrollTop = 0;
-        }
-    }, [isReviewing]);
 
     const currentCountry = useMemo(() => quizQuestions[currentQuestionIndex], [quizQuestions, currentQuestionIndex]);
-
-    const getCountryName = useCallback((c: Country) => language === 'pt' ? c.translations.por.common : c.name.common, [language]);
+    const getCountryName = useCallback((c: Country) => language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common, [language]);
 
     const options = useMemo(() => {
         if (!currentCountry) return [];
@@ -150,18 +136,14 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                 if (intruderContinents.has(continent)) continue;
                 const decoyPool = countries.filter(c => c.continents.includes(continent) && c.cca3 !== intruder.cca3);
                 if (decoyPool.length >= OPTIONS_COUNT - 1) {
-                    // FIX: Explicitly provide the generic type to shuffleArray to resolve type inference issue.
                     decoys = shuffleArray<Country>(decoyPool).slice(0, OPTIONS_COUNT - 1);
                     break;
                 }
             }
-            
             if (decoys.length < OPTIONS_COUNT - 1) {
                  const fallbackPool = countries.filter(c => c.cca3 !== intruder.cca3 && !c.continents.some(cont => intruderContinents.has(cont)));
-                 // FIX: Explicitly provide the generic type to shuffleArray to resolve type inference issue.
                  decoys = shuffleArray<Country>(fallbackPool).slice(0, OPTIONS_COUNT - 1);
             }
-    
             const optionCountries = shuffleArray([intruder, ...decoys]);
             return optionCountries.map(c => getCountryName(c));
         }
@@ -177,16 +159,9 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                 wrongOptionPool = countries.filter(c => c.capital && c.capital.length > 0 && c.cca3 !== currentCountry.cca3);
                 getOptionValue = c => c.capital[0];
                 break;
-            default: // flag-to-country, shape-to-country, country-to-flag
+            default:
                 correctAnswer = getCountryName(currentCountry);
                 wrongOptionPool = countries.filter(c => c.cca3 !== currentCountry.cca3);
-                if (difficulty === 'hard') {
-                    const continent = currentCountry.continents[0];
-                    const continentalPool = wrongOptionPool.filter(c => c.continents.includes(continent));
-                    if (continentalPool.length >= OPTIONS_COUNT - 1) {
-                        wrongOptionPool = continentalPool;
-                    }
-                }
                 getOptionValue = getCountryName;
         }
 
@@ -195,17 +170,14 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
             .map(getOptionValue);
 
         return shuffleArray([correctAnswer, ...wrongOptions]);
-    }, [currentCountry, countries, getCountryName, mode, difficulty]);
+    }, [currentCountry, countries, getCountryName, mode]);
 
-    const handleAnswer = (answer: string) => {
-        if (isAnswered) return;
+    const handleAnswer = (answer: string | null) => {
+        if (isAnswered || !currentCountry) return;
         
-        let correctAnswer: string;
-        if (mode === 'flag-to-capital' || mode === 'country-to-capital') {
-            correctAnswer = currentCountry.capital[0];
-        } else {
-            correctAnswer = getCountryName(currentCountry);
-        }
+        const correctAnswer = (mode === 'flag-to-capital' || mode === 'country-to-capital') 
+            ? currentCountry.capital[0] 
+            : getCountryName(currentCountry);
         
         const isCorrect = answer === correctAnswer;
         setSelectedAnswer(answer);
@@ -215,11 +187,13 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
             setScore(prev => prev + 1);
             setStreak(prev => {
                 const newStreak = prev + 1;
-                setBestStreak(currentBest => Math.max(currentBest, newStreak));
+                setBestStreak(curr => Math.max(curr, newStreak));
                 return newStreak;
             });
         } else {
             setStreak(0);
+            setShake(true);
+            setTimeout(() => setShake(false), 500);
         }
 
         setQuizHistory(prev => [
@@ -239,116 +213,77 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
         } else {
             setEndTime(Date.now());
             setQuizState('results');
-            // Track quiz results for achievements
             trackQuizResult(score, actualQuizLength, bestStreak);
         }
     };
 
     const handleUseHint = () => {
-        if (hintsRemaining > 0 && !isHintUsedThisTurn) {
+        if (hintsRemaining > 0 && !isHintUsedThisTurn && !isAnswered && currentCountry) {
             setHintsRemaining(prev => prev - 1);
             setIsHintUsedThisTurn(true);
         }
     };
     
     const handleUseFiftyFiftyHint = () => {
-        if (fiftyFiftyHintsRemaining > 0 && !isFiftyFiftyUsedThisTurn && !isAnswered) {
+        if (fiftyFiftyHintsRemaining > 0 && !isFiftyFiftyUsedThisTurn && !isAnswered && currentCountry) {
             setFiftyFiftyHintsRemaining(prev => prev - 1);
             setIsFiftyFiftyUsedThisTurn(true);
-    
             const correctAnswer = (mode === 'flag-to-capital' || mode === 'country-to-capital')
                 ? currentCountry.capital[0]
                 : getCountryName(currentCountry);
-            
             const wrongOptions = options.filter(opt => opt !== correctAnswer);
-            const shuffledWrongOptions = shuffleArray(wrongOptions);
-            setDisabledOptions(shuffledWrongOptions.slice(0, 2));
+            setDisabledOptions(shuffleArray(wrongOptions).slice(0, 2));
         }
     };
-
-    const getScoreFeedback = () => {
-        if (actualQuizLength === 0) return t('scoreFeedbackPoor');
-        const percentage = (score / actualQuizLength) * 100;
-        if (percentage >= 90) return t('scoreFeedbackExcellent');
-        if (percentage >= 70) return t('scoreFeedbackGood');
-        if (percentage >= 50) return t('scoreFeedbackAverage');
-        return t('scoreFeedbackPoor');
-    };
-
-    const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
-    const CrossIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
-    const LightbulbIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.5c-2.485 0-4.5 2.015-4.5 4.5 0 1.44.693 2.723 1.763 3.565.175.14.237.374.15.562l-.5 1.125A1.5 1.5 0 008 15.5h4a1.5 1.5 0 001.413-1.748l-.5-1.125c-.087-.188-.025-.422.15-.562A4.482 4.482 0 0014.5 8C14.5 5.515 12.485 3.5 10 3.5zM8.5 16.5a1.5 1.5 0 103 0h-3z" /></svg>;
-
-    const getButtonClass = (option: string, correctAnswer: string) => {
-        if (!isAnswered) {
-             return "bg-white dark:bg-slate-700 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-600";
-        }
-        
-        const isCorrect = option === correctAnswer;
-        const isSelected = option === selectedAnswer;
-    
-        if (isCorrect) {
-            return "bg-green-100 dark:bg-green-900/50 border-green-500 text-green-800 dark:text-green-300";
-        }
-        
-        if (isSelected) { // And not correct (because of the check above)
-            return "bg-red-100 dark:bg-red-900/50 border-red-500 text-red-800 dark:text-red-300";
-        }
-        
-        return "bg-white dark:bg-slate-700 opacity-60 cursor-not-allowed text-gray-800 dark:text-gray-200";
-    };
-
-    if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
-    if (quizQuestions.length === 0 || !currentCountry) return <div className="text-center py-20">{t('loadingFlags')}</div>;
 
     if (quizState === 'results') {
         const totalTime = ((endTime - startTime) / 1000).toFixed(1);
-        const avgTime = actualQuizLength > 0 ? (parseFloat(totalTime) / actualQuizLength).toFixed(1) : '0.0';
-        const percentage = actualQuizLength > 0 ? Math.round((score / actualQuizLength) * 100) : 0;
+        const percentage = Math.round((score / actualQuizLength) * 100);
 
-        const getRank = () => {
-            if (percentage >= 95) return { title: t('rankMaster'), color: 'text-amber-400' };
-            if (percentage >= 80) return { title: t('rankExpert'), color: 'text-violet-400' };
-            if (percentage >= 60) return { title: t('rankAdept'), color: 'text-blue-400' };
-            if (percentage >= 40) return { title: t('rankApprentice'), color: 'text-green-400' };
-            return { title: t('rankNovice'), color: 'text-gray-400' };
+        const getScoreFeedback = () => {
+            if (percentage >= 90) return t('scoreFeedbackExcellent');
+            if (percentage >= 70) return t('scoreFeedbackGood');
+            if (percentage >= 40) return t('scoreFeedbackAverage');
+            return t('scoreFeedbackPoor');
         };
-        const rank = getRank();
 
-        const radius = 54;
-        const circumference = 2 * Math.PI * radius;
-        const strokeDashoffset = circumference - (percentage / 100) * circumference;
+        const getRankInfo = () => {
+            if (percentage >= 95) return { title: t('rankMaster'), color: 'text-amber-400', bg: 'bg-amber-400/10', icon: '👑' };
+            if (percentage >= 80) return { title: t('rankExpert'), color: 'text-violet-400', bg: 'bg-violet-400/10', icon: '💎' };
+            if (percentage >= 60) return { title: t('rankAdept'), color: 'text-blue-400', bg: 'bg-blue-400/10', icon: '🏆' };
+            if (percentage >= 40) return { title: t('rankApprentice'), color: 'text-green-400', bg: 'bg-green-400/10', icon: '🛡️' };
+            return { title: t('rankNovice'), color: 'text-slate-400', bg: 'bg-slate-400/10', icon: '🔰' };
+        };
+        const rank = getRankInfo();
 
         if (isReviewing) {
             return (
-                <div className="max-w-2xl mx-auto animate-fade-in" ref={reviewListRef}>
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('quizReviewTitle')}</h2>
-                        <button onClick={() => setIsReviewing(false)} className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">{t('quizBackToSummary')}</button>
+                <div className="max-w-2xl mx-auto animate-fade-in">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-3xl font-black text-gray-900 dark:text-white">{t('quizReviewTitle')}</h2>
+                        <button onClick={() => setIsReviewing(false)} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-full font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">{t('quizBackToSummary')}</button>
                     </div>
-                    <div className="space-y-6">
-                        {quizHistory.map((item, index) => (
-                            <div key={index} className="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-lg">
-                                <p className="font-bold text-gray-800 dark:text-gray-200 mb-3">{t('questionOf', { current: (index + 1).toString(), total: actualQuizLength.toString() })}</p>
-                                <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-slate-700 rounded-lg mb-4 flex items-center justify-center p-2">
-                                    <img src={item.question.flags.svg} alt="Flag" className="w-full h-full object-contain drop-shadow-md max-h-32"/>
-                                </div>
-                                <div className="space-y-2">
-                                    {item.options.map(option => {
-                                        const isCorrect = option === item.correctAnswer;
-                                        const isUserChoice = option === item.userAnswer;
-                                        let borderColor = 'border-gray-200 dark:border-slate-600';
-                                        if (isCorrect) borderColor = 'border-green-500';
-                                        else if (isUserChoice) borderColor = 'border-red-500';
-
-                                        return (
-                                            <div key={option} className={`flex items-center justify-between p-3 rounded-lg border-2 ${borderColor}`}>
-                                                <span className={`font-semibold ${isCorrect ? 'text-green-700 dark:text-green-300' : isUserChoice ? 'text-red-700 dark:text-red-300' : 'text-gray-700 dark:text-gray-300'}`}>{option}</span>
-                                                {isCorrect && <span className="text-green-500"><CheckIcon /></span>}
-                                                {!isCorrect && isUserChoice && <span className="text-red-500"><CrossIcon /></span>}
-                                            </div>
-                                        );
-                                    })}
+                    <div className="space-y-4">
+                        {quizHistory.map((item, idx) => (
+                            <div key={idx} className={`p-5 rounded-3xl border-2 ${item.isCorrect ? 'bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30' : 'bg-red-50/50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30'}`}>
+                                <div className="flex gap-4 items-start">
+                                    <div className="w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 shadow-sm border border-white/40">
+                                        <img src={item.question.flags.svg} alt="" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex-grow">
+                                        <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Question {idx + 1}</p>
+                                        <h4 className="font-bold text-slate-800 dark:text-slate-100 leading-tight">
+                                            {item.isCorrect ? t('quizCorrect') : t('quizIncorrect')}
+                                        </h4>
+                                        <p className="text-sm mt-2 text-slate-600 dark:text-slate-400">
+                                            {t('quizCorrectAnswer')} <span className="font-bold text-slate-900 dark:text-white">{item.correctAnswer}</span>
+                                        </p>
+                                        {!item.isCorrect && item.userAnswer && (
+                                            <p className="text-sm text-red-500 line-through mt-1">
+                                                {t('quizYourAnswer')} {item.userAnswer}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -358,140 +293,165 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
         }
 
         return (
-            <div className="max-w-2xl mx-auto text-center bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl animate-fade-in">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('quizResults')}</h2>
-                <p className={`text-xl font-semibold ${rank.color} mb-4`}>{rank.title}</p>
-
-                <div className="relative inline-flex items-center justify-center my-4 w-36 h-36">
-                    <svg className="w-full h-full" viewBox="0 0 120 120">
-                        <circle className="text-gray-200 dark:text-slate-700" strokeWidth="10" stroke="currentColor" fill="transparent" r="54" cx="60" cy="60" />
-                        <circle
-                            className={`${rank.color} transition-all duration-1000 ease-out`}
-                            strokeWidth="10"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={strokeDashoffset}
-                            strokeLinecap="round"
-                            stroke="currentColor"
-                            fill="transparent"
-                            r="54"
-                            cx="60"
-                            cy="60"
-                            style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}
-                        />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-4xl font-extrabold text-gray-800 dark:text-gray-100">{score}</span>
-                        <span className="text-lg text-gray-500 dark:text-gray-400">/ {actualQuizLength}</span>
+            <div className="max-w-2xl mx-auto text-center animate-fade-in space-y-8">
+                <div className={`inline-block p-10 rounded-[3rem] shadow-2xl relative ${rank.bg}`}>
+                    <div className="absolute -top-6 -right-6 text-6xl animate-bounce">{rank.icon}</div>
+                    <h2 className="text-2xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">{t('quizResults')}</h2>
+                    <p className={`text-5xl font-black ${rank.color} mb-6 tracking-tighter`}>{rank.title}</p>
+                    
+                    <div className="flex items-baseline justify-center gap-2">
+                        <span className="text-7xl font-black text-slate-900 dark:text-white tracking-tighter">{score}</span>
+                        <span className="text-2xl font-bold text-slate-400">/ {actualQuizLength}</span>
                     </div>
                 </div>
                 
-                <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{getScoreFeedback()}</p>
+                <p className="text-xl text-slate-600 dark:text-slate-400 font-medium px-4">{getScoreFeedback()}</p>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-                    <Stat label={t('quizAccuracy')} value={`${percentage}%`} />
-                    <Stat label={t('quizBestStreak')} value={bestStreak.toString()} />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <Stat label={t('quizAccuracy')} value={`${percentage}%`} color={rank.color} />
+                    <Stat label={t('quizBestStreak')} value={bestStreak} color="text-orange-500" />
                     <Stat label={t('quizTime')} value={t('quizSeconds', { seconds: totalTime })} />
-                    <Stat label={t('quizAvgTime')} value={t('quizSeconds', { seconds: avgTime })} />
+                    <Stat label={t('quizRank')} value={rank.icon} />
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onClick={startNewQuiz} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800 transition-all">{t('playAgain')}</button>
-                    <button onClick={() => setIsReviewing(true)} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-slate-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800 transition-all">{t('quizReviewAnswers')}</button>
+                    <button onClick={startNewQuiz} className="flex-1 py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95">{t('playAgain')}</button>
+                    <button onClick={() => setIsReviewing(true)} className="flex-1 py-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:bg-slate-50 transition-all active:scale-95">{t('quizReviewAnswers')}</button>
                 </div>
             </div>
         );
     }
-    
-    const progressPercentage = actualQuizLength > 0 ? ((currentQuestionIndex + 1) / actualQuizLength) * 100 : 0;
 
-    const questionTitle = {
-        'flag-to-country': t('whichCountry'),
-        'country-to-flag': t('whichFlag', { country: getCountryName(currentCountry) }),
-        'flag-to-capital': t('whichCapital'),
-        'country-to-capital': t('whichCapitalForCountry', { country: getCountryName(currentCountry) }),
-        'shape-to-country': t('whichCoatOfArms'),
-        'flagle': 'Should not be used here',
-        'odd-one-out': t('whichIsTheOddOneOut'),
-    }[mode];
+    if (quizState === 'playing' && !currentCountry) {
+        return (
+            <div className="flex justify-center items-center py-20">
+                <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+            </div>
+        );
+    }
 
-    const correctAnswerText = (mode === 'flag-to-capital' || mode === 'country-to-capital') ? currentCountry.capital[0] : getCountryName(currentCountry);
+    const progress = actualQuizLength > 0 ? ((currentQuestionIndex + 1) / actualQuizLength) * 100 : 0;
 
     return (
-        <div className="max-w-2xl mx-auto">
-            <div className="mb-4">
-                <div className="flex justify-between items-center mb-1 text-sm font-semibold">
-                    <p className="text-blue-600 dark:text-blue-400 uppercase tracking-wider">{t('questionOf', { current: (currentQuestionIndex + 1).toString(), total: actualQuizLength.toString() })}</p>
-                    <div className="flex items-center gap-4">
-                        {streak > 1 && <p className="text-orange-500 animate-fade-in-up-short">{t('quizStreak', { count: streak.toString() })}</p>}
-                        <p className="text-gray-600 dark:text-gray-400">{score} / {currentQuestionIndex}</p>
+        <div className="max-w-2xl mx-auto space-y-6">
+            {/* Header: Progress & Streak */}
+            <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-3xl backdrop-blur-md border border-white/50 dark:border-slate-800/50">
+                <div className="flex justify-between items-center mb-3">
+                    <span className="text-xs font-black text-blue-600 dark:text-sky-400 uppercase tracking-[0.2em]">
+                        {t('questionOf', { current: (currentQuestionIndex + 1).toString(), total: actualQuizLength.toString() })}
+                    </span>
+                    <div className="flex items-center gap-3">
+                        {streak > 1 && (
+                            <span className="flex items-center gap-1.5 px-3 py-1 bg-orange-500 text-white rounded-full text-xs font-black animate-pulse">
+                                <span>🔥</span> {t('quizStreak', { count: streak.toString() })}
+                            </span>
+                        )}
+                        <span className="text-xs font-bold text-slate-500">{score} PTS</span>
                     </div>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5"><div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercentage}%` }}></div></div>
+                <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
+                </div>
             </div>
-            
-            <div key={currentQuestionIndex} className="animate-fade-in">
-                <h2 className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1 mb-4 min-h-[64px] flex items-center justify-center">{questionTitle}</h2>
 
-                { (mode === 'flag-to-country' || mode === 'flag-to-capital') &&
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg mb-6"><div className="aspect-w-16 aspect-h-9"><img src={currentCountry.flags.svg} alt="Flag" className="w-full h-full object-contain drop-shadow-md"/></div></div>
-                }
-                { mode === 'shape-to-country' && currentCountry.coatOfArms.svg &&
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg mb-6 flex justify-center items-center h-48"><img src={currentCountry.coatOfArms.svg} alt="Coat of Arms" className="w-auto h-full object-contain drop-shadow-md"/></div>
-                }
+            {/* Main Question Card */}
+            <div className={`relative bg-white dark:bg-slate-900 p-6 sm:p-10 rounded-[2.5rem] shadow-2xl transition-all duration-300 ${shake ? 'animate-bounce' : ''}`}>
+                 <h2 className="text-center text-2xl font-black text-slate-800 dark:text-white mb-8 min-h-[60px] flex items-center justify-center">
+                    {mode === 'flag-to-country' ? t('whichCountry') : 
+                     mode === 'flag-to-capital' ? t('whichCapital') :
+                     mode === 'country-to-flag' ? t('whichFlag', { country: getCountryName(currentCountry) }) :
+                     mode === 'shape-to-country' ? t('whichCoatOfArms') : 
+                     mode === 'country-to-capital' ? t('whichCapitalForCountry', { country: getCountryName(currentCountry) }) :
+                     t('whichIsTheOddOneOut')}
+                </h2>
 
-                <div className="min-h-[44px] mb-4 text-center">
-                    { !isAnswered ? (
-                        <div className="flex items-center justify-center space-x-2">
-                             <button onClick={handleUseHint} disabled={hintsRemaining === 0 || isHintUsedThisTurn} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <LightbulbIcon />
-                                {hintsRemaining > 0 ? t('quizHint', { count: hintsRemaining.toString() }) : t('quizNoHints')}
-                            </button>
-                             <button onClick={handleUseFiftyFiftyHint} disabled={fiftyFiftyHintsRemaining === 0 || isFiftyFiftyUsedThisTurn} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-sky-800 dark:text-sky-200 bg-sky-100 dark:bg-sky-900/50 hover:bg-sky-200 dark:hover:bg-sky-900 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <span className="font-mono font-bold">50:50</span>
-                                {fiftyFiftyHintsRemaining > 0 ? `(${fiftyFiftyHintsRemaining})` : ''}
-                            </button>
+                <div className="flex flex-col items-center gap-8">
+                    {currentCountry && (mode === 'flag-to-country' || mode === 'flag-to-capital') && (
+                        <div className="w-full max-w-sm aspect-[3/2] rounded-2xl overflow-hidden shadow-xl border-4 border-slate-50 dark:border-slate-800 transform transition-transform hover:scale-105">
+                            <img src={currentCountry.flags.svg} alt="" className="w-full h-full object-cover" />
                         </div>
-                    ) : ( isHintUsedThisTurn && 
-                        <p className="text-sm text-gray-600 dark:text-gray-400 animate-fade-in-up-short">
-                           {t('continentHint', { continent: currentCountry.continents.map(c => CONTINENT_NAMES[c]?.[language] || c).join(', ') })}
-                        </p>
-                    )
-                    }
+                    )}
+                    {currentCountry && mode === 'shape-to-country' && (
+                        <div className="w-full max-w-xs h-40 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-6">
+                            <img src={currentCountry.coatOfArms.svg} alt="" className="h-full w-auto object-contain drop-shadow-lg" />
+                        </div>
+                    )}
+
+                    {/* Hints & Tools */}
+                    {!isAnswered && (
+                        <div className="flex gap-2">
+                             <button 
+                                onClick={handleUseHint} 
+                                disabled={hintsRemaining === 0 || isHintUsedThisTurn}
+                                className="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-amber-200 transition-colors disabled:opacity-30"
+                             >
+                                💡 {t('quizHint', { count: hintsRemaining.toString() })}
+                             </button>
+                             <button 
+                                onClick={handleUseFiftyFiftyHint} 
+                                disabled={fiftyFiftyHintsRemaining === 0 || isFiftyFiftyUsedThisTurn}
+                                className="px-4 py-2 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-sky-200 transition-colors disabled:opacity-30"
+                             >
+                                🎭 {t('quiz5050Hint', { count: fiftyFiftyHintsRemaining.toString() })}
+                             </button>
+                        </div>
+                    )}
+
+                    {isHintUsedThisTurn && currentCountry && (
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 animate-fade-in-up">
+                            <p className="text-xs font-bold text-blue-700 dark:text-blue-300">
+                                {t('continentHint', { continent: currentCountry.continents.map(c => CONTINENT_NAMES[c]?.[language] || c).join(', ') })}
+                            </p>
+                        </div>
+                    )}
                 </div>
 
-                { (mode === 'flag-to-country' || mode === 'flag-to-capital' || mode === 'shape-to-country' || mode === 'country-to-capital') &&
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {options.map(option => (
-                            <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered || disabledOptions.includes(option)} className={`w-full text-left p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 active:scale-95 flex items-center justify-between ${getButtonClass(option, correctAnswerText)} ${disabledOptions.includes(option) ? 'opacity-50 line-through' : ''}`}>
-                                <span className="font-semibold">{option}</span>
-                                {isAnswered && option === correctAnswerText && <span className="text-green-500"><CheckIcon /></span>}
-                                {isAnswered && option === selectedAnswer && option !== correctAnswerText && <span className="text-red-500"><CrossIcon /></span>}
-                            </button>
-                        ))}
-                    </div>
-                }
-                { (mode === 'country-to-flag' || mode === 'odd-one-out') &&
-                     <div className="grid grid-cols-2 gap-4 mb-8">
-                        {options.map(option => {
-                            const countryOption = countries.find(c => getCountryName(c) === option);
-                            return (
-                                <button key={option} onClick={() => handleAnswer(option)} disabled={isAnswered || !countryOption || disabledOptions.includes(option)} className={`relative p-2 rounded-lg shadow-md transition-all duration-300 ease-in-out border-2 active:scale-95 ${getButtonClass(option, correctAnswerText)} ${disabledOptions.includes(option) ? 'opacity-50 line-through' : ''}`}>
-                                    <div className="aspect-w-16 aspect-h-9"><img src={countryOption?.flags.svg} alt={option} className="w-full h-full object-cover"/></div>
-                                     {isAnswered && (
-                                        <div className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 dark:bg-slate-900/80">
-                                            {option === correctAnswerText && <span className="text-green-500"><CheckIcon /></span>}
-                                            {option === selectedAnswer && option !== correctAnswerText && <span className="text-red-500"><CrossIcon /></span>}
+                {/* Answers Grid */}
+                <div className={`mt-10 grid gap-4 ${mode === 'country-to-flag' || mode === 'odd-one-out' ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
+                    {options.map((opt, i) => {
+                        const isCorrect = isAnswered && opt === ((mode === 'flag-to-capital' || mode === 'country-to-capital') ? currentCountry.capital[0] : getCountryName(currentCountry));
+                        const isWrong = isAnswered && opt === selectedAnswer && !isCorrect;
+                        const isDisabled = disabledOptions.includes(opt);
+                        const countryForFlag = mode === 'country-to-flag' || mode === 'odd-one-out' ? countries.find(c => getCountryName(c) === opt) : null;
+
+                        return (
+                            <button
+                                key={i}
+                                onClick={() => handleAnswer(opt)}
+                                disabled={isAnswered || isDisabled}
+                                className={`relative group p-4 rounded-2xl border-2 transition-all duration-200 active:scale-95 text-left
+                                    ${isDisabled ? 'opacity-0 pointer-events-none' : 'opacity-100'}
+                                    ${!isAnswered ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''}
+                                    ${isCorrect ? 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20 ring-4 ring-green-500/10' : ''}
+                                    ${isWrong ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20' : ''}
+                                    ${isAnswered && !isCorrect && !isWrong ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-transparent opacity-60' : ''}
+                                `}
+                            >
+                                <div className="flex items-center gap-3">
+                                    {countryForFlag && (
+                                        <div className="w-16 h-10 rounded shadow-sm overflow-hidden flex-shrink-0">
+                                            <img src={countryForFlag.flags.svg} alt="" className="w-full h-full object-cover" />
                                         </div>
                                     )}
-                                </button>
-                            );
-                        })}
-                    </div>
-                }
+                                    <span className="font-black text-sm tracking-tight">{opt}</span>
+                                </div>
+                                {isCorrect && <div className="absolute -top-2 -right-2 bg-white text-green-500 rounded-full p-1 shadow-md animate-bounce"><CheckIcon /></div>}
+                                {isWrong && <div className="absolute -top-2 -right-2 bg-white text-red-500 rounded-full p-1 shadow-md"><CrossIcon /></div>}
+                            </button>
+                        );
+                    })}
+                </div>
 
+                {/* Footer Actions */}
                 {isAnswered && (
-                    <div className="text-center mt-8 animate-fade-in-up">
-                        <button onClick={handleNextQuestion} className="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800">{t('nextQuestion')}</button>
+                    <div className="mt-10 flex justify-center animate-fade-in-up">
+                        <button 
+                            onClick={handleNextQuestion}
+                            className="px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl hover:scale-105 transition-transform shadow-xl flex items-center gap-3"
+                        >
+                            {t('nextQuestion')}
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                        </button>
                     </div>
                 )}
             </div>
@@ -504,26 +464,8 @@ interface QuizViewProps {
     onBackToExplorer: () => void;
 }
 
-const BuildingIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
-    </svg>
-);
-
-const FlagleIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M0 0h4v4H0zM5 0h4v4H5zM10 0h4v4h-4zM15 0h4v4h-4zM0 5h4v4H0zM5 5h4v4H5zM10 5h4v4h-4zM15 5h4v4h-4zM0 10h4v4H0zM5 10h4v4H5zM10 10h4v4h-4zM15 10h4v4h-4zM0 15h4v4H0zM5 15h4v4H5zM10 15h4v4h-4zM15 15h4v4h-4z" opacity="0.4" />
-        <path d="M5 5h4v4H5zM10 5h4v4h-4z" />
-    </svg>
-);
-
-const OddOneOutIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M3 3h4v4H3V3zm5 0h4v4H8V3zM3 8h4v4H3V8zm5 0h4v4H8V8z" opacity="0.6"/>
-        <path d="M13 3h4v4h-4V3zm0 5h4v4h-4V8z"/>
-        <path d="M3 13h4v4H3v-4zm5 0h4v4H8v-4z" opacity="0.6"/>
-    </svg>
-);
+const CheckIcon = () => <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
+const CrossIcon = () => <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
 
 
 const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
@@ -534,120 +476,101 @@ const QuizView: React.FC<QuizViewProps> = ({ countries, onBackToExplorer }) => {
     const [isQuizStarted, setIsQuizStarted] = useState(false);
 
     const quizCountries = useMemo(() => {
-        const countriesToExclude = new Set([
-            'Bouvet Island',
-            'Heard Island and McDonald Islands',
-            'United States Minor Outlying Islands',
-            'Svalbard and Jan Mayen',
-            'Saint Martin',
-        ]);
-        return countries.filter(country => !countriesToExclude.has(country.name.common));
+        const exclude = new Set(['Bouvet Island', 'Heard Island and McDonald Islands', 'United States Minor Outlying Islands', 'Svalbard and Jan Mayen', 'Saint Martin']);
+        return countries.filter(c => !exclude.has(c.name.common));
     }, [countries]);
 
-    const gameModes: { id: QuizMode, title: string, desc: string, icon: React.ReactNode }[] = [
-        { id: 'flag-to-country', title: t('modeFlagToCountry'), desc: t('modeFlagToCountryDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" /><path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" /></svg> },
-        { id: 'country-to-flag', title: t('modeCountryToFlag'), desc: t('modeCountryToFlagDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4a1 1 0 001 1h10a1 1 0 100-2H5a1 1 0 00-1 1zM2 9a1 1 0 001 1h14a1 1 0 100-2H3a1 1 0 00-1 1zm1 3a1 1 0 100 2h14a1 1 0 100-2H3zm-1 4a1 1 0 001 1h14a1 1 0 100-2H3a1 1 0 00-1 1z" clipRule="evenodd" /></svg> },
-        { id: 'flag-to-capital', title: t('modeFlagToCapital'), desc: t('modeFlagToCapitalDesc'), icon: <BuildingIcon /> },
-        { id: 'country-to-capital', title: t('modeCountryToCapital'), desc: t('modeCountryToCapitalDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>},
-        { id: 'shape-to-country', title: t('modeShapeToCountry'), desc: t('modeShapeToCountryDesc'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg> },
-        { id: 'odd-one-out', title: t('modeOddOneOut'), desc: t('modeOddOneOutDesc'), icon: <OddOneOutIcon /> },
-        { id: 'flagle', title: t('modeFlagle'), desc: t('modeFlagleDesc'), icon: <FlagleIcon /> },
-    ];
-
-    const difficultyLevels: { id: QuizDifficulty, title: string, desc: string }[] = [
-        { id: 'easy', title: t('difficultyEasy'), desc: t('difficultyEasyDesc') },
-        { id: 'medium', title: t('difficultyMedium'), desc: t('difficultyMediumDesc') },
-        { id: 'hard', title: t('difficultyHard'), desc: t('difficultyHardDesc') },
+    const gameModes: { id: QuizMode, title: string, desc: string, icon: string }[] = [
+        { id: 'flag-to-country', title: t('modeFlagToCountry'), desc: t('modeFlagToCountryDesc'), icon: '🏁' },
+        { id: 'country-to-flag', title: t('modeCountryToFlag'), desc: t('modeCountryToFlagDesc'), icon: '🗺️' },
+        { id: 'flag-to-capital', title: t('modeFlagToCapital'), desc: t('modeFlagToCapitalDesc'), icon: '🏛️' },
+        { id: 'country-to-capital', title: t('modeCountryToCapital'), desc: t('modeCountryToCapitalDesc'), icon: '📍' },
+        { id: 'shape-to-country', title: t('modeShapeToCountry'), desc: t('modeShapeToCountryDesc'), icon: '🛡️' },
+        { id: 'odd-one-out', title: t('modeOddOneOut'), desc: t('modeOddOneOutDesc'), icon: '🧩' },
+        { id: 'flagle', title: t('modeFlagle'), desc: t('modeFlagleDesc'), icon: '👾' },
     ];
 
     if (isQuizStarted) {
-        if (mode === 'flagle') {
-            return <Suspense fallback={<div>Loading...</div>}><FlagleGame countries={quizCountries} onBackToMenu={() => setIsQuizStarted(false)} /></Suspense>;
-        }
-        if (mode && difficulty) {
-            return <QuizGame countries={quizCountries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
-        }
+        if (mode === 'flagle') return <Suspense fallback={null}><FlagleGame countries={quizCountries} onBackToMenu={() => setIsQuizStarted(false)} /></Suspense>;
+        if (mode && difficulty) return <QuizGame countries={quizCountries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
     }
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in-up">
-            <div className="text-center mb-10">
-                <h1 className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">{t('quizSetupTitle')}</h1>
+        <div className="max-w-4xl mx-auto animate-fade-in-up pb-20">
+            <div className="text-center mb-12">
+                <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">{t('quizSetupTitle')}</h1>
+                <div className="h-1.5 w-24 bg-blue-600 mx-auto rounded-full"></div>
             </div>
             
-            <div className="space-y-10">
+            <div className="space-y-12">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('chooseMode')}</h2>
+                    <h2 className="text-xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">{t('chooseMode')}</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {gameModes.map(m => (
-                            <button key={m.id} onClick={() => setMode(m.id)} className={`p-6 text-left rounded-xl border-2 transition-all duration-200 ${mode === m.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-600'}`}>
-                                <div className="flex items-center gap-3">
-                                    <span className={mode === m.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}>{m.icon}</span>
-                                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{m.title}</h3>
+                            <button 
+                                key={m.id} 
+                                onClick={() => setMode(m.id)} 
+                                className={`p-6 text-left rounded-3xl border-2 transition-all duration-300 flex flex-col items-start gap-4 active:scale-95
+                                    ${mode === m.id ? 'border-blue-600 bg-blue-600 text-white shadow-xl shadow-blue-600/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-blue-300'}`}
+                            >
+                                <span className="text-4xl">{m.icon}</span>
+                                <div>
+                                    <h3 className="font-black text-lg leading-tight">{m.title}</h3>
+                                    <p className={`text-xs mt-1 font-medium ${mode === m.id ? 'text-blue-100' : 'text-slate-500'}`}>{m.desc}</p>
                                 </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 pl-8">{m.desc}</p>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div className={`transition-opacity duration-500 space-y-10 ${mode === 'flagle' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                <div className={`transition-all duration-500 space-y-12 ${mode === 'flagle' ? 'opacity-30 grayscale pointer-events-none' : 'opacity-100'}`}>
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('selectDifficulty')}</h2>
+                        <h2 className="text-xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">{t('selectDifficulty')}</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {difficultyLevels.map(d => (
-                                <button key={d.id} onClick={() => setDifficulty(d.id)} className={`p-6 text-center rounded-xl border-2 transition-all duration-200 ${difficulty === d.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-600'}`}>
-                                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{d.title}</h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{d.desc}</p>
+                            {['easy', 'medium', 'hard'].map((d) => (
+                                <button 
+                                    key={d} 
+                                    onClick={() => setDifficulty(d as QuizDifficulty)} 
+                                    className={`p-6 text-center rounded-3xl border-2 transition-all duration-300 active:scale-95
+                                        ${difficulty === d ? 'border-blue-600 bg-blue-600 text-white shadow-xl shadow-blue-600/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900'}`}
+                                >
+                                    <h3 className="font-black text-lg capitalize">{t(`difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`)}</h3>
+                                    <p className={`text-xs mt-1 font-medium ${difficulty === d ? 'text-blue-100' : 'text-slate-500'}`}>{t(`difficulty${d.charAt(0).toUpperCase() + d.slice(1)}Desc`)}</p>
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('selectNumberOfQuestions')}</h2>
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border-2 border-gray-200 dark:border-slate-700">
-                            <div className="relative px-2">
-                                <input
-                                    type="range"
-                                    min="10"
-                                    max="55"
-                                    step="5"
-                                    value={quizLength >= 55 ? 55 : quizLength}
-                                    onChange={(e) => {
-                                        const value = Number(e.target.value);
-                                        // Use a large number to signify "All" questions.
-                                        setQuizLength(value === 55 ? 999 : value);
-                                    }}
-                                    className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-sky-500"
-                                    id="quiz-length-slider"
-                                />
-                                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 px-1">
-                                    <span>10</span>
-                                    <span>20</span>
-                                    <span>30</span>
-                                    <span>40</span>
-                                    <span>50</span>
-                                    <span>{t('all')}</span>
-                                </div>
+                        <h2 className="text-xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">{t('selectNumberOfQuestions')}</h2>
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border-2 border-slate-100 dark:border-slate-800 shadow-xl">
+                            <input
+                                type="range" min="5" max="55" step="5"
+                                value={quizLength >= 55 ? 55 : quizLength}
+                                onChange={(e) => setQuizLength(Number(e.target.value) >= 55 ? 999 : Number(e.target.value))}
+                                className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-blue-600"
+                            />
+                            <div className="flex justify-between text-[10px] font-black text-slate-400 mt-4 px-1 uppercase tracking-widest">
+                                <span>5</span><span>20</span><span>40</span><span>{t('all')}</span>
                             </div>
-                            <div className="text-center text-xl font-bold text-gray-900 dark:text-gray-100 mt-4">
-                                {quizLength >= 55
-                                    ? t('allQuestions')
-                                    : t('numberOfQuestions', { count: quizLength.toString() })}
+                            <div className="text-center text-3xl font-black text-slate-900 dark:text-white mt-6 tracking-tighter">
+                                {quizLength >= 55 ? t('allQuestions') : t('numberOfQuestions', { count: quizLength.toString() })}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="mt-12 text-center">
+            <div className="mt-16 text-center">
                 <button 
                     onClick={() => setIsQuizStarted(true)} 
                     disabled={!mode || (mode !== 'flagle' && !difficulty)}
-                    className="px-12 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-900 transition-all transform hover:scale-105"
+                    className="group relative px-16 py-6 bg-blue-600 text-white font-black text-xl rounded-full shadow-2xl shadow-blue-600/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
                 >
-                    {t('startQuiz')}
+                    <span className="relative z-10 flex items-center gap-3">
+                        {t('startQuiz')}
+                        <svg className="w-6 h-6 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    </span>
                 </button>
             </div>
         </div>
