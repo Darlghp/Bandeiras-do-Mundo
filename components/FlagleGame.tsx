@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -154,9 +153,9 @@ const FlagleGame: React.FC<{ countries: Country[], onBackToMenu: () => void }> =
                     )}
                 </div>
 
-                {/* Status Badges */}
+                {/* Status Badges - Centralização perfeita via animação CSS */}
                 {isWon && (
-                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-20 px-6 py-2 bg-green-500 text-white rounded-full font-black shadow-xl animate-achievement flex items-center gap-2">
+                    <div className="absolute -bottom-4 z-20 px-6 py-2 bg-green-500 text-white rounded-full font-black shadow-xl animate-achievement flex items-center gap-2 whitespace-nowrap">
                         <span>🏆 EXCELENTE!</span>
                     </div>
                 )}

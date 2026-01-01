@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -72,10 +71,12 @@ const Hero: React.FC<HeroProps> = ({ flagOfTheDay, isLoading, onFlagClick }) => 
                     {/* Content Area */}
                     <div className="w-full lg:w-3/5 text-center lg:text-left space-y-6">
                         <div className="flex flex-wrap justify-center lg:justify-start items-center gap-3">
-                            <span className="px-4 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-full shadow-lg shadow-blue-500/20 animate-metal-shimmer relative overflow-hidden">
-                                <span className="relative z-10">{t('flagOfTheDay')}</span>
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] animate-metal-shimmer"></div>
-                            </span>
+                            <div className="inline-flex relative">
+                                <span className="px-5 py-2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-full shadow-lg shadow-blue-500/20 relative overflow-hidden flex items-center justify-center min-w-[150px]">
+                                    <span className="relative z-10">{t('flagOfTheDay')}</span>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] animate-metal-shimmer"></div>
+                                </span>
+                            </div>
                             <span className="px-4 py-1.5 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] rounded-full">
                                 {displayCca3}
                             </span>

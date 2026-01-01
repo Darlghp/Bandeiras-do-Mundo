@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useAchievements, Achievement } from '../context/AchievementContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -48,8 +47,8 @@ const AchievementToast: React.FC = () => {
 
   return (
     <div 
-      className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] px-4 w-full max-w-sm pointer-events-none transition-all duration-1000
-        ${visible ? 'animate-achievement opacity-100' : 'opacity-0 translate-y-12 scale-90'}`}
+      className={`fixed bottom-24 z-[100] px-4 w-full max-w-sm pointer-events-none transition-all duration-1000
+        ${visible ? 'animate-achievement opacity-100' : 'left-1/2 -translate-x-1/2 opacity-0 translate-y-12 scale-90'}`}
     >
       <div className="relative overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-2 border-amber-400/60 shadow-[0_25px_60px_rgba(251,191,36,0.3)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.6)] rounded-[2.5rem] p-6 flex items-center gap-5 pointer-events-auto">
         
