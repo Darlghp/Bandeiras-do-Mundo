@@ -2,6 +2,7 @@
 import React from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
+import { CONTINENT_NAMES, LOCALIZED_ACRONYMS } from '../constants';
 
 interface HeroProps {
     flagOfTheDay: { country: Country; title: string; } | null;
@@ -11,7 +12,7 @@ interface HeroProps {
 
 const HeroSkeleton: React.FC = () => {
     return (
-        <div className="relative w-full h-80 bg-slate-200 dark:bg-slate-900 rounded-3xl shimmer-bg animate-pulse border border-transparent dark:border-slate-800"></div>
+        <div className="relative w-full h-[450px] bg-slate-200 dark:bg-slate-900 rounded-[3rem] shimmer-bg animate-pulse border-4 border-white dark:border-slate-800 shadow-2xl"></div>
     );
 }
 
@@ -27,51 +28,98 @@ const Hero: React.FC<HeroProps> = ({ flagOfTheDay, isLoading, onFlagClick }) => 
     }
 
     const { country, title } = flagOfTheDay;
-    const commonName = language === 'pt' ? country.translations.por.common : country.name.common;
+    const commonName = language === 'pt' ? (country.translations?.por?.common || country.name.common) : country.name.common;
+    const continent = CONTINENT_NAMES[country.continents[0]]?.[language] || country.continents[0];
+    const displayCca3 = (language === 'pt' && LOCALIZED_ACRONYMS[country.cca3]) ? LOCALIZED_ACRONYMS[country.cca3] : country.cca3;
 
     return (
-        <div className="relative rounded-3xl overflow-hidden p-0.5 bg-gradient-to-br from-blue-500/20 to-sky-500/5 dark:from-sky-500/30 dark:to-transparent animate-fade-in-up">
-             <div className="absolute inset-0">
-                <img 
-                    src={country.flags.svg} 
-                    alt="" 
-                    aria-hidden="true"
-                    className="w-full h-full object-cover filter blur-2xl opacity-40 dark:opacity-20 scale-110"
-                />
-                <div className="absolute inset-0 bg-white/20 dark:bg-slate-950/40 backdrop-blur-3xl"></div>
-            </div>
-
-            <div className="relative bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[22px] p-8 sm:p-12 flex flex-col md:flex-row items-center gap-10 border border-white/40 dark:border-slate-800/50">
-                <div 
-                    className="w-full md:w-1/2 lg:w-2/5 flex-shrink-0 cursor-pointer group"
-                    onClick={() => onFlagClick(country)}
-                    aria-label={t('viewDetailsFor', { countryName: commonName })}
-                    role="button"
-                    tabIndex={0}
-                    onKeyPress={(e) => { if (e.key === 'Enter') onFlagClick(country) }}
-                >
-                    <div className="aspect-[5/3] rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/10 transform transition-all duration-500 ease-out group-hover:scale-[1.03] group-hover:shadow-blue-500/20 border border-white/20 dark:border-slate-700/50">
-                        <img 
-                            src={country.flags.svg} 
-                            alt={country.flags.alt || `Flag of ${commonName}`}
-                            className="w-full h-full object-cover"
-                            loading="eager"
-                            decoding="async"
-                        />
-                    </div>
+        <div className="relative group animate-fade-in-up">
+            {/* Sombras de Profundidade */}
+            <div className="absolute -inset-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 blur-3xl opacity-50 rounded-[4rem] pointer-events-none"></div>
+            
+            <div className="relative overflow-hidden rounded-[3rem] border-[6px] border-white dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] dark:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)]">
+                
+                {/* Efeito de Vidro e Brilho de Fundo */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <img 
+                        src={country.flags.svg} 
+                        alt="" 
+                        className="w-full h-full object-cover filter blur-[100px] opacity-20 dark:opacity-10 scale-150"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/60 via-transparent to-white/20 dark:from-slate-950/60 dark:to-slate-950/20"></div>
                 </div>
-                <div className="w-full md:w-1/2 lg:w-3/5 text-center md:text-left">
-                    <p className="text-sm font-black text-blue-600 dark:text-sky-400 uppercase tracking-[0.2em] mb-3">{t('flagOfTheDay')}</p>
-                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white leading-tight mb-6">
-                        {title}
-                    </h1>
-                     <button 
+
+                <div className="relative flex flex-col lg:flex-row items-center gap-12 p-8 sm:p-14">
+                    
+                    {/* Flag Showcase Area */}
+                    <div 
+                        className="w-full lg:w-2/5 flex-shrink-0 cursor-pointer perspective-1000"
                         onClick={() => onFlagClick(country)}
-                        className="inline-flex items-center px-8 py-3.5 border border-transparent text-base font-bold rounded-2xl text-white bg-blue-600 dark:bg-sky-500 hover:bg-blue-700 dark:hover:bg-sky-400 shadow-xl shadow-blue-500/20 dark:shadow-sky-500/20 transition-all transform hover:-translate-y-1 active:scale-95"
                     >
-                        {t('viewDetailsFor', { countryName: commonName })}
-                        <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                    </button>
+                        <div className="relative aspect-[3/2] rounded-[2rem] overflow-hidden shadow-2xl shadow-black/20 transform-gpu transition-all duration-700 ease-out group-hover:rotate-y-6 group-hover:scale-[1.05] border-4 border-white/50 dark:border-slate-700/50">
+                            <img 
+                                src={country.flags.svg} 
+                                alt={country.flags.alt || `Flag of ${commonName}`}
+                                className="w-full h-full object-cover"
+                                loading="eager"
+                            />
+                            {/* Texture overlay */}
+                            <div className="absolute inset-0 pointer-events-none opacity-[0.05] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/canvas-orange.png')]"></div>
+                            <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10"></div>
+                        </div>
+                    </div>
+
+                    {/* Content Area */}
+                    <div className="w-full lg:w-3/5 text-center lg:text-left space-y-6">
+                        <div className="flex flex-wrap justify-center lg:justify-start items-center gap-3">
+                            <span className="px-4 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-full shadow-lg shadow-blue-500/20 animate-metal-shimmer relative overflow-hidden">
+                                <span className="relative z-10">Daily Discovery</span>
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] animate-metal-shimmer"></div>
+                            </span>
+                            <span className="px-4 py-1.5 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] rounded-full">
+                                {displayCca3}
+                            </span>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white leading-[1.1] tracking-tighter">
+                                {title}
+                            </h2>
+                            <p className="text-xl font-bold text-blue-600 dark:text-sky-400 uppercase tracking-widest opacity-80">
+                                {commonName}
+                            </p>
+                        </div>
+
+                        {/* Mini Stats Bar */}
+                        <div className="flex flex-wrap justify-center lg:justify-start items-center gap-6 py-4 border-y border-slate-200/50 dark:border-slate-700/50">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('population')}</span>
+                                <span className="text-lg font-black text-slate-800 dark:text-slate-100">{country.population.toLocaleString(language)}</span>
+                            </div>
+                            <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('continents')}</span>
+                                <span className="text-lg font-black text-slate-800 dark:text-slate-100">{continent}</span>
+                            </div>
+                            <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('area')}</span>
+                                <span className="text-lg font-black text-slate-800 dark:text-slate-100">{country.area.toLocaleString(language)} km²</span>
+                            </div>
+                        </div>
+
+                        <div className="pt-4">
+                            <button 
+                                onClick={() => onFlagClick(country)}
+                                className="group relative inline-flex items-center gap-4 px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-black/10 dark:shadow-white/5 uppercase tracking-[0.2em] text-xs"
+                            >
+                                {t('viewDetailsFor', { countryName: commonName })}
+                                <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
