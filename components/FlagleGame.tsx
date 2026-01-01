@@ -11,6 +11,7 @@ const normalizeString = (str: string) => str.trim().toLowerCase().normalize("NFD
 
 interface GuessInfo {
     name: string;
+    flagUrl: string;
     isCorrect: boolean;
 }
 
@@ -63,6 +64,7 @@ const FlagleGame: React.FC<{ countries: Country[], onBackToMenu: () => void }> =
         const isCorrect = country.cca3 === correctCountry.cca3;
         const newGuess: GuessInfo = {
             name: getCountryName(country),
+            flagUrl: country.flags.svg,
             isCorrect
         };
 
@@ -187,10 +189,13 @@ const FlagleGame: React.FC<{ countries: Country[], onBackToMenu: () => void }> =
                             
                             {guess ? (
                                 <>
+                                    <div className="w-10 h-7 rounded overflow-hidden shadow-sm flex-shrink-0 border border-slate-100 dark:border-slate-700">
+                                        <img src={guess.flagUrl} alt="" className="w-full h-full object-cover" />
+                                    </div>
                                     <div className="flex-grow font-black truncate text-sm uppercase tracking-tight text-slate-800 dark:text-white">
                                         {guess.name}
                                     </div>
-                                    <div className="ml-auto">
+                                    <div className="ml-auto flex items-center">
                                         {guess.isCorrect ? (
                                             <span className="text-xl">✨</span>
                                         ) : (
