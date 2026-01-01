@@ -11,10 +11,20 @@ interface FlagModalProps {
     onToggleFavorite: (country: Country) => void;
 }
 
-const StatItem: React.FC<{ label: string, value: string | React.ReactNode }> = ({ label, value }) => (
-    <div className="flex justify-between items-start py-3">
-        <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">{label}</dt>
-        <dd className="text-sm text-gray-900 dark:text-slate-200 text-right font-semibold">{value}</dd>
+const InfoCard: React.FC<{ icon: React.ReactNode, label: string, value: string | React.ReactNode, delay: string }> = ({ icon, label, value, delay }) => (
+    <div 
+        className="bg-slate-50/50 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 p-4 rounded-3xl flex flex-col gap-2 animate-fade-in-up-short"
+        style={{ animationDelay: delay }}
+    >
+        <div className="flex items-center gap-2">
+            <div className="text-blue-500 dark:text-sky-400 opacity-80 scale-90">
+                {icon}
+            </div>
+            <dt className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</dt>
+        </div>
+        <dd className="text-base font-black text-slate-800 dark:text-slate-100 truncate">
+            {value}
+        </dd>
     </div>
 );
 
@@ -25,166 +35,157 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
 
     useEffect(() => {
         setIsShowing(!!country);
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        };
-
-        const handleFocusTrap = (event: KeyboardEvent) => {
-            if (event.key === 'Tab' && modalRef.current) {
-                const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-                );
-                if (focusableElements.length === 0) return;
-
-                const firstElement = focusableElements[0];
-                const lastElement = focusableElements[focusableElements.length - 1];
-
-                if (event.shiftKey) { // Shift+Tab
-                    if (document.activeElement === firstElement) {
-                        lastElement.focus();
-                        event.preventDefault();
-                    }
-                } else { // Tab
-                    if (document.activeElement === lastElement) {
-                        firstElement.focus();
-                        event.preventDefault();
-                    }
-                }
-            }
-        };
-
         if (country) {
             document.body.style.overflow = 'hidden';
-            window.addEventListener('keydown', handleKeyDown);
-            window.addEventListener('keydown', handleFocusTrap);
-            
             setTimeout(() => {
                 modalRef.current?.querySelector<HTMLElement>('button')?.focus();
             }, 100);
         } else {
             document.body.style.overflow = '';
         }
-
-        return () => {
-            document.body.style.overflow = '';
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('keydown', handleFocusTrap);
-        }
-    }, [country, onClose]);
+        return () => { document.body.style.overflow = ''; }
+    }, [country]);
 
     if (!country) return null;
 
     const commonName = language === 'pt' ? (country.translations?.por?.common || country.name.common) : country.name.common;
     const officialName = language === 'pt' ? (country.translations?.por?.official || country.name.official) : country.name.official;
-
     const translatedContinents = country.continents
         .map(continentKey => CONTINENT_NAMES[continentKey]?.[language] || continentKey)
         .join(', ');
-        
     const capitalNames = country.capital?.join(', ') || t('notAvailable');
-
-    // Sigla localizada
-    const displayCca3 = (language === 'pt' && LOCALIZED_ACRONYMS[country.cca3]) 
-        ? LOCALIZED_ACRONYMS[country.cca3] 
-        : country.cca3;
+    const displayCca3 = (language === 'pt' && LOCALIZED_ACRONYMS[country.cca3]) ? LOCALIZED_ACRONYMS[country.cca3] : country.cca3;
 
     return (
         <div 
-            className={`fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4 transition-opacity duration-300 ${isShowing ? 'opacity-100' : 'opacity-0'}`}
+            className={`fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center z-[100] p-4 transition-all duration-500 ${isShowing ? 'opacity-100' : 'opacity-0'}`}
             onClick={onClose}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="flag-modal-title"
         >
             <div 
                 ref={modalRef}
-                className={`bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full relative transform transition-all duration-300 ease-out overflow-y-auto max-h-[90vh] no-scrollbar ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} 
+                className={`bg-white dark:bg-slate-950 rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] max-w-5xl w-full relative transform transition-all duration-700 ease-[cubic-bezier(0.2,1,0.2,1)] overflow-y-auto max-h-[95vh] no-scrollbar border-[8px] border-white dark:border-slate-800 ${isShowing ? 'translate-y-0 scale-100' : 'translate-y-20 scale-95'}`} 
                 onClick={e => e.stopPropagation()}
             >
-                <div className="p-6 sm:p-8 grid md:grid-cols-2 gap-x-8">
-                    <div className="flex flex-col">
+                {/* Close button floating */}
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-6 right-6 z-50 p-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-xl active:scale-90"
+                    aria-label={t('closeModal')}
+                >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+
+                <div className="grid lg:grid-cols-12 gap-0">
+                    
+                    {/* Visual Section (Left) */}
+                    <div className="lg:col-span-5 p-8 sm:p-12 bg-slate-50 dark:bg-slate-900/50 flex flex-col gap-8 border-r border-slate-100 dark:border-slate-800/50">
                         <div className="relative">
-                            <div className="aspect-[5/3] bg-gray-100 dark:bg-slate-900/50 rounded-xl p-4 flex items-center justify-center shadow-inner">
+                            <div className="aspect-[3/2] rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 bg-white group">
                                 <img 
                                     src={country.flags.svg} 
-                                    alt={t('flagOf', { country: commonName })} 
-                                    className="w-full h-full object-contain drop-shadow-lg"
-                                    loading="lazy"
-                                    decoding="async"
+                                    alt="" 
+                                    className="w-full h-full object-cover"
                                 />
-                            </div>
-                            <button 
-                                onClick={onClose} 
-                                className="absolute -top-3 -right-3 text-gray-500 bg-white dark:bg-slate-700 dark:text-slate-300 rounded-full p-1 shadow-md hover:text-gray-900 dark:hover:text-slate-100 transition-colors z-20"
-                                aria-label={t('closeModal')}
-                            >
-                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-                        <div className="mt-6 flex-grow flex items-center justify-center">
-                             <a 
-                                href={country.maps.googleMaps}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-slate-800 transition-colors"
-                            >
-                                {t('viewOnMap')}
-                                <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                   <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
-                                   <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
-                                </svg>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div className="mt-6 md:mt-0">
-                         <div className="flex items-start justify-between gap-4">
-                            <div className="flex-grow">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <h2 id="flag-modal-title" className="text-3xl font-bold text-gray-900 dark:text-slate-100">{commonName}</h2>
-                                    <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-xs font-black text-slate-500 dark:text-slate-400">
-                                        {displayCca3}
-                                    </span>
-                                </div>
-                                <p className="text-md text-gray-600 dark:text-slate-400">{officialName}</p>
-                            </div>
-                            <div className="flex-shrink-0 flex items-center gap-2">
-                                <button
-                                    onClick={() => onToggleFavorite(country)}
-                                    className={`p-2.5 rounded-full transition-all duration-200 transform hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800
-                                        ${isFavorite 
-                                            ? 'bg-red-100 text-red-500 dark:bg-red-900/50 dark:text-red-400' 
-                                            : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
-                                        } 
-                                        hover:text-red-500 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50`}
-                                    aria-label={isFavorite ? t('removeFromFavorites') : t('addToFavorites')}
-                                    aria-pressed={isFavorite}
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
+                                <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 pointer-events-none"></div>
+                                {/* Texture */}
+                                <div className="absolute inset-0 pointer-events-none opacity-[0.05] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/canvas-orange.png')]"></div>
                             </div>
                         </div>
 
-                        <dl className="mt-6 border-t border-gray-200 dark:border-slate-700 divide-y divide-gray-200 dark:divide-slate-700">
-                             <StatItem label={t('population')} value={country.population.toLocaleString(language)} />
-                             <StatItem label={t('area')} value={<>{country.area.toLocaleString(language)} km<sup>2</sup></>} />
-                             <StatItem label={t('continents')} value={translatedContinents} />
-                             <StatItem label={t('capital')} value={capitalNames} />
-                        </dl>
-                        
                         {country.coatOfArms.svg && (
-                             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-slate-700">
-                                 <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-2">{t('coatOfArms')}</h3>
-                                 <div className="flex-shrink-0 bg-gray-100 dark:bg-slate-700 p-4 rounded-lg flex items-center justify-center">
-                                     <img src={country.coatOfArms.svg} alt={t('coatOfArms')} className="h-24 w-auto" loading="lazy" decoding="async" />
+                             <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+                                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">{t('coatOfArms')}</h3>
+                                 <div className="bg-white dark:bg-slate-800/50 p-8 rounded-[2.5rem] shadow-inner flex items-center justify-center border-2 border-slate-100 dark:border-slate-800">
+                                     <img src={country.coatOfArms.svg} alt="" className="h-28 w-auto drop-shadow-2xl" />
                                  </div>
                              </div>
                         )}
+                    </div>
+
+                    {/* Data Section (Right) */}
+                    <div className="lg:col-span-7 p-8 sm:p-12 space-y-10">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">
+                                        {commonName}
+                                    </h2>
+                                    <span className="px-3 py-1 bg-blue-600/10 dark:bg-sky-400/10 text-blue-600 dark:text-sky-400 text-xs font-black rounded-lg">
+                                        {displayCca3}
+                                    </span>
+                                </div>
+                                <p className="text-lg font-bold text-slate-400 dark:text-slate-500 tracking-tight leading-tight">
+                                    {officialName}
+                                </p>
+                            </div>
+                            
+                            <button
+                                onClick={() => onToggleFavorite(country)}
+                                className={`flex-shrink-0 p-4 rounded-3xl transition-all duration-500 transform 
+                                    ${isFavorite 
+                                        ? 'bg-red-500 text-white shadow-[0_20px_40px_rgba(239,68,68,0.4)] scale-110' 
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-red-500'
+                                    } 
+                                    hover:scale-110 active:scale-95`}
+                                aria-label={isFavorite ? t('removeFromFavorites') : t('addToFavorites')}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <InfoCard 
+                                delay="100ms"
+                                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
+                                label={t('capital')} 
+                                value={capitalNames} 
+                            />
+                            <InfoCard 
+                                delay="150ms"
+                                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
+                                label={t('population')} 
+                                value={country.population.toLocaleString(language)} 
+                            />
+                            <InfoCard 
+                                delay="200ms"
+                                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.5m1.399-9.84a9 9 0 11-12.728 12.728L16.422 3.934z" /></svg>}
+                                label={t('continents')} 
+                                value={translatedContinents} 
+                            />
+                            <InfoCard 
+                                delay="250ms"
+                                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" /></svg>}
+                                label={t('area')} 
+                                value={<>{country.area.toLocaleString(language)} <span className="text-[10px] opacity-60">km²</span></>} 
+                            />
+                        </div>
+
+                        {/* Interactive Map Link */}
+                        <div className="pt-6 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+                            <a 
+                                href={country.maps.googleMaps}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="relative group flex items-center justify-center gap-4 w-full h-18 bg-slate-900 dark:bg-white rounded-[2rem] overflow-hidden transition-all hover:scale-[1.02] active:scale-95 shadow-2xl shadow-slate-500/20"
+                            >
+                                {/* Metal shimmer on map button */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-black/5 to-transparent skew-x-[-25deg] translate-x-[-150%] group-hover:animate-metal-shimmer"></div>
+                                
+                                <span className="relative z-10 text-white dark:text-slate-900 font-black uppercase tracking-[0.2em] text-xs">
+                                    {t('viewOnMap')}
+                                </span>
+                                <div className="relative z-10 p-2 bg-blue-600 rounded-xl text-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
