@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { Country } from '../types';
 import FlagCard from './FlagCard';
 
 const getColumnCount = () => {
-    // These breakpoints should match Tailwind's configuration
     if (typeof window === 'undefined') return 1;
     if (window.innerWidth >= 1280) return 4; // xl
     if (window.innerWidth >= 1024) return 3; // lg
@@ -11,19 +11,17 @@ const getColumnCount = () => {
     return 1;
 };
 
-// Estimates for calculation. They should be generous to avoid blank space.
-// We make them dynamic based on column count because card height changes with width due to aspect ratio.
 const getCardEstimatedHeight = (columns: number) => {
     switch (columns) {
-        case 1: return 540; // Mobile, card is wide, so tall.
-        case 2: return 420; // sm screens
-        case 3: return 320; // lg screens
-        case 4: return 300; // xl screens
+        case 1: return 540;
+        case 2: return 420;
+        case 3: return 320;
+        case 4: return 300;
         default: return 400;
     }
 };
 
-const GAP = 24; // from gap-6 class
+const GAP = 24;
 
 interface VirtualFlagGridProps {
     countries: Country[];
@@ -39,12 +37,12 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
     const rootRef = useRef<HTMLDivElement>(null);
 
     const [columnCount, setColumnCount] = useState(getColumnCount());
-    const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
+    // Começa renderizando as primeiras 10 linhas para evitar tela branca inicial no mobile
+    const [visibleRange, setVisibleRange] = useState({ start: 0, end: 10 });
 
     const cardEstimatedHeight = getCardEstimatedHeight(columnCount);
-    const rowHeight = cardEstimatedHeight + GAP;
+    const rowHeight = Math.max(1, cardEstimatedHeight + GAP);
 
-    // Update column count on window resize
     const handleResize = useCallback(() => {
         setColumnCount(getColumnCount());
     }, []);
@@ -55,31 +53,23 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
         return () => window.removeEventListener('resize', handleResize);
     }, [handleResize]);
 
-    // Update visible items on scroll
     const handleScroll = useCallback(() => {
         if (!rootRef.current) return;
         
-        const scrollTop = window.scrollY;
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const viewportHeight = window.innerHeight;
         
-        const gridTop = rootRef.current.offsetTop;
-        const gridHeight = rootRef.current.offsetHeight;
-        const buffer = viewportHeight * 0.5;
+        const gridTop = rootRef.current.offsetTop || 0;
+        const gridHeight = rootRef.current.offsetHeight || 0;
+        const buffer = viewportHeight * 0.8; // Buffer maior para mobile
 
-        // Check if the grid is way outside the viewport, and if so, clear rendered items
-        if (scrollTop + viewportHeight < gridTop - buffer || scrollTop > gridTop + gridHeight + buffer) {
-            setVisibleRange(prevRange => {
-                if (prevRange.start === 0 && prevRange.end === 0) return prevRange;
-                return { start: 0, end: 0 };
-            });
+        if (scrollTop + viewportHeight < gridTop - buffer || (gridHeight > 0 && scrollTop > gridTop + gridHeight + buffer)) {
+            // Se estiver muito longe, não reseta para 0,0 para evitar "pulo" visual no mobile
             return;
         }
 
-        // Number of rows to render before and after the visible area for smoother scrolling
-        const overscanRowCount = 3;
-
-        // Calculate which rows are visible, relative to the grid's top
-        const visibleStart = scrollTop - gridTop;
+        const overscanRowCount = 4;
+        const visibleStart = Math.max(0, scrollTop - gridTop);
         
         const startRow = Math.max(0, Math.floor(visibleStart / rowHeight) - overscanRowCount);
         const endRow = Math.min(
@@ -96,19 +86,24 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
     }, [countries.length, columnCount, rowHeight]);
 
     useEffect(() => {
-        // Initial render calculation
         handleScroll();
-
         window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
+        // Timeout de segurança para recalcular após o carregamento das imagens/layout
+        const timer = setTimeout(handleScroll, 500);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            clearTimeout(timer);
+        };
     }, [handleScroll]);
 
 
     const virtualRows = useMemo(() => {
         const rows = [];
-        // Only loop if the range is valid
-        if (visibleRange.end > visibleRange.start) {
-            for (let i = visibleRange.start; i < visibleRange.end; i++) {
+        const start = visibleRange.start;
+        const end = Math.min(visibleRange.end, Math.ceil(countries.length / columnCount));
+        
+        if (end > start) {
+            for (let i = start; i < end; i++) {
                 const rowItems = countries.slice(i * columnCount, (i + 1) * columnCount);
                 if (rowItems.length > 0) {
                     rows.push({
@@ -129,7 +124,11 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
     const totalHeight = Math.ceil(countries.length / columnCount) * rowHeight;
 
     return (
-        <div ref={rootRef} style={{ position: 'relative', height: `${totalHeight}px` }}>
+        <div 
+            ref={rootRef} 
+            className="min-h-[500px]"
+            style={{ position: 'relative', height: `${Math.max(500, totalHeight)}px` }}
+        >
             {virtualRows.map(row => (
                 <div key={row.index} style={row.style} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {row.items.map(country => (

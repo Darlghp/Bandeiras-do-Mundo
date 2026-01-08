@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z'/%3E%3C/svg%3E" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>Flags of the World Explorer</title>
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#ffffff" />
@@ -38,7 +39,6 @@
     animation: shimmer 1.5s infinite;
   }
   
-  /* Achievement Animations - Corrigida para centralização absoluta perfeita */
   @keyframes achievement-entrance {
     0% { transform: translate(-50%, 60px) scale(0.7); opacity: 0; }
     60% { transform: translate(-50%, -10px) scale(1.05); opacity: 1; }
@@ -63,24 +63,32 @@
   /* Modern Mesh Background */
   body::before {
     content: ''; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80"><rect fill="%23f8fafc" width="80" height="80"/><g fill-rule="evenodd"><g fill="%23f1f5f9" fill-opacity="0.5"><path d="M0 0h40v40H0zM40 40h40v40H40z"/></g></g></svg>');
+    background-color: #f8fafc;
+    background-image: radial-gradient(#e2e8f0 0.5px, transparent 0.5px);
+    background-size: 20px 20px;
     z-index: -1;
   }
   
   .dark body::before {
-     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80"><rect fill="%23020617" width="80" height="80"/><g fill-rule="evenodd"><g fill="%230f172a" fill-opacity="0.3"><path d="M0 0h40v40H0zM40 40h40v40H40z"/></g></g></svg>');
+     background-color: #020617;
+     background-image: radial-gradient(#1e293b 0.5px, transparent 0.5px);
   }
 
   @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
   .animate-float { animation: float 6s ease-in-out infinite; }
 
-  .unique-flag-glow::before {
-    content: ''; position: absolute; top: 50%; left: 50%; width: 800px; height: 800px;
-    background-image: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(56, 189, 248, 0) 60%);
-    transform: translate(-50%, -50%); z-index: 0; pointer-events: none; animation: spin-glow 20s linear infinite;
+  #root:empty::after {
+    content: 'Loading Flags...';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 900;
+    color: #94a3b8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
-  @keyframes spin-glow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-
 </style>
 <script>
   (function() {
