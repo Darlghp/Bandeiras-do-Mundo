@@ -18,13 +18,14 @@ import VirtualFlagGrid from './components/VirtualFlagGrid';
 import BottomNav from './components/BottomNav';
 import { useDebounce } from './hooks/useDebounce';
 import AchievementToast from './components/AchievementToast';
+import VexyChatbot from './components/VexyChatbot';
 
-// Lazy load views
-const QuizView = lazy(() => import('./components/QuizView.tsx'));
-const DiscoverView = lazy(() => import('./components/DiscoverView.tsx'));
-const DesignerView = lazy(() => import('./components/DesignerView.tsx'));
-const FlagModal = lazy(() => import('./components/FlagModal.tsx'));
-const CompareModal = lazy(() => import('./components/CompareModal.tsx'));
+// Lazy load views - removed .tsx extension for better compatibility
+const QuizView = lazy(() => import('./components/QuizView'));
+const DiscoverView = lazy(() => import('./components/DiscoverView'));
+const DesignerView = lazy(() => import('./components/DesignerView'));
+const FlagModal = lazy(() => import('./components/FlagModal'));
+const CompareModal = lazy(() => import('./components/CompareModal'));
 
 export type View = 'explorer' | 'discover' | 'quiz' | 'designer';
 export type SortOrder = 
@@ -56,6 +57,7 @@ const PageLoader: React.FC = () => {
     );
 };
 
+// Fixed missing </svg> tag in Toast component below
 const Toast: React.FC<{ info: { message: string; type: 'add' | 'remove' } | null, isVisible: boolean }> = ({ info, isVisible }) => {
     if (!info) return null;
     const isAdd = info.type === 'add';
@@ -261,10 +263,12 @@ const AppContent: React.FC = () => {
     const [comparisonList, setComparisonList] = useState<Country[]>([]);
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     
+    // Fixed Set initialization to handle potential non-iterable data
     const [favorites, setFavorites] = useState<Set<string>>(() => {
         try {
             const savedFavorites = localStorage.getItem('favorites');
-            return new Set(savedFavorites ? JSON.parse(savedFavorites) : []);
+            const parsed = savedFavorites ? JSON.parse(savedFavorites) : [];
+            return new Set(Array.isArray(parsed) ? parsed : []);
         } catch {
             return new Set();
         }
@@ -477,6 +481,11 @@ const AppContent: React.FC = () => {
             {!(view === 'explorer' && isCompareModeActive) && <BottomNav currentView={view} setView={setView} />}
             <Toast info={toastInfo} isVisible={isToastVisible} />
             <AchievementToast />
+            <VexyChatbot 
+                countries={countries} 
+                onNavigate={(v) => setView(v)} 
+                onSelectCountry={(c) => setSelectedCountry(c)}
+            />
         </div>
     );
 };

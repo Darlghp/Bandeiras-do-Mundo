@@ -1,3 +1,4 @@
+
 import type { Country } from '../types';
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -23,7 +24,8 @@ const collectionGenerators: {
     {
         title: { en: "Largest Nations by Area", pt: "Maiores Nações por Área" },
         getCountries: (countries: Country[]) => {
-            return [...countries].sort((a, b) => b.area - b.area).slice(0, 15);
+            // Fix: Corrected sort subtraction from b.area - b.area to b.area - a.area for descending order
+            return [...countries].sort((a, b) => b.area - a.area).slice(0, 15);
         }
     },
     {
