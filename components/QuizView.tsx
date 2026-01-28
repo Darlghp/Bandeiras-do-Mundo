@@ -82,6 +82,22 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
     const [actualQuizLength, setActualQuizLength] = useState(0);
     const [shake, setShake] = useState(false);
 
+    const getCountryName = useCallback((c: Country) => language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common, [language]);
+
+    // Helper centralizado para obter o valor da resposta correta baseado no modo
+    const getCorrectValue = useCallback((c: Country): string => {
+        switch (mode) {
+            case 'flag-to-capital':
+            case 'country-to-capital':
+                return c.capital?.[0] || 'N/A';
+            case 'country-to-flag':
+            case 'odd-one-out':
+                return c.cca3;
+            default:
+                return getCountryName(c);
+        }
+    }, [mode, getCountryName]);
+
     const startNewQuiz = useCallback(() => {
         let difficultyPool: Country[];
         const sortedByPopulation = [...countries].sort((a, b) => b.population - a.population);
@@ -132,71 +148,67 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
     }, [startNewQuiz]);
 
     const currentCountry = useMemo(() => quizQuestions[currentQuestionIndex], [quizQuestions, currentQuestionIndex]);
-    const getCountryName = useCallback((c: Country) => language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common, [language]);
 
     const options = useMemo(() => {
         if (!currentCountry) return [];
         
+        const correctAnswer = getCorrectValue(currentCountry);
+
         if (mode === 'odd-one-out') {
-            const intruder = currentCountry;
-            const intruderContinents = new Set(intruder.continents);
-            const allContinents = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania'];
-            const shuffledContinents = shuffleArray(allContinents);
+            const targetContinent = currentCountry.continents[0];
+            const otherContinents = countries
+                .filter(c => !c.continents.includes(targetContinent))
+                .map(c => c.continents[0]);
             
-            let decoys: Country[] = [];
-            for (const continent of shuffledContinents) {
-                if (intruderContinents.has(continent)) continue;
-                const decoyPool = countries.filter(c => c.continents.includes(continent) && c.cca3 !== intruder.cca3);
-                if (decoyPool.length >= OPTIONS_COUNT - 1) {
-                    decoys = shuffleArray<Country>(decoyPool).slice(0, OPTIONS_COUNT - 1);
-                    break;
-                }
-            }
-            if (decoys.length < OPTIONS_COUNT - 1) {
-                 const fallbackPool = countries.filter(c => c.cca3 !== intruder.cca3 && !c.continents.some(cont => intruderContinents.has(cont)));
-                 decoys = shuffleArray<Country>(fallbackPool).slice(0, OPTIONS_COUNT - 1);
-            }
-            const optionCountries = shuffleArray([intruder, ...decoys]);
-            return optionCountries.map(c => c.cca3);
+            const selectedOtherContinent = otherContinents[Math.floor(Math.random() * otherContinents.length)];
+            // FIX: Added explicit Country type casting to filter and map callbacks to resolve 'Property cca3 does not exist on type unknown'.
+            const decoys = shuffleArray(countries.filter((c: Country) => c.continents.includes(selectedOtherContinent) && c.cca3 !== currentCountry.cca3))
+                .slice(0, OPTIONS_COUNT - 1)
+                .map((c: Country) => c.cca3);
+
+            return shuffleArray([currentCountry.cca3, ...decoys]);
         }
 
-        let correctAnswer: string;
         let wrongOptionPool: Country[];
         let getOptionValue: (country: Country) => string;
 
         switch (mode) {
             case 'flag-to-capital':
             case 'country-to-capital':
-                correctAnswer = currentCountry.capital[0];
                 wrongOptionPool = countries.filter(c => c.capital && c.capital.length > 0 && c.cca3 !== currentCountry.cca3);
                 getOptionValue = c => c.capital[0];
                 break;
             case 'country-to-flag':
-                correctAnswer = currentCountry.cca3;
                 wrongOptionPool = countries.filter(c => c.cca3 !== currentCountry.cca3);
                 getOptionValue = c => c.cca3;
                 break;
             default:
-                correctAnswer = getCountryName(currentCountry);
                 wrongOptionPool = countries.filter(c => c.cca3 !== currentCountry.cca3);
                 getOptionValue = getCountryName;
         }
 
-        const wrongOptions = shuffleArray(wrongOptionPool)
-            .slice(0, OPTIONS_COUNT - 1)
-            .map(getOptionValue);
+        // Garantir que não existam valores duplicados nas opções (ex: duas capitais iguais de países diferentes)
+        const uniqueOptions = new Set<string>();
+        uniqueOptions.add(correctAnswer);
 
-        return shuffleArray([correctAnswer, ...wrongOptions]);
-    }, [currentCountry, countries, getCountryName, mode]);
+        const shuffledWrongPool = shuffleArray(wrongOptionPool);
+        for (const country of shuffledWrongPool) {
+            const val = getOptionValue(country);
+            if (!uniqueOptions.has(val)) {
+                uniqueOptions.add(val);
+            }
+            if (uniqueOptions.size === OPTIONS_COUNT) break;
+        }
+
+        return shuffleArray(Array.from(uniqueOptions));
+    }, [currentCountry, countries, getCountryName, mode, getCorrectValue]);
 
     const handleAnswer = (answer: string | null) => {
         if (isAnswered || !currentCountry) return;
         
-        const correctAnswer = (mode === 'flag-to-capital' || mode === 'country-to-capital') 
-            ? currentCountry.capital[0] 
-            : (mode === 'country-to-flag' || mode === 'odd-one-out') ? currentCountry.cca3 : getCountryName(currentCountry);
-        
+        const correctAnswer = getCorrectValue(currentCountry);
         const isCorrect = answer === correctAnswer;
+        
         setSelectedAnswer(answer);
         setIsAnswered(true);
 
@@ -245,9 +257,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
         if (fiftyFiftyHintsRemaining > 0 && !isFiftyFiftyUsedThisTurn && !isAnswered && currentCountry) {
             setFiftyFiftyHintsRemaining(prev => prev - 1);
             setIsFiftyFiftyUsedThisTurn(true);
-            const correctAnswer = (mode === 'flag-to-capital' || mode === 'country-to-capital')
-                ? currentCountry.capital[0]
-                : (mode === 'country-to-flag' || mode === 'odd-one-out') ? currentCountry.cca3 : getCountryName(currentCountry);
+            const correctAnswer = getCorrectValue(currentCountry);
             const wrongOptions = options.filter(opt => opt !== correctAnswer);
             setDisabledOptions(shuffleArray(wrongOptions).slice(0, 2));
         }
@@ -257,7 +267,6 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
         const totalTime = ((endTime - startTime) / 1000).toFixed(1);
         const percentage = Math.round((score / actualQuizLength) * 100);
 
-        // Fix: Wrap arrow function in parentheses to correctly execute as an IIFE and ensure proper type inference.
         const rank = ((p: number) => {
             if (p >= 95) return { title: t('rankMaster'), color: 'text-amber-400', bg: 'bg-amber-400/10', icon: '👑' };
             if (p >= 80) return { title: t('rankExpert'), color: 'text-violet-400', bg: 'bg-violet-400/10', icon: '💎' };
@@ -390,7 +399,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                 <div className={`mt-10 grid gap-4 ${mode === 'country-to-flag' || mode === 'odd-one-out' ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
                     {options.map((opt, i) => {
                         const isVisual = mode === 'country-to-flag' || mode === 'odd-one-out';
-                        const correctAnswer = (mode === 'flag-to-capital' || mode === 'country-to-capital') ? currentCountry.capital[0] : (isVisual ? currentCountry.cca3 : getCountryName(currentCountry));
+                        const correctAnswer = getCorrectValue(currentCountry);
                         const isCorrect = isAnswered && opt === correctAnswer;
                         const isWrong = isAnswered && opt === selectedAnswer && !isCorrect;
                         const isDisabled = disabledOptions.includes(opt);
@@ -465,7 +474,8 @@ const QuizView: React.FC<{ countries: Country[], onBackToExplorer: () => void }>
 
     if (isQuizStarted) {
         if (mode === 'flagle') return <Suspense fallback={null}><FlagleGame countries={quizCountries} onBackToMenu={() => setIsQuizStarted(false)} /></Suspense>;
-        if (mode && (mode === 'flagle' || difficulty)) return <QuizGame countries={quizCountries} mode={mode} difficulty={difficulty || 'medium'} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
+        // Ajuste no filtro de renderização para garantir consistência visual e lógica
+        if (mode && (mode as QuizMode !== 'flagle' && difficulty)) return <QuizGame countries={quizCountries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
     }
 
     return (
