@@ -37,21 +37,11 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
     const rootRef = useRef<HTMLDivElement>(null);
 
     const [columnCount, setColumnCount] = useState(getColumnCount());
-    // Começa renderizando as primeiras 10 linhas para evitar tela branca inicial no mobile
-    const [visibleRange, setVisibleRange] = useState({ start: 0, end: 10 });
+    // Overscan inicial maior para garantir que a tela nunca fique branca no carregamento
+    const [visibleRange, setVisibleRange] = useState({ start: 0, end: 12 });
 
     const cardEstimatedHeight = getCardEstimatedHeight(columnCount);
     const rowHeight = Math.max(1, cardEstimatedHeight + GAP);
-
-    const handleResize = useCallback(() => {
-        setColumnCount(getColumnCount());
-    }, []);
-
-    useEffect(() => {
-        window.addEventListener('resize', handleResize);
-        handleResize(); 
-        return () => window.removeEventListener('resize', handleResize);
-    }, [handleResize]);
 
     const handleScroll = useCallback(() => {
         if (!rootRef.current) return;
@@ -59,17 +49,11 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const viewportHeight = window.innerHeight;
         
-        const gridTop = rootRef.current.offsetTop || 0;
-        const gridHeight = rootRef.current.offsetHeight || 0;
-        const buffer = viewportHeight * 0.8; // Buffer maior para mobile
-
-        if (scrollTop + viewportHeight < gridTop - buffer || (gridHeight > 0 && scrollTop > gridTop + gridHeight + buffer)) {
-            // Se estiver muito longe, não reseta para 0,0 para evitar "pulo" visual no mobile
-            return;
-        }
-
-        const overscanRowCount = 4;
-        const visibleStart = Math.max(0, scrollTop - gridTop);
+        const gridRect = rootRef.current.getBoundingClientRect();
+        const gridTopAbsolute = gridRect.top + scrollTop;
+        
+        const overscanRowCount = 5; // Aumentado para scroll mais suave
+        const visibleStart = Math.max(0, scrollTop - gridTopAbsolute);
         
         const startRow = Math.max(0, Math.floor(visibleStart / rowHeight) - overscanRowCount);
         const endRow = Math.min(
@@ -86,13 +70,21 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
     }, [countries.length, columnCount, rowHeight]);
 
     useEffect(() => {
-        handleScroll();
+        const handleResize = () => {
+            setColumnCount(getColumnCount());
+            handleScroll();
+        };
+
+        window.addEventListener('resize', handleResize);
         window.addEventListener('scroll', handleScroll, { passive: true });
-        // Timeout de segurança para recalcular após o carregamento das imagens/layout
-        const timer = setTimeout(handleScroll, 500);
+        
+        // Garante cálculo após layout estável
+        const rafId = requestAnimationFrame(handleScroll);
+        
         return () => {
+            window.removeEventListener('resize', handleResize);
             window.removeEventListener('scroll', handleScroll);
-            clearTimeout(timer);
+            cancelAnimationFrame(rafId);
         };
     }, [handleScroll]);
 
@@ -102,8 +94,8 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
         const start = visibleRange.start;
         const end = Math.min(visibleRange.end, Math.ceil(countries.length / columnCount));
         
-        if (end > start) {
-            for (let i = start; i < end; i++) {
+        if (end >= start) {
+            for (let i = start; i <= end; i++) {
                 const rowItems = countries.slice(i * columnCount, (i + 1) * columnCount);
                 if (rowItems.length > 0) {
                     rows.push({
@@ -126,8 +118,8 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
     return (
         <div 
             ref={rootRef} 
-            className="min-h-[500px]"
-            style={{ position: 'relative', height: `${Math.max(500, totalHeight)}px` }}
+            className="min-h-[600px] w-full"
+            style={{ position: 'relative', height: `${Math.max(600, totalHeight)}px` }}
         >
             {virtualRows.map(row => (
                 <div key={row.index} style={row.style} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

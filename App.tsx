@@ -57,7 +57,6 @@ const PageLoader: React.FC = () => {
     );
 };
 
-// Fixed missing </svg> tag in Toast component below
 const Toast: React.FC<{ info: { message: string; type: 'add' | 'remove' } | null, isVisible: boolean }> = ({ info, isVisible }) => {
     if (!info) return null;
     const isAdd = info.type === 'add';
@@ -263,7 +262,6 @@ const AppContent: React.FC = () => {
     const [comparisonList, setComparisonList] = useState<Country[]>([]);
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     
-    // Fixed Set initialization to handle potential non-iterable data
     const [favorites, setFavorites] = useState<Set<string>>(() => {
         try {
             const savedFavorites = localStorage.getItem('favorites');
@@ -332,10 +330,7 @@ const AppContent: React.FC = () => {
             const sortedData = [...data].sort((a, b) => a.cca3.localeCompare(b.cca3));
             setCountries(sortedData);
             
-            // Collections and Flag of the Day
-            const collections = fetchAllCollections(sortedData, language);
-            setCollectionsData(collections);
-            
+            // Determinar Flag of the Day (baseado em data)
             const now = new Date();
             const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             const countryForToday = getDeterministicCountryForDate(today, sortedData);
@@ -353,9 +348,26 @@ const AppContent: React.FC = () => {
         }
     }, [language]);
 
+    // O useEffect de carga inicial só deve rodar uma vez, sem depender de language para evitar re-fetches
+    // As coleções e Flag of the Day reagem a language via useMemo nos subcomponentes ou no render
     useEffect(() => {
         loadData();
-    }, [loadData]);
+    }, []); // Carrega apenas na montagem
+
+    // Atualiza coleções quando dados ou idioma mudam
+    useEffect(() => {
+        if (countries.length > 0) {
+            const collections = fetchAllCollections(countries, language);
+            setCollectionsData(collections);
+            
+            // Atualizar título da Flag of the Day
+            if (flagOfTheDay) {
+                const curatedTitle = FLAG_OF_THE_DAY_TITLES[flagOfTheDay.country.cca3]?.[language];
+                const fallbackTitle = language === 'pt' ? (flagOfTheDay.country.translations?.por?.common || flagOfTheDay.country.name.common) : flagOfTheDay.country.name.common;
+                setFlagOfTheDay(prev => prev ? ({ ...prev, title: curatedTitle || fallbackTitle }) : null);
+            }
+        }
+    }, [countries, language]);
 
     const handleCardClick = (country: Country) => {
         if (isCompareModeActive) {

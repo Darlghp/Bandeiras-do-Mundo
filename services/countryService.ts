@@ -3,7 +3,8 @@ import type { Country } from '../types';
 import { API_BASE_URL, API_FIELDS } from '../constants';
 import { COUNTRY_NAMES_PT } from '../constants/countryNamesPT';
 
-const CACHE_KEY = 'countries_data_v14'; // Versão atualizada para refletir melhorias de tradução
+// Versão v15 para forçar atualização e evitar bugs de campos ausentes em caches antigos
+const CACHE_KEY = 'countries_data_v15_stable'; 
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -69,7 +70,7 @@ export const fetchCountries = async (): Promise<Country[]> => {
     } catch (error) {
         console.error("Fetch failed, attempting to use expired cache as fallback", error);
         
-        // 3. Fallback de emergência: usar cache mesmo expirado
+        // 3. Fallback de emergência: usar cache mesmo expirado se disponível
         if (cachedItem) {
             try {
                 const { data } = JSON.parse(cachedItem);
