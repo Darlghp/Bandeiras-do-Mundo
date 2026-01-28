@@ -2,8 +2,6 @@
 // Gemini API service for advanced reasoning and contextual information.
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 /**
  * Generates an intelligent response from Vexy the chatbot using Gemini 3 Flash.
  * @param prompt The user's question about flags or countries.
@@ -12,6 +10,9 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
  */
 export const askVexy = async (prompt: string, countryContext?: any): Promise<string> => {
   try {
+    // New instance created right before use to ensure API_KEY is available
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     const systemInstruction = `
       You are Vexy, a friendly and extremely knowledgeable AI vexillologist.
       Your expertise covers all world flags, their symbolism, history, and the countries they represent.

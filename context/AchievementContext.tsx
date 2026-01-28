@@ -46,25 +46,34 @@ const AchievementContext = createContext<AchievementContextType | undefined>(und
 
 export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [stats, setStats] = useState<UserStats>(() => {
-    const saved = localStorage.getItem('user_stats');
-    return saved ? JSON.parse(saved) : INITIAL_STATS;
+    try {
+      const saved = localStorage.getItem('user_stats');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...INITIAL_STATS, ...parsed };
+      }
+    } catch (e) {
+      console.error("Error loading user stats from storage", e);
+    }
+    return INITIAL_STATS;
   });
 
   const [unlockedIds, setUnlockedIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('unlocked_achievements');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('unlocked_achievements');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    } catch (e) {
+      console.error("Error loading achievements from storage", e);
+    }
+    return [];
   });
 
-  // Usamos ref para rastrear o que já foi enviado para a fila de notificações e evitar duplicatas ou perdas
-  const notifiedIdsRef = useRef<Set<string>>(new Set(
-    JSON.parse(localStorage.getItem('unlocked_achievements') || '[]')
-  ));
-
+  const notifiedIdsRef = useRef<Set<string>>(new Set(unlockedIds));
   const [notificationQueue, setNotificationQueue] = useState<Achievement[]>([]);
 
-  /**
-   * FIX: Added explicit type and used "as const" for category to resolve type mismatch.
-   */
   const achievementsBase = useMemo(() => [
     { id: 'first_steps', titleKey: 'achFirstStepsTitle', descKey: 'achFirstStepsDesc', icon: '👣', category: 'explorer' as const, maxProgress: 1 },
     { id: 'world_traveler', titleKey: 'achWorldTravelerTitle', descKey: 'achWorldTravelerDesc', icon: '🌍', category: 'explorer' as const, maxProgress: 50 },
@@ -92,7 +101,6 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
     localStorage.setItem('unlocked_achievements', JSON.stringify(unlockedIds));
   }, [stats, unlockedIds]);
 
-  // Checagem de novas conquistas centralizada
   useEffect(() => {
     const checkUnlocks = () => {
       const toUnlock: string[] = [];
@@ -112,19 +120,15 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
         newUnlocks.forEach(id => notifiedIdsRef.current.add(id));
         setUnlockedIds(Array.from(notifiedIdsRef.current));
         
-        /**
-         * FIX: Ensure the notification queue receives full Achievement objects to satisfy the state type.
-         */
         const newAchObjs = newUnlocks
           .map(id => {
             const base = achievementsBase.find(a => a.id === id);
             if (!base) return null;
-            const ach: Achievement = {
+            return {
               ...base,
               isUnlocked: true,
               progress: base.maxProgress,
             };
-            return ach;
           })
           .filter((a): a is Achievement => a !== null);
           
