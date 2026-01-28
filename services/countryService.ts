@@ -3,8 +3,8 @@ import type { Country } from '../types';
 import { API_BASE_URL, API_FIELDS } from '../constants';
 import { COUNTRY_NAMES_PT } from '../constants/countryNamesPT';
 
-// Versão v17 para forçar limpeza profunda de nomes técnicos e geográficos
-const CACHE_KEY = 'countries_data_v17_clean'; 
+// Versão v18 para forçar limpeza total e evitar siglas como "ir", "br", "ps"
+const CACHE_KEY = 'countries_data_v18_clean'; 
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -13,7 +13,11 @@ const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000;
  */
 const cleanName = (name: string): string => {
     if (!name) return "";
-    return name
+    
+    // Se o nome for apenas um código de 2 letras minúsculas (ex: "ir", "br"), é lixo da API
+    if (name.length <= 2 && name === name.toLowerCase()) return "";
+
+    let cleaned = name
         .replace(/Republic of /gi, '')
         .replace(/State of /gi, '')
         .replace(/, State of/gi, '')
@@ -25,13 +29,18 @@ const cleanName = (name: string): string => {
         .replace(/, Estado da/gi, '')
         .replace(/Estado da /gi, '')
         .replace(/Margem Ocidental/gi, '')
-        .replace(/as margens do rio/gi, '') // Remove o resíduo citado pelo usuário
+        .replace(/as margens do rio/gi, '')
         .replace(/West Bank/gi, '')
         .replace(/ \(the former.*\)/gi, '')
         .replace(/ \(the\)/gi, '')
         .replace(/ \(.+\)/g, '') // Remove qualquer conteúdo entre parênteses
         .replace(/, /g, '') // Remove vírgulas residuais
         .trim();
+
+    // Verificação final: se após a limpeza sobrou algo muito curto e estranho
+    if (cleaned.length <= 2 && !['Oi', 'Ir'].includes(cleaned)) return "";
+
+    return cleaned;
 };
 
 /**
@@ -40,7 +49,7 @@ const cleanName = (name: string): string => {
 const applyImprovements = (countries: Country[]): Country[] => {
     return countries.map(country => {
         // 1. Limpeza básica nos nomes originais (inglês)
-        country.name.common = cleanName(country.name.common);
+        country.name.common = cleanName(country.name.common) || country.cca3;
         
         // 2. Prioridade Máxima: Mapeamento manual em Português
         const improvedName = COUNTRY_NAMES_PT[country.cca3];
@@ -56,16 +65,20 @@ const applyImprovements = (countries: Country[]): Country[] => {
         }
 
         if (improvedName) {
-            // Se temos no nosso dicionário (ex: PSE -> Palestina), usamos ele cegamente
+            // Se temos no nosso dicionário, usamos ele obrigatoriamente
             country.translations.por.common = improvedName;
         } else {
-            // Caso contrário, limpamos o que veio da API
-            country.translations.por.common = cleanName(country.translations.por.common);
+            // Caso contrário, limpamos o que veio da API e validamos
+            const apiPor = country.translations.por.common;
+            const cleanedPor = cleanName(apiPor);
+            
+            // Se a tradução da API sumiu na limpeza, usa o nome comum inglês limpo
+            country.translations.por.common = cleanedPor || cleanName(country.name.common) || country.cca3;
         }
 
-        // 3. Limpeza das capitais (ex: "Ramallah (Margem Ocidental)" -> "Ramallah")
+        // 3. Limpeza das capitais
         if (country.capital && country.capital.length > 0) {
-            country.capital = country.capital.map(cap => cleanName(cap));
+            country.capital = country.capital.map(cap => cleanName(cap) || cap);
         }
 
         return country;
@@ -73,7 +86,6 @@ const applyImprovements = (countries: Country[]): Country[] => {
 };
 
 export const fetchCountries = async (): Promise<Country[]> => {
-    // 1. Tentar ler cache local primeiro
     const cachedItem = localStorage.getItem(CACHE_KEY);
     if (cachedItem) {
         try {
@@ -87,7 +99,6 @@ export const fetchCountries = async (): Promise<Country[]> => {
         }
     }
 
-    // 2. Executar fetch da API
     try {
         const url = `${API_BASE_URL}/all?fields=${API_FIELDS.join(',')}`;
         const response = await fetch(url);
@@ -115,8 +126,6 @@ export const fetchCountries = async (): Promise<Country[]> => {
         throw new Error('EMPTY_DATA');
     } catch (error) {
         console.error("Fetch failed, using cache as fallback", error);
-        
-        // 3. Fallback de emergência: usar cache mesmo expirado se disponível
         if (cachedItem) {
             try {
                 const { data } = JSON.parse(cachedItem);

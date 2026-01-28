@@ -82,9 +82,13 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
     const [actualQuizLength, setActualQuizLength] = useState(0);
     const [shake, setShake] = useState(false);
 
-    const getCountryName = useCallback((c: Country) => language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common, [language]);
+    const getCountryName = useCallback((c: Country) => {
+        const name = language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common;
+        // Proteção extra: se o nome tiver apenas 2 letras e for minúsculo, usa o código ISO maiúsculo
+        if (name.length <= 2 && name === name.toLowerCase()) return c.cca3;
+        return name;
+    }, [language]);
 
-    // Helper centralizado para obter o valor da resposta correta baseado no modo
     const getCorrectValue = useCallback((c: Country): string => {
         switch (mode) {
             case 'flag-to-capital':
@@ -161,7 +165,6 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                 .map(c => c.continents[0]);
             
             const selectedOtherContinent = otherContinents[Math.floor(Math.random() * otherContinents.length)];
-            // FIX: Added explicit Country type casting to filter and map callbacks to resolve 'Property cca3 does not exist on type unknown'.
             const decoys = shuffleArray(countries.filter((c: Country) => c.continents.includes(selectedOtherContinent) && c.cca3 !== currentCountry.cca3))
                 .slice(0, OPTIONS_COUNT - 1)
                 .map((c: Country) => c.cca3);
@@ -187,14 +190,13 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                 getOptionValue = getCountryName;
         }
 
-        // Garantir que não existam valores duplicados nas opções (ex: duas capitais iguais de países diferentes)
         const uniqueOptions = new Set<string>();
         uniqueOptions.add(correctAnswer);
 
         const shuffledWrongPool = shuffleArray(wrongOptionPool);
         for (const country of shuffledWrongPool) {
             const val = getOptionValue(country);
-            if (!uniqueOptions.has(val)) {
+            if (!uniqueOptions.has(val) && val.length > 2) { // Garante que a opção fake também não seja uma sigla
                 uniqueOptions.add(val);
             }
             if (uniqueOptions.size === OPTIONS_COUNT) break;
@@ -474,7 +476,6 @@ const QuizView: React.FC<{ countries: Country[], onBackToExplorer: () => void }>
 
     if (isQuizStarted) {
         if (mode === 'flagle') return <Suspense fallback={null}><FlagleGame countries={quizCountries} onBackToMenu={() => setIsQuizStarted(false)} /></Suspense>;
-        // Ajuste no filtro de renderização para garantir consistência visual e lógica
         if (mode && (mode as QuizMode !== 'flagle' && difficulty)) return <QuizGame countries={quizCountries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
     }
 
