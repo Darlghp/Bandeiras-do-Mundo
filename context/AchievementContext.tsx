@@ -74,34 +74,48 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [notificationQueue, setNotificationQueue] = useState<Achievement[]>([]);
 
   const achievementsBase = useMemo((): Omit<Achievement, 'isUnlocked' | 'progress'>[] => [
+    // EXPLORER
     { id: 'first_steps', titleKey: 'achFirstStepsTitle', descKey: 'achFirstStepsDesc', icon: '👣', category: 'explorer', rarity: 'Common', xp: 100, maxProgress: 1 },
     { id: 'world_traveler', titleKey: 'achWorldTravelerTitle', descKey: 'achWorldTravelerDesc', icon: '🌍', category: 'explorer', rarity: 'Rare', xp: 250, maxProgress: 50 },
+    { id: 'century_club', titleKey: 'achCenturyClubTitle', descKey: 'achCenturyClubDesc', icon: '💯', category: 'explorer', rarity: 'Rare', xp: 300, maxProgress: 100 },
     { id: 'vexillology_expert', titleKey: 'achVexExpertTitle', descKey: 'achVexExpertDesc', icon: '🎓', category: 'explorer', rarity: 'Epic', xp: 500, maxProgress: 150 },
     { id: 'master_explorer', titleKey: 'achMasterExplorerTitle', descKey: 'achMasterExplorerDesc', icon: '👑', category: 'explorer', rarity: 'Legendary', xp: 1000, maxProgress: 240 },
     
+    // QUIZ
     { id: 'quiz_starter', titleKey: 'achQuizStarterTitle', descKey: 'achQuizStarterDesc', icon: '📝', category: 'quiz', rarity: 'Common', xp: 100, maxProgress: 1 },
+    { id: 'quiz_scholar', titleKey: 'achQuizScholarTitle', descKey: 'achQuizScholarDesc', icon: '📚', category: 'quiz', rarity: 'Common', xp: 200, maxProgress: 10 },
+    { id: 'quiz_marathoner', titleKey: 'achQuizMarathonerTitle', descKey: 'achQuizMarathonerDesc', icon: '🏃', category: 'quiz', rarity: 'Epic', xp: 600, maxProgress: 50 },
     { id: 'streak_master', titleKey: 'achStreakMasterTitle', descKey: 'achStreakMasterDesc', icon: '🔥', category: 'quiz', rarity: 'Rare', xp: 250, maxProgress: 10 },
+    { id: 'streak_godlike', titleKey: 'achStreakGodlikeTitle', descKey: 'achStreakGodlikeDesc', icon: '⚡', category: 'quiz', rarity: 'Legendary', xp: 1200, maxProgress: 25 },
     { id: 'perfect_score', titleKey: 'achPerfectScoreTitle', descKey: 'achPerfectScoreDesc', icon: '✨', category: 'quiz', rarity: 'Epic', xp: 500, maxProgress: 1 },
+    { id: 'perfect_legend', titleKey: 'achPerfectLegendTitle', descKey: 'achPerfectLegendDesc', icon: '🏆', category: 'quiz', rarity: 'Legendary', xp: 1500, maxProgress: 10 },
     
+    // COLLECTOR
     { id: 'curator', titleKey: 'achCuratorTitle', descKey: 'achCuratorDesc', icon: '💖', category: 'collector', rarity: 'Rare', xp: 250, maxProgress: 10 },
+    { id: 'collector_pro', titleKey: 'achCollectorProTitle', descKey: 'achCollectorProDesc', icon: '💎', category: 'collector', rarity: 'Epic', xp: 500, maxProgress: 25 },
+    { id: 'world_curator', titleKey: 'achWorldCuratorTitle', descKey: 'achWorldCuratorDesc', icon: '🏛️', category: 'collector', rarity: 'Legendary', xp: 1000, maxProgress: 50 },
+    
+    // DESIGNER
     { id: 'flag_artist', titleKey: 'achArtistTitle', descKey: 'achArtistDesc', icon: '🎨', category: 'designer', rarity: 'Rare', xp: 250, maxProgress: 1 },
+    { id: 'prolific_designer', titleKey: 'achProlificDesignerTitle', descKey: 'achProlificDesignerDesc', icon: '⚒️', category: 'designer', rarity: 'Rare', xp: 400, maxProgress: 10 },
+    { id: 'design_visionary', titleKey: 'achDesignVisionaryTitle', descKey: 'achDesignVisionaryDesc', icon: '🦄', category: 'designer', rarity: 'Legendary', xp: 1100, maxProgress: 30 },
   ], []);
 
   const achievementsList: Achievement[] = useMemo(() => achievementsBase.map(a => ({
     ...a,
     isUnlocked: unlockedIds.includes(a.id),
-    progress: a.id === 'curator' ? stats.favoritesCount :
-              a.id === 'flag_artist' ? stats.flagsDesigned :
-              a.id === 'quiz_starter' ? stats.quizzesCompleted :
-              a.id === 'perfect_score' ? stats.perfectQuizzes :
-              a.id === 'streak_master' ? stats.maxStreak :
+    progress: a.id === 'curator' || a.id === 'collector_pro' || a.id === 'world_curator' ? stats.favoritesCount :
+              a.id === 'flag_artist' || a.id === 'prolific_designer' || a.id === 'design_visionary' ? stats.flagsDesigned :
+              a.id === 'quiz_starter' || a.id === 'quiz_scholar' || a.id === 'quiz_marathoner' ? stats.quizzesCompleted :
+              a.id === 'perfect_score' || a.id === 'perfect_legend' ? stats.perfectQuizzes :
+              a.id === 'streak_master' || a.id === 'streak_godlike' ? stats.maxStreak :
               stats.viewedFlags.length
   })), [achievementsBase, unlockedIds, stats]);
 
-  // Level Logic
-  const level = useMemo(() => Math.floor(Math.sqrt(stats.totalXP / 100)) + 1, [stats.totalXP]);
-  const xpForCurrentLevel = Math.pow(level - 1, 2) * 100;
-  const xpForNextLevel = Math.pow(level, 2) * 100;
+  // Level Logic (Exponential curve)
+  const level = useMemo(() => Math.floor(Math.sqrt(stats.totalXP / 80)) + 1, [stats.totalXP]);
+  const xpForCurrentLevel = Math.pow(level - 1, 2) * 80;
+  const xpForNextLevel = Math.pow(level, 2) * 80;
   const levelProgress = ((stats.totalXP - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100;
 
   useEffect(() => {
@@ -111,15 +125,35 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   useEffect(() => {
     const toUnlock: {id: string, xp: number}[] = [];
-    if (stats.viewedFlags.length >= 1) toUnlock.push({id: 'first_steps', xp: 100});
-    if (stats.viewedFlags.length >= 50) toUnlock.push({id: 'world_traveler', xp: 250});
-    if (stats.viewedFlags.length >= 150) toUnlock.push({id: 'vexillology_expert', xp: 500});
-    if (stats.viewedFlags.length >= 240) toUnlock.push({id: 'master_explorer', xp: 1000});
-    if (stats.quizzesCompleted >= 1) toUnlock.push({id: 'quiz_starter', xp: 100});
-    if (stats.perfectQuizzes >= 1) toUnlock.push({id: 'perfect_score', xp: 500});
-    if (stats.maxStreak >= 10) toUnlock.push({id: 'streak_master', xp: 250});
-    if (stats.favoritesCount >= 10) toUnlock.push({id: 'curator', xp: 250});
-    if (stats.flagsDesigned >= 1) toUnlock.push({id: 'flag_artist', xp: 250});
+    
+    // Logic Mapping
+    const check = (id: string, condition: boolean, xp: number) => {
+        if (condition) toUnlock.push({id, xp});
+    };
+
+    check('first_steps', stats.viewedFlags.length >= 1, 100);
+    check('world_traveler', stats.viewedFlags.length >= 50, 250);
+    check('century_club', stats.viewedFlags.length >= 100, 300);
+    check('vexillology_expert', stats.viewedFlags.length >= 150, 500);
+    check('master_explorer', stats.viewedFlags.length >= 240, 1000);
+    
+    check('quiz_starter', stats.quizzesCompleted >= 1, 100);
+    check('quiz_scholar', stats.quizzesCompleted >= 10, 200);
+    check('quiz_marathoner', stats.quizzesCompleted >= 50, 600);
+    
+    check('streak_master', stats.maxStreak >= 10, 250);
+    check('streak_godlike', stats.maxStreak >= 25, 1200);
+    
+    check('perfect_score', stats.perfectQuizzes >= 1, 500);
+    check('perfect_legend', stats.perfectQuizzes >= 10, 1500);
+    
+    check('curator', stats.favoritesCount >= 10, 250);
+    check('collector_pro', stats.favoritesCount >= 25, 500);
+    check('world_curator', stats.favoritesCount >= 50, 1000);
+    
+    check('flag_artist', stats.flagsDesigned >= 1, 250);
+    check('prolific_designer', stats.flagsDesigned >= 10, 400);
+    check('design_visionary', stats.flagsDesigned >= 30, 1100);
 
     const newUnlocks = toUnlock.filter(item => !notifiedIdsRef.current.has(item.id));
     
@@ -139,7 +173,7 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
       });
       setNotificationQueue(prev => [...prev, ...newAchObjs]);
     }
-  }, [stats.viewedFlags.length, stats.quizzesCompleted, stats.perfectQuizzes, stats.maxStreak, stats.favoritesCount, stats.flagsDesigned, achievementsBase]);
+  }, [stats, achievementsBase]);
 
   const trackFlagView = useCallback((cca3: string) => {
     setStats(prev => {
@@ -154,7 +188,7 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
       quizzesCompleted: prev.quizzesCompleted + 1,
       perfectQuizzes: score === total ? prev.perfectQuizzes + 1 : prev.perfectQuizzes,
       maxStreak: Math.max(prev.maxStreak, streak),
-      totalXP: prev.totalXP + (score * 5) // Bonus XP for each correct answer
+      totalXP: prev.totalXP + (score * 5)
     }));
   }, []);
 
