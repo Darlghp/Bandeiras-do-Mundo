@@ -1,15 +1,15 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z'/%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>Flags of the World Explorer</title>
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#020617" />
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
   <script type="importmap">
 {
@@ -37,7 +37,7 @@
   .shimmer-bg { position: relative; overflow: hidden; }
   .shimmer-bg::after {
     content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%);
-    background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.2) 20%, rgba(255, 255, 255, 0.5) 60%, rgba(255, 255, 255, 0));
+    background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0));
     animation: shimmer 1.5s infinite;
   }
   
@@ -57,23 +57,42 @@
   }
   .animate-metal-shimmer { animation: metal-shimmer 3.5s infinite ease-in-out; }
 
+  @keyframes mesh-float {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(2%, 4%) scale(1.05); }
+    66% { transform: translate(-1%, -2%) scale(0.98); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
   body.keyboard-visible .hide-on-keyboard { display: none; }
   
-  /* Modern Mesh Background */
+  /* Exclusive Dark Dynamic Mesh Background */
   body::before {
-    content: ''; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background-color: #f8fafc;
-    background-image: radial-gradient(#e2e8f0 0.5px, transparent 0.5px);
-    background-size: 20px 20px;
-    z-index: -1;
+    content: ''; 
+    position: fixed; 
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    z-index: -2;
+    background-color: #020617;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(220,60%,10%,1) 0, transparent 45%), 
+      radial-gradient(at 100% 0%, hsla(240,60%,8%,1) 0, transparent 45%), 
+      radial-gradient(at 100% 100%, hsla(210,60%,12%,1) 0, transparent 45%), 
+      radial-gradient(at 0% 100%, hsla(230,60%,9%,1) 0, transparent 45%);
+    animation: mesh-float 30s ease-in-out infinite alternate;
   }
-  
-  .dark body::before {
-     background-color: #020617;
-     background-image: radial-gradient(#1e293b 0.5px, transparent 0.5px);
+
+  /* Deep Texture Noise */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   }
 
   @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
@@ -87,25 +106,13 @@
     transform: translate(-50%, -50%);
     font-family: system-ui, -apple-system, sans-serif;
     font-weight: 900;
-    color: #94a3b8;
+    color: #1e293b;
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 </style>
-<script>
-  (function() {
-    try {
-      const theme = localStorage.getItem('theme');
-      if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    } catch (_) {}
-  })();
-</script>
 </head>
-  <body class="bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+  <body class="bg-slate-950 transition-colors duration-700">
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
   </body>
