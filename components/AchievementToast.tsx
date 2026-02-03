@@ -1,6 +1,34 @@
+
 import React, { useEffect, useState, useRef } from 'react';
-import { useAchievements, Achievement } from '../context/AchievementContext';
+import { useAchievements, Achievement, Rarity } from '../context/AchievementContext';
 import { useLanguage } from '../context/LanguageContext';
+
+const RARITY_THEMES: Record<Rarity, { border: string, shadow: string, glow: string, text: string }> = {
+    Legendary: { 
+        border: 'border-amber-400', 
+        shadow: 'shadow-[0_25px_60px_rgba(251,191,36,0.5)]', 
+        glow: 'bg-amber-400',
+        text: 'text-amber-500'
+    },
+    Epic: { 
+        border: 'border-purple-500', 
+        shadow: 'shadow-[0_25px_60px_rgba(168,85,247,0.4)]', 
+        glow: 'bg-purple-500',
+        text: 'text-purple-400'
+    },
+    Rare: { 
+        border: 'border-sky-500', 
+        shadow: 'shadow-[0_25px_60px_rgba(14,165,233,0.3)]', 
+        glow: 'bg-sky-500',
+        text: 'text-sky-400'
+    },
+    Common: { 
+        border: 'border-slate-400', 
+        shadow: 'shadow-2xl', 
+        glow: 'bg-slate-400',
+        text: 'text-slate-400'
+    }
+};
 
 const AchievementToast: React.FC = () => {
   const { notificationQueue, popNotification } = useAchievements();
@@ -13,85 +41,61 @@ const AchievementToast: React.FC = () => {
   useEffect(() => {
     if (notificationQueue.length > 0 && !isAnimating.current) {
       isAnimating.current = true;
-      
       const nextAchievement = { ...notificationQueue[0] };
       setCurrent(nextAchievement);
       popNotification();
 
-      // Trigger entrance animation
-      const showTimeout = setTimeout(() => {
-        setVisible(true);
-      }, 50);
-
-      // Display for 8 seconds
-      const hideTimeout = setTimeout(() => {
+      setTimeout(() => setVisible(true), 50);
+      setTimeout(() => {
         setVisible(false);
-        
-        // Cleanup after exit transition
-        const cleanupTimeout = setTimeout(() => {
+        setTimeout(() => {
           setCurrent(null);
           isAnimating.current = false;
         }, 1000);
-
-        return () => clearTimeout(cleanupTimeout);
-      }, 8000);
-
-      return () => {
-        clearTimeout(showTimeout);
-        clearTimeout(hideTimeout);
-      };
+      }, 7000);
     }
   }, [notificationQueue, popNotification]);
 
   if (!current) return null;
+  const theme = RARITY_THEMES[current.rarity];
 
   return (
     <div 
-      className={`fixed bottom-24 z-[100] px-4 w-full max-w-sm pointer-events-none transition-all duration-1000
-        ${visible ? 'animate-achievement opacity-100' : 'left-1/2 -translate-x-1/2 opacity-0 translate-y-12 scale-90'}`}
+      className={`fixed top-24 z-[100] px-4 w-full max-w-sm left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-1000
+        ${visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-12 scale-90'}`}
     >
-      <div className="relative overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-2 border-amber-400/60 shadow-[0_25px_60px_rgba(251,191,36,0.3)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.6)] rounded-[2.5rem] p-6 flex items-center gap-5 pointer-events-auto">
+      <div className={`relative overflow-hidden bg-slate-900/95 backdrop-blur-2xl border-2 ${theme.border} ${theme.shadow} rounded-[2.5rem] p-6 flex items-center gap-5 pointer-events-auto`}>
         
-        {/* Progress Bar */}
-        <div 
-          className={`absolute top-0 left-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 origin-left transition-all duration-[8000ms] ease-linear`}
-          style={{ width: visible ? '100%' : '0%' }}
-        ></div>
-
-        {/* Dynamic Metallic Shimmer */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[2.5rem]">
-            <div className="absolute top-0 -left-[100%] w-[40%] h-full bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-25deg] animate-metal-shimmer"></div>
+        {/* Animated Background Shine */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-0 -left-[100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-25deg] animate-metal-shimmer"></div>
         </div>
         
-        {/* Icon with Glowing Pulse */}
+        {/* Glow Pulse */}
         <div className="relative flex-shrink-0">
-            <div className="absolute inset-0 bg-amber-400 blur-2xl opacity-40 animate-pulse"></div>
-            <div className="relative text-5xl bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/20 w-16 h-16 rounded-3xl flex items-center justify-center shadow-lg border border-amber-200/50 dark:border-amber-700/30">
+            <div className={`absolute inset-0 ${theme.glow} blur-2xl opacity-40 animate-pulse`}></div>
+            <div className="relative text-5xl bg-slate-800 rounded-3xl w-16 h-16 flex items-center justify-center shadow-lg border border-white/5">
                 {current.icon}
             </div>
         </div>
 
         <div className="flex-grow min-w-0">
-          <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.25em] mb-1">
-            {t('achievementUnlocked')}
-          </p>
-          <h4 className="text-xl font-black text-slate-900 dark:text-white leading-tight truncate mb-1">
+          <div className="flex items-center gap-2 mb-1">
+             <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${theme.text}`}>
+                {t(`rarity${current.rarity}`)}
+             </span>
+             <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
+             <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                +{current.xp} {t('xp')}
+             </span>
+          </div>
+          <h4 className="text-xl font-black text-white leading-tight truncate mb-1">
             {t(current.titleKey)}
           </h4>
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 line-clamp-2 leading-tight opacity-90">
+          <p className="text-xs font-semibold text-slate-400 line-clamp-2 leading-tight">
             {t(current.descKey)}
           </p>
         </div>
-        
-        <button 
-          onClick={() => setVisible(false)}
-          className="flex-shrink-0 p-2 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
-          aria-label="Fechar"
-        >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
       </div>
     </div>
   );
