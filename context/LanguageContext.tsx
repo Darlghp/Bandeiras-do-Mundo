@@ -11,7 +11,6 @@ interface LanguageContextType {
 
 const translations: { [lang in Language]: { [key: string]: string } } = {
   en: {
-    // ... (preserving previous keys)
     title: "World Flag Explorer",
     headerTitle: "World Flags",
     explorer: "Explore",
@@ -210,7 +209,13 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     achProlificDesignerDesc: "Master the patterns and layouts by creating 10 designs.",
     achDesignVisionaryTitle: "Master of Tinctures",
     achDesignVisionaryDesc: "Establish yourself as a master by creating 30 unique designs.",
-    // ... (rest of keys)
+    dataManagement: "Progress Management",
+    exportData: "Export Progress",
+    importData: "Import Progress",
+    resetData: "Reset All Progress",
+    resetConfirm: "Are you sure? This will wipe your levels and achievements forever.",
+    dataImported: "Progress successfully restored!",
+    dataExported: "Backup file generated.",
     flagFactsList: "[\"**Nepal** is the only sovereign nation with a non-quadrilateral flag design.\", \"The flag of **Denmark** holds the record as the oldest national flag in continuous use, dating back to 1219.\", \"**Jamaica** is currently the only national flag that does not feature the colors red, white, or blue.\", \"**Switzerland** and **Vatican City** are the only two states with officially square national flags.\", \"The flag of **Mozambique** is the only one to feature a modern assault rifle, representing national defense.\", \"**Belize** is unique for having a national flag that features human figures as a central element.\", \"The **Philippines** flag is unique: it is flown upside down (red stripe on top) during times of official war.\", \"**Libya** previously held the record for the only solid-color national flag (pure green).\", \"The celestial bodies on **Nepal's** flag symbolize the hope for national longevity alongside the sun and moon.\", \"The colors of the **South African** flag represent unity and diversity in the wake of its history.\"]",
     mapTitle: "Global Cartography",
     mapSubtitle: "Navigate the world through geography and location.",
@@ -294,7 +299,6 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     outOfTime: "Time Expired!"
   },
   pt: {
-    // ... (previous keys)
     title: "Explorador de Bandeiras",
     headerTitle: "Bandeiras do Mundo",
     explorer: "Explorar",
@@ -493,7 +497,13 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     achProlificDesignerDesc: "Domine os padrões e layouts criando 10 designs.",
     achDesignVisionaryTitle: "Mestre das Tinturas",
     achDesignVisionaryDesc: "Consagre-se como um mestre criando 30 designs únicos.",
-    // ... (rest of keys)
+    dataManagement: "Gerenciamento de Dados",
+    exportData: "Exportar Progresso",
+    importData: "Importar Progresso",
+    resetData: "Resetar Todo o Progresso",
+    resetConfirm: "Tem certeza? Isso apagará seus níveis e conquistas para sempre.",
+    dataImported: "Progresso restaurado com sucesso!",
+    dataExported: "Arquivo de backup gerado.",
     flagFactsList: "[\"O **Nepal** é a única nação soberana com uma bandeira nacional não quadrilátera.\", \"A bandeira da **Dinamarca** é reconhecida como a mais antiga em uso contínuo, datando de 1219.\", \"A **Jamaica** é atualmente a única bandeira nacional que não contém as cores vermelho, branco ou azul.\", \"A **Suíça** e o **Vaticano** são os únicos dois estados com bandeiras nacionais oficialmente quadradas.\", \"A bandeira de **Moçambique** é a única a apresentar um rifle de assalto moderno, simbolizando a defesa nacional.\", \"**Belize** destaca-se por ter a única bandeira nacional que apresenta figuras humanas como elemento central.\", \"A bandeira das **Filipinas** tem um uso único: é hasteada invertida (vermelho no topo) em tempos de guerra oficial.\", \"A **Líbia** já ostentou a única bandeira de cor sólida do mundo (totalmente verde).\", \"Os corpos celestes na bandeira do **Nepal** simbolizam a esperança de que a nação dure tanto quanto o sol e a lua.\", \"As cores da bandeira da **África do Sul** simbolizam a unidade e diversidade após sua reconstrução histórica.\"]",
     mapTitle: "Cartografia Global",
     mapSubtitle: "Navegue pelo mundo através da geografia e localização.",

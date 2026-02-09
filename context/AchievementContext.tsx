@@ -24,6 +24,7 @@ interface UserStats {
   favoritesCount: number;
   flagsDesigned: number;
   totalXP: number;
+  lastUpdated?: number;
 }
 
 interface AchievementContextType {
@@ -39,6 +40,9 @@ interface AchievementContextType {
   trackDesign: () => void;
   notificationQueue: Achievement[];
   popNotification: () => void;
+  exportProgress: () => void;
+  importProgress: (jsonData: string) => boolean;
+  resetProgress: () => void;
 }
 
 const INITIAL_STATS: UserStats = {
@@ -49,6 +53,7 @@ const INITIAL_STATS: UserStats = {
   favoritesCount: 0,
   flagsDesigned: 0,
   totalXP: 0,
+  lastUpdated: Date.now(),
 };
 
 const AchievementContext = createContext<AchievementContextType | undefined>(undefined);
@@ -112,21 +117,19 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
               stats.viewedFlags.length
   })), [achievementsBase, unlockedIds, stats]);
 
-  // Level Logic (Exponential curve)
   const level = useMemo(() => Math.floor(Math.sqrt(stats.totalXP / 80)) + 1, [stats.totalXP]);
   const xpForCurrentLevel = Math.pow(level - 1, 2) * 80;
   const xpForNextLevel = Math.pow(level, 2) * 80;
   const levelProgress = ((stats.totalXP - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100;
 
   useEffect(() => {
-    localStorage.setItem('user_stats_v2', JSON.stringify(stats));
+    localStorage.setItem('user_stats_v2', JSON.stringify({ ...stats, lastUpdated: Date.now() }));
     localStorage.setItem('unlocked_achievements_v2', JSON.stringify(unlockedIds));
   }, [stats, unlockedIds]);
 
   useEffect(() => {
     const toUnlock: {id: string, xp: number}[] = [];
     
-    // Logic Mapping
     const check = (id: string, condition: boolean, xp: number) => {
         if (condition) toUnlock.push({id, xp});
     };
@@ -211,6 +214,43 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   }, []);
 
+  const exportProgress = useCallback(() => {
+    const data = {
+        stats,
+        unlockedIds,
+        timestamp: Date.now(),
+        version: "2.0"
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vexillology_explorer_save_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [stats, unlockedIds]);
+
+  const importProgress = useCallback((jsonData: string) => {
+    try {
+        const data = JSON.parse(jsonData);
+        if (data.stats && Array.isArray(data.unlockedIds)) {
+            setStats(data.stats);
+            setUnlockedIds(data.unlockedIds);
+            notifiedIdsRef.current = new Set(data.unlockedIds);
+            return true;
+        }
+    } catch (e) {}
+    return false;
+  }, []);
+
+  const resetProgress = useCallback(() => {
+    setStats(INITIAL_STATS);
+    setUnlockedIds([]);
+    notifiedIdsRef.current = new Set();
+    localStorage.removeItem('user_stats_v2');
+    localStorage.removeItem('unlocked_achievements_v2');
+  }, []);
+
   return (
     <AchievementContext.Provider value={{ 
       achievements: achievementsList, 
@@ -224,7 +264,10 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
       trackFavorite,
       trackDesign,
       notificationQueue,
-      popNotification
+      popNotification,
+      exportProgress,
+      importProgress,
+      resetProgress
     }}>
       {children}
     </AchievementContext.Provider>

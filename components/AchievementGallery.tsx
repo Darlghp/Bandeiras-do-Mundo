@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useAchievements, Achievement, Rarity } from '../context/AchievementContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -61,10 +61,37 @@ const AchievementCard: React.FC<{ achievement: Achievement }> = ({ achievement }
 };
 
 const AchievementGallery: React.FC = () => {
-  const { achievements, level, levelProgress, stats, xpToNextLevel } = useAchievements();
+  const { achievements, level, levelProgress, stats, xpToNextLevel, exportProgress, importProgress, resetProgress } = useAchievements();
   const { t } = useLanguage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const categories = ['explorer', 'quiz', 'collector', 'designer'] as const;
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const result = event.target?.result as string;
+            if (importProgress(result)) {
+                alert(t('dataImported'));
+                window.location.reload();
+            } else {
+                alert('Invalid backup file.');
+            }
+        };
+        reader.readAsText(file);
+    }
+  };
+
+  const handleReset = () => {
+    if (confirm(t('resetConfirm'))) {
+        resetProgress();
+        window.location.reload();
+    }
+  };
 
   return (
     <div className="space-y-16 py-8">
@@ -141,6 +168,41 @@ const AchievementGallery: React.FC = () => {
           </div>
         );
       })}
+
+      {/* Data Management Section */}
+      <div className="mt-20 p-10 bg-slate-900/40 rounded-[3rem] border border-white/5 text-center">
+          <h3 className="text-xl font-black text-white uppercase tracking-widest mb-6">{t('dataManagement')}</h3>
+          <div className="flex flex-wrap justify-center gap-4">
+              <button 
+                onClick={exportProgress}
+                className="px-6 py-3 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all"
+              >
+                  {t('exportData')}
+              </button>
+              <button 
+                onClick={handleImportClick}
+                className="px-6 py-3 bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all"
+              >
+                  {t('importData')}
+              </button>
+              <button 
+                onClick={handleReset}
+                className="px-6 py-3 bg-red-600/20 text-red-400 border border-red-600/30 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all"
+              >
+                  {t('resetData')}
+              </button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+                accept=".json"
+              />
+          </div>
+          <p className="mt-6 text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+            Auto-save active • {new Date(stats.lastUpdated || Date.now()).toLocaleTimeString()}
+          </p>
+      </div>
     </div>
   );
 };
