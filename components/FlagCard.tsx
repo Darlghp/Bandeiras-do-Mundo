@@ -38,10 +38,10 @@ const FlagCard: React.FC<FlagCardProps> = ({
             className={`
                 relative bg-white/70 dark:bg-slate-900/40 rounded-[2.8rem] backdrop-blur-2xl
                 transition-all duration-700 ease-[cubic-bezier(0.2,1,0.2,1)] group overflow-hidden 
-                opacity-0 animate-fade-in-up aspect-[3/4.2] border-[6px] border-white dark:border-slate-800/60 shadow-lg
+                opacity-0 animate-fade-in-up aspect-[3/4.2] border-[6px] border-white dark:border-slate-800/60 shadow-xl
                 ${isCompareModeActive 
                     ? `cursor-pointer ${isSelectedForCompare ? 'ring-4 ring-blue-500 ring-offset-4 dark:ring-offset-slate-950 scale-[0.97]' : 'hover:scale-[1.02] hover:ring-2 hover:ring-blue-400'}`
-                    : 'cursor-pointer hover:-translate-y-4 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] hover:scale-[1.03]'
+                    : 'cursor-pointer hover:-translate-y-4 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] hover:scale-[1.03]'
                 }
             `}
             style={{ animationDelay }}
@@ -51,7 +51,6 @@ const FlagCard: React.FC<FlagCardProps> = ({
             onKeyPress={(e) => { if (e.key === 'Enter') onCardClick(country) }}
             aria-label={ariaLabel}
         >
-            {/* Base Flag Image */}
             <div className="absolute inset-0 z-0 bg-slate-200 dark:bg-slate-950">
                 <img
                     src={country.flags.svg}
@@ -59,22 +58,17 @@ const FlagCard: React.FC<FlagCardProps> = ({
                     className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-125"
                     loading="lazy"
                 />
-                
-                {/* Sombra de Vinheta Escura */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 opacity-90 transition-opacity duration-500 group-hover:opacity-70"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/70 opacity-90 transition-opacity duration-500 group-hover:opacity-70"></div>
             </div>
             
-            {/* Brilho Dinâmico (Sweep) */}
             <div className="absolute inset-0 translate-x-[-200%] skew-x-[-30deg] bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:animate-metal-shimmer z-10 pointer-events-none"></div>
 
-            {/* Continent Badge */}
             <div className="absolute top-5 left-5 z-20">
                 <span className="px-4 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-black text-white uppercase tracking-[0.2em]">
                     {translatedContinent}
                 </span>
             </div>
 
-            {/* Favorito Button */}
             <button
                 onClick={(e) => {
                     e.stopPropagation();
@@ -93,11 +87,10 @@ const FlagCard: React.FC<FlagCardProps> = ({
                 </svg>
             </button>
 
-            {/* Bottom Info Tab */}
             <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
                 <div className="relative overflow-hidden bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[2.2rem] p-5 shadow-2xl transition-all duration-700 group-hover:-translate-y-2 group-hover:bg-black/80">
                     <div className="space-y-3">
-                        <h3 className="text-2xl font-black text-white tracking-tighter leading-tight drop-shadow-lg">
+                        <h3 className="text-2xl font-black text-white tracking-tighter leading-tight drop-shadow-lg truncate">
                             {commonName}
                         </h3>
                         

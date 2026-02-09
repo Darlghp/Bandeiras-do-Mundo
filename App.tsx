@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import SkeletonCard from './components/SkeletonCard';
 import Hero from './components/Hero';
+import QuickStatsWidget from './components/QuickStatsWidget';
 import { CONTINENTS_API_VALUES } from './constants';
 import { FLAG_OF_THE_DAY_TITLES } from './constants/flagOfTheDayTitles';
 import { useLanguage } from './context/LanguageContext';
@@ -20,7 +21,7 @@ import { useDebounce } from './hooks/useDebounce';
 import AchievementToast from './components/AchievementToast';
 import VexyChatbot from './components/VexyChatbot';
 
-// Lazy load views - removed .tsx extension for better compatibility
+// Lazy load views
 const QuizView = lazy(() => import('./components/QuizView'));
 const DiscoverView = lazy(() => import('./components/DiscoverView'));
 const DesignerView = lazy(() => import('./components/DesignerView'));
@@ -63,10 +64,10 @@ const Toast: React.FC<{ info: { message: string; type: 'add' | 'remove' } | null
     
     return (
         <div
-            className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-out
+            className={`fixed top-5 left-1/2 -translate-x-1/2 z-[110] transition-all duration-300 ease-out
                 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-12 pointer-events-none'}`}
         >
-            <div className="flex items-center gap-3 bg-gray-900 dark:bg-slate-50 text-white dark:text-slate-900 px-4 py-3 rounded-full shadow-lg">
+            <div className="flex items-center gap-3 bg-slate-900/95 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-full shadow-2xl backdrop-blur-md border border-white/10 dark:border-black/10">
                 {isAdd ? (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
@@ -76,7 +77,7 @@ const Toast: React.FC<{ info: { message: string; type: 'add' | 'remove' } | null
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                 )}
-                <span className="text-sm font-medium">{info.message}</span>
+                <span className="text-sm font-black uppercase tracking-widest">{info.message}</span>
             </div>
         </div>
     );
@@ -117,6 +118,7 @@ interface ExplorerContentProps {
     setSortOrder: (order: SortOrder) => void;
     comparisonList: Country[];
     onRetry: () => void;
+    onShuffleSpotlight: () => void;
 }
 
 const ExplorerContent: React.FC<ExplorerContentProps> = ({
@@ -138,7 +140,8 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     sortOrder,
     setSortOrder,
     comparisonList,
-    onRetry
+    onRetry,
+    onShuffleSpotlight
 }) => {
     const { t } = useLanguage();
 
@@ -150,7 +153,7 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                 <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">{t(error) || t('api_fetch_error')}</p>
                 <button 
                     onClick={onRetry}
-                    className="px-10 py-3 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                    className="px-10 py-3 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-all shadow-lg active:scale-95"
                 >
                     {t('playAgain')}
                 </button>
@@ -159,9 +162,9 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     }
 
     return (
-        <div className="space-y-12">
+        <div className="space-y-12 pb-24">
             <div className="max-w-4xl animate-fade-in-up">
-                <h1 className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white leading-tight mb-4 tracking-tighter">
+                <h1 className="text-5xl sm:text-7xl font-black text-slate-900 dark:text-white leading-none mb-6 tracking-tighter">
                     {t('headerTitle')}
                 </h1>
                 <p className="text-xl text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
@@ -173,36 +176,37 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                 flagOfTheDay={flagOfTheDay} 
                 isLoading={isFlagOfTheDayLoading} 
                 onFlagClick={handleCardClick}
+                onShuffleSpotlight={onShuffleSpotlight}
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <div className="lg:col-span-1">
-                    <div className="sticky top-24 space-y-6">
-                        <FilterNavigator 
-                            continents={CONTINENTS_API_VALUES}
-                            selectedContinent={selectedContinent}
-                            setSelectedContinent={setSelectedContinent}
-                            searchQuery={searchQuery}
-                            onSearchChange={setSearchQuery}
-                            isCompareModeActive={isCompareModeActive}
-                            onToggleCompareMode={handleToggleCompareMode}
-                        />
-                        
-                        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-4 rounded-xl shadow-md border border-gray-200 dark:border-slate-700/50">
-                            <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">{t('sortBy')}</h4>
-                            <select 
-                                value={sortOrder}
-                                onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                                className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-slate-800 text-sm font-semibold border-none focus:ring-2 focus:ring-blue-500 outline-none"
-                            >
-                                <option value="name_asc">{t('sortNameAsc')}</option>
-                                <option value="name_desc">{t('sortNameDesc')}</option>
-                                <option value="pop_desc">{t('sortPopDesc')}</option>
-                                <option value="pop_asc">{t('sortPopAsc')}</option>
-                                <option value="area_desc">{t('sortAreaDesc')}</option>
-                                <option value="area_asc">{t('sortAreaAsc')}</option>
-                            </select>
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+                <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
+                    <QuickStatsWidget />
+                    
+                    <FilterNavigator 
+                        continents={CONTINENTS_API_VALUES}
+                        selectedContinent={selectedContinent}
+                        setSelectedContinent={setSelectedContinent}
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        isCompareModeActive={isCompareModeActive}
+                        onToggleCompareMode={handleToggleCompareMode}
+                    />
+                    
+                    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2rem] shadow-lg border border-white dark:border-slate-800/50">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">{t('sortBy')}</h4>
+                        <select 
+                            value={sortOrder}
+                            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+                            className="w-full p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-sm font-black border-none focus:ring-2 focus:ring-blue-500 outline-none"
+                        >
+                            <option value="name_asc">{t('sortNameAsc')}</option>
+                            <option value="name_desc">{t('sortNameDesc')}</option>
+                            <option value="pop_desc">{t('sortPopDesc')}</option>
+                            <option value="pop_asc">{t('sortPopAsc')}</option>
+                            <option value="area_desc">{t('sortAreaDesc')}</option>
+                            <option value="area_asc">{t('sortAreaAsc')}</option>
+                        </select>
                     </div>
                 </div>
 
@@ -213,8 +217,8 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                         </div>
                     ) : filteredCountries.length > 0 ? (
                         <>
-                            <div className="mb-6 flex items-center justify-between">
-                                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                            <div className="mb-8 flex items-center justify-between px-2">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                                     {t('showingFlags', { count: filteredCountries.length.toString(), total: countries.length.toString() })}
                                 </p>
                             </div>
@@ -228,10 +232,10 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                             />
                         </>
                     ) : (
-                        <div className="text-center py-20 bg-white/50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-slate-800">
-                             <div className="text-5xl mb-4">🔍</div>
-                             <h3 className="text-xl font-bold text-gray-800 dark:text-slate-200 mb-2">{t('noFlagsFound')}</h3>
-                             <p className="text-gray-600 dark:text-slate-400">{t('noFlagsFoundDescription')}</p>
+                        <div className="text-center py-32 bg-white/50 dark:bg-slate-900/50 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+                             <div className="text-6xl mb-6">🏜️</div>
+                             <h3 className="text-2xl font-black text-slate-800 dark:text-slate-200 mb-2">{t('noFlagsFound')}</h3>
+                             <p className="text-slate-500 dark:text-slate-400 font-medium">{t('noFlagsFoundDescription')}</p>
                         </div>
                     )}
                 </div>
@@ -320,6 +324,14 @@ const AppContent: React.FC = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    const setSpotlight = useCallback((countryList: Country[]) => {
+        if (countryList.length === 0) return;
+        const randomCountry = countryList[Math.floor(Math.random() * countryList.length)];
+        const curatedTitle = FLAG_OF_THE_DAY_TITLES[randomCountry.cca3]?.[language];
+        const fallbackTitle = language === 'pt' ? (randomCountry.translations?.por?.common || randomCountry.name.common) : randomCountry.name.common;
+        setFlagOfTheDay({ country: randomCountry, title: curatedTitle || fallbackTitle });
+    }, [language]);
+
     const loadData = useCallback(async () => {
         try {
             setIsLoading(true);
@@ -330,7 +342,6 @@ const AppContent: React.FC = () => {
             const sortedData = [...data].sort((a, b) => a.cca3.localeCompare(b.cca3));
             setCountries(sortedData);
             
-            // Determinar Flag of the Day (baseado em data)
             const now = new Date();
             const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             const countryForToday = getDeterministicCountryForDate(today, sortedData);
@@ -348,19 +359,15 @@ const AppContent: React.FC = () => {
         }
     }, [language]);
 
-    // O useEffect de carga inicial só deve rodar uma vez, sem depender de language para evitar re-fetches
-    // As coleções e Flag of the Day reagem a language via useMemo nos subcomponentes ou no render
     useEffect(() => {
         loadData();
-    }, []); // Carrega apenas na montagem
+    }, []);
 
-    // Atualiza coleções quando dados ou idioma mudam
     useEffect(() => {
         if (countries.length > 0) {
             const collections = fetchAllCollections(countries, language);
             setCollectionsData(collections);
             
-            // Atualizar título da Flag of the Day
             if (flagOfTheDay) {
                 const curatedTitle = FLAG_OF_THE_DAY_TITLES[flagOfTheDay.country.cca3]?.[language];
                 const fallbackTitle = language === 'pt' ? (flagOfTheDay.country.translations?.por?.common || flagOfTheDay.country.name.common) : flagOfTheDay.country.name.common;
@@ -448,6 +455,7 @@ const AppContent: React.FC = () => {
                         setSortOrder={setSortOrder}
                         comparisonList={comparisonList}
                         onRetry={loadData}
+                        onShuffleSpotlight={() => setSpotlight(countries)}
                     />
                 );
             case 'quiz': return <Suspense fallback={<PageLoader />}><QuizView countries={countries} onBackToExplorer={() => setView('explorer')} /></Suspense>;
