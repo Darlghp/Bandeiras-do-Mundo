@@ -8,7 +8,6 @@ interface HeroProps {
     flagOfTheDay: { country: Country; title: string; } | null;
     isLoading: boolean;
     onFlagClick: (country: Country) => void;
-    onShuffleSpotlight?: () => void;
 }
 
 const HeroSkeleton: React.FC = () => {
@@ -17,7 +16,7 @@ const HeroSkeleton: React.FC = () => {
     );
 }
 
-const Hero: React.FC<HeroProps> = ({ flagOfTheDay, isLoading, onFlagClick, onShuffleSpotlight }) => {
+const Hero: React.FC<HeroProps> = ({ flagOfTheDay, isLoading, onFlagClick }) => {
     const { t, language } = useLanguage();
 
     if (isLoading) {
@@ -31,7 +30,6 @@ const Hero: React.FC<HeroProps> = ({ flagOfTheDay, isLoading, onFlagClick, onShu
     const { country, title } = flagOfTheDay;
     const commonName = language === 'pt' ? (country.translations?.por?.common || country.name.common) : country.name.common;
     const continent = CONTINENT_NAMES[country.continents[0]]?.[language] || country.continents[0];
-    const displayCca3 = (language === 'pt' && LOCALIZED_ACRONYMS[country.cca3]) ? LOCALIZED_ACRONYMS[country.cca3] : country.cca3;
 
     return (
         <div className="relative group animate-fade-in-up">
@@ -69,16 +67,6 @@ const Hero: React.FC<HeroProps> = ({ flagOfTheDay, isLoading, onFlagClick, onShu
                                 <span className="relative z-10">{t('flagOfTheDay')}</span>
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] animate-metal-shimmer"></div>
                             </span>
-                            
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); onShuffleSpotlight?.(); }}
-                                className="p-2 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-500 dark:text-slate-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-600 transition-all active:scale-90"
-                                title={t('randomize')}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                            </button>
                         </div>
 
                         <div className="space-y-2">

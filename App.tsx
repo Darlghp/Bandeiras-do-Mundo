@@ -118,7 +118,6 @@ interface ExplorerContentProps {
     setSortOrder: (order: SortOrder) => void;
     comparisonList: Country[];
     onRetry: () => void;
-    onShuffleSpotlight: () => void;
 }
 
 const ExplorerContent: React.FC<ExplorerContentProps> = ({
@@ -141,7 +140,6 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     setSortOrder,
     comparisonList,
     onRetry,
-    onShuffleSpotlight
 }) => {
     const { t } = useLanguage();
 
@@ -176,7 +174,6 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                 flagOfTheDay={flagOfTheDay} 
                 isLoading={isFlagOfTheDayLoading} 
                 onFlagClick={handleCardClick}
-                onShuffleSpotlight={onShuffleSpotlight}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
@@ -324,14 +321,6 @@ const AppContent: React.FC = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const setSpotlight = useCallback((countryList: Country[]) => {
-        if (countryList.length === 0) return;
-        const randomCountry = countryList[Math.floor(Math.random() * countryList.length)];
-        const curatedTitle = FLAG_OF_THE_DAY_TITLES[randomCountry.cca3]?.[language];
-        const fallbackTitle = language === 'pt' ? (randomCountry.translations?.por?.common || randomCountry.name.common) : randomCountry.name.common;
-        setFlagOfTheDay({ country: randomCountry, title: curatedTitle || fallbackTitle });
-    }, [language]);
-
     const loadData = useCallback(async () => {
         try {
             setIsLoading(true);
@@ -375,6 +364,16 @@ const AppContent: React.FC = () => {
             }
         }
     }, [countries, language]);
+
+    const handleAddToCompare = useCallback((country: Country) => {
+        setIsCompareModeActive(true);
+        setComparisonList(prev => {
+            const isAlreadySelected = prev.some(c => c.cca3 === country.cca3);
+            if (isAlreadySelected) return prev;
+            if (prev.length < 2) return [...prev, country];
+            return [prev[1], country];
+        });
+    }, []);
 
     const handleCardClick = (country: Country) => {
         if (isCompareModeActive) {
@@ -455,7 +454,6 @@ const AppContent: React.FC = () => {
                         setSortOrder={setSortOrder}
                         comparisonList={comparisonList}
                         onRetry={loadData}
-                        onShuffleSpotlight={() => setSpotlight(countries)}
                     />
                 );
             case 'quiz': return <Suspense fallback={<PageLoader />}><QuizView countries={countries} onBackToExplorer={() => setView('explorer')} /></Suspense>;
@@ -480,6 +478,7 @@ const AppContent: React.FC = () => {
                         onClose={() => setSelectedCountry(null)}
                         isFavorite={favorites.has(selectedCountry.cca3)}
                         onToggleFavorite={handleToggleFavorite}
+                        onAddToCompare={handleAddToCompare}
                     />
                 )}
                 {isCompareModalOpen && comparisonList.length === 2 && (
