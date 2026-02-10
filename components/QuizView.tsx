@@ -84,7 +84,6 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
 
     const getCountryName = useCallback((c: Country) => {
         const name = language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common;
-        // Proteção extra: se o nome tiver apenas 2 letras e for minúsculo, usa o código ISO maiúsculo
         if (name.length <= 2 && name === name.toLowerCase()) return c.cca3;
         return name;
     }, [language]);
@@ -196,7 +195,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
         const shuffledWrongPool = shuffleArray(wrongOptionPool);
         for (const country of shuffledWrongPool) {
             const val = getOptionValue(country);
-            if (!uniqueOptions.has(val) && val.length > 2) { // Garante que a opção fake também não seja uma sigla
+            if (!uniqueOptions.has(val) && val.length > 2) {
                 uniqueOptions.add(val);
             }
             if (uniqueOptions.size === OPTIONS_COUNT) break;
@@ -293,7 +292,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                                         <FlagFabricOverlay />
                                     </div>
                                     <div className="flex-grow">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Question {idx + 1}</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t('questionLabel')} {idx + 1}</p>
                                         <h4 className="font-bold text-slate-800 dark:text-slate-100 leading-tight">
                                             {item.isCorrect ? t('quizCorrect') : t('quizIncorrect')}
                                         </h4>
@@ -352,7 +351,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLe
                     </span>
                     <div className="flex items-center gap-3">
                         {streak > 1 && <span className="px-3 py-1 bg-orange-500 text-white rounded-full text-[10px] font-black animate-pulse flex items-center gap-1">🔥 {streak}</span>}
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{score} ACERTOS</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{score} {t('hitsLabel')}</span>
                     </div>
                 </div>
                 <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">

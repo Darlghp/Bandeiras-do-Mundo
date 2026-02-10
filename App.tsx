@@ -149,9 +149,10 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
 }) => {
     const { t } = useLanguage();
     const filterContainerRef = useRef<HTMLDivElement>(null);
+    const trackRef = useRef<HTMLDivElement>(null);
     const [scrollState, setScrollState] = useState({ top: 0, height: 0, containerHeight: 0 });
     
-    // Estados para Drag-and-Scroll da Barra de Locomoção
+    // Estados para Drag-and-Scroll
     const [isDragging, setIsDragging] = useState(false);
     const [startY, setStartY] = useState(0);
     const [startScrollTop, setStartScrollTop] = useState(0);
@@ -166,37 +167,38 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
         handleFilterScroll();
     }, [filteredCountries.length]);
 
-    // Constantes de Design da Barra
-    const handleHeight = 48; // Aumentado um pouco para melhor usabilidade
-    const trackPadding = 12;
+    const handleHeight = 64; 
+    const trackPadding = 16;
     const availableTrackHeight = scrollState.containerHeight - (trackPadding * 2);
     const scrollMax = scrollState.height - scrollState.containerHeight;
     const scrollRatio = scrollMax > 0 ? scrollState.top / scrollMax : 0;
     const translateOffset = scrollRatio * (availableTrackHeight - handleHeight);
 
-    // Lógica de Drag
     const onMouseDown = (e: React.MouseEvent) => {
+        e.stopPropagation();
         if (!filterContainerRef.current) return;
         setIsDragging(true);
         setStartY(e.pageY);
         setStartScrollTop(filterContainerRef.current.scrollTop);
-        document.body.style.userSelect = 'none'; // Evita seleção de texto durante o arrasto
+        document.body.style.userSelect = 'none';
+    };
+
+    const onTrackClick = (e: React.MouseEvent) => {
+        if (!trackRef.current || !filterContainerRef.current) return;
+        const rect = trackRef.current.getBoundingClientRect();
+        const clickY = e.clientY - rect.top - trackPadding;
+        const clickRatio = clickY / (rect.height - trackPadding * 2);
+        filterContainerRef.current.scrollTop = clickRatio * scrollMax;
     };
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isDragging || !filterContainerRef.current) return;
-
             const deltaY = e.pageY - startY;
             const scrollableHandlePath = availableTrackHeight - handleHeight;
-            
             if (scrollableHandlePath <= 0) return;
-
-            // Proporção do movimento do mouse em relação ao trilho
             const moveRatio = deltaY / scrollableHandlePath;
-            const newScrollTop = startScrollTop + (moveRatio * scrollMax);
-
-            filterContainerRef.current.scrollTop = newScrollTop;
+            filterContainerRef.current.scrollTop = startScrollTop + (moveRatio * scrollMax);
         };
 
         const handleMouseUp = () => {
@@ -214,6 +216,9 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
             window.removeEventListener('mouseup', handleMouseUp);
         };
     }, [isDragging, startY, startScrollTop, scrollMax, availableTrackHeight]);
+
+    const showTopShadow = scrollState.top > 10;
+    const showBottomShadow = scrollState.top < scrollMax - 10;
 
     if (error) {
         return (
@@ -251,28 +256,35 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
             {/* Layout de Duas Colunas Principal */}
             <div className="flex flex-col lg:flex-row gap-10 items-start">
                 
-                {/* BARRA LATERAL (SIDEBAR) */}
-                <aside className="w-full lg:w-80 lg:shrink-0 lg:sticky lg:top-24 z-30">
-                    <div className="animate-fade-in-up-short space-y-8">
+                {/* BARRA LATERAL (SIDEBAR) REFINADA PARA PC */}
+                <aside className="w-full lg:w-[400px] lg:shrink-0 lg:sticky lg:top-24 z-30">
+                    <div className="animate-fade-in-up-short space-y-6">
                         
-                        {/* Bloco de Estatísticas (Nível) */}
                         <div className="hidden lg:block">
                             <QuickStatsWidget />
                         </div>
                         
-                        {/* Painel de Controle Lateral com Barra de Locomoção Interativa */}
-                        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] border-2 border-slate-200 dark:border-slate-800 shadow-2xl shadow-blue-500/5 flex flex-col max-h-[80vh] lg:max-h-[calc(100vh-10rem)] relative overflow-hidden group/sidebar">
+                        {/* Painel de Controle Lateral Otimizado */}
+                        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[3rem] border-2 border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[90vh] lg:max-h-[calc(100vh-12rem)] relative overflow-hidden group/sidebar">
                             
-                            {/* BARRA DE LOCOMOÇÃO INTERATIVA */}
+                            {/* INDICADORES DE SOMBRA (DEPTH) */}
+                            <div className={`absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white dark:from-slate-900 to-transparent z-40 pointer-events-none transition-opacity duration-300 ${showTopShadow ? 'opacity-100' : 'opacity-0'}`}></div>
+                            <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-slate-900 to-transparent z-40 pointer-events-none transition-opacity duration-300 ${showBottomShadow ? 'opacity-100' : 'opacity-0'}`}></div>
+
+                            {/* BARRA DE LOCOMOÇÃO "DESKTOP PRO" */}
                             {scrollState.height > scrollState.containerHeight && (
-                                <div className="absolute right-1.5 top-0 bottom-0 w-3 flex items-center justify-center pointer-events-none z-50">
-                                    <div className="w-1.5 h-[calc(100%-24px)] bg-black/5 dark:bg-black/40 rounded-full relative">
+                                <div 
+                                    ref={trackRef}
+                                    onClick={onTrackClick}
+                                    className="absolute right-0 top-0 bottom-0 w-8 flex items-center justify-center cursor-pointer z-50 group/track"
+                                >
+                                    <div className="w-1.5 h-[calc(100%-40px)] bg-slate-100 dark:bg-black/30 rounded-full relative transition-all group-hover/track:w-2.5">
                                         <div 
                                             onMouseDown={onMouseDown}
-                                            className={`absolute left-0 w-full rounded-full shadow-md transition-colors cursor-grab pointer-events-auto
+                                            className={`absolute left-0 w-full rounded-full shadow-lg transition-all cursor-grab pointer-events-auto
                                                 ${isDragging 
-                                                    ? 'bg-blue-600 dark:bg-blue-500 cursor-grabbing' 
-                                                    : 'bg-slate-400 dark:bg-slate-500 hover:bg-slate-500 dark:hover:bg-slate-400'
+                                                    ? 'bg-blue-600 shadow-blue-500/40 cursor-grabbing' 
+                                                    : 'bg-slate-300 dark:bg-slate-600 hover:bg-blue-500 group-hover/sidebar:bg-slate-400 dark:group-hover/sidebar:bg-slate-500'
                                                 }`}
                                             style={{ 
                                                 height: `${handleHeight}px`, 
@@ -280,11 +292,10 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                                                 top: `${trackPadding}px`
                                             }}
                                         >
-                                            {/* Indicador Visual Tátil (3 pontos) */}
                                             <div className="flex flex-col gap-0.5 items-center justify-center h-full opacity-40">
-                                                <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
-                                                <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
-                                                <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
+                                                <div className="w-1 h-1 bg-white rounded-full"></div>
+                                                <div className="w-1 h-1 bg-white rounded-full"></div>
+                                                <div className="w-1 h-1 bg-white rounded-full"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -294,32 +305,26 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                             <div 
                                 ref={filterContainerRef}
                                 onScroll={handleFilterScroll}
-                                className={`p-8 pr-10 flex-grow overflow-y-auto no-scrollbar space-y-8 ${isDragging ? 'scroll-auto' : 'scroll-smooth'}`}
+                                className={`p-8 pr-12 flex-grow overflow-y-auto no-scrollbar space-y-8 ${isDragging ? 'scroll-auto' : 'scroll-smooth'}`}
                             >
-                                <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">{t('filterAndSearch')}</h3>
-                                        <div className="w-1.5 h-1.5 bg-blue-600/30 rounded-full"></div>
-                                    </div>
-                                    <FilterNavigator 
-                                        continents={CONTINENTS_API_VALUES}
-                                        selectedContinent={selectedContinent}
-                                        setSelectedContinent={setSelectedContinent}
-                                        searchQuery={searchQuery}
-                                        onSearchChange={setSearchQuery}
-                                        onRandomDiscovery={onRandomDiscovery}
-                                        isCompareModeActive={isCompareModeActive}
-                                        onToggleCompareMode={onToggleCompareMode}
-                                    />
-                                </div>
+                                <FilterNavigator 
+                                    continents={CONTINENTS_API_VALUES}
+                                    selectedContinent={selectedContinent}
+                                    setSelectedContinent={setSelectedContinent}
+                                    searchQuery={searchQuery}
+                                    onSearchChange={setSearchQuery}
+                                    onRandomDiscovery={onRandomDiscovery}
+                                    isCompareModeActive={isCompareModeActive}
+                                    onToggleCompareMode={onToggleCompareMode}
+                                />
                                 
-                                <div className="pt-8 border-t border-slate-200 dark:border-slate-800">
-                                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-4 px-1">{t('sortBy')}</h4>
-                                    <div className="relative">
+                                <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
+                                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4 px-1">{t('sortBy')}</h4>
+                                    <div className="relative group/select">
                                         <select 
                                             value={sortOrder}
                                             onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                                            className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-xs font-black border-2 border-transparent focus:border-blue-500/50 outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-all appearance-none text-slate-700 dark:text-slate-200 shadow-sm"
+                                            className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-[11px] font-black border-2 border-transparent focus:border-blue-500/50 outline-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all appearance-none text-slate-800 dark:text-slate-200 shadow-inner"
                                         >
                                             <option value="name_asc">{t('sortNameAsc')}</option>
                                             <option value="name_desc">{t('sortNameDesc')}</option>
@@ -328,15 +333,14 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                                             <option value="area_desc">{t('sortAreaDesc')}</option>
                                             <option value="area_asc">{t('sortAreaAsc')}</option>
                                         </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover/select:text-blue-500 transition-colors">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Estatísticas no Mobile aparecem abaixo dos filtros */}
                         <div className="lg:hidden">
                             <QuickStatsWidget />
                         </div>
@@ -351,12 +355,12 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                         </div>
                     ) : filteredCountries.length > 0 ? (
                         <div className="animate-fade-in">
-                            <div className="mb-8 flex items-center justify-between px-2">
+                            <div className="mb-10 flex items-center justify-between px-4">
                                 <div className="flex flex-col">
-                                    <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">
+                                    <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mb-2">
                                         {t('showingFlags', { count: filteredCountries.length.toString(), total: countries.length.toString() })}
                                     </p>
-                                    <div className="h-1 w-12 bg-blue-600 mt-2 rounded-full shadow-lg shadow-blue-500/20"></div>
+                                    <div className="h-1.5 w-16 bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full shadow-lg shadow-blue-500/20"></div>
                                 </div>
                             </div>
                             <VirtualFlagGrid 

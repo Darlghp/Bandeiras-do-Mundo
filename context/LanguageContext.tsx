@@ -299,7 +299,15 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     outOfTime: "Time Expired!",
     explored: "Explored",
     addToComparison: "Add to Comparison",
-    removeFromComparison: "Remove from Comparison"
+    removeFromComparison: "Remove from Comparison",
+    guessesLabel: "GUESSES",
+    excellentLabel: "EXCELLENT!",
+    youWonLabel: "YOU WON!",
+    correctAnswerWasLabel: "The flag was from",
+    hintNameStarts: "Hint: The name starts with",
+    hintRegion: "Hint: Located in region:",
+    hitsLabel: "HITS",
+    questionLabel: "Question"
   },
   pt: {
     title: "Explorador de Bandeiras",
@@ -473,7 +481,7 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     achVexExpertTitle: "Autoridade em Vexilologia",
     achVexExpertDesc: "Analise profundamente 150 designs nacionais diferentes.",
     achMasterExplorerTitle: "Soberano da Terra",
-    achMasterExplorerDesc: "Complete the global registry by viewing all 240+ flags.",
+    achMasterExplorerDesc: "Complete o registro global visualizando todas as mais de 240 bandeiras.",
     achQuizStarterTitle: "Jornada Acadêmica",
     achQuizStarterDesc: "Conclua com sucesso seu primeiro desafio de conhecimento.",
     achQuizScholarTitle: "Estudioso Ativo",
@@ -511,7 +519,7 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     mapTitle: "Cartografia Global",
     mapSubtitle: "Navegue pelo mundo através da geografia e localização.",
     mapComingSoon: "Navegador Geográfico",
-    mapModeInstructions: "Use the map to explore countries by location. Tap a country tag to reveal its full flag and statistical profile.",
+    mapModeInstructions: "Use o mapa para explorar países por localização. Toque na tag de um país para revelar sua bandeira e perfil estatístico.",
     nepalFlagDesc: "A única bandeira nacional não quadrilátera do mundo.",
     switzerlandFlagDesc: "Um design perfeitamente quadrado, raro entre estados soberanos.",
     vaticanFlagDesc: "A segunda de apenas duas bandeiras oficialmente quadradas.",
@@ -590,7 +598,15 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     outOfTime: "Tempo Expirado!",
     explored: "Explorado",
     addToComparison: "Adicionar à Comparação",
-    removeFromComparison: "Remover da Comparação"
+    removeFromComparison: "Remover da Comparação",
+    guessesLabel: "PALPITES",
+    excellentLabel: "EXCELENTE!",
+    youWonLabel: "VOCÊ VENCEU!",
+    correctAnswerWasLabel: "A bandeira era de",
+    hintNameStarts: "Dica: O nome começa com",
+    hintRegion: "Dica: Localizado na região:",
+    hitsLabel: "ACERTOS",
+    questionLabel: "Questão"
   }
 };
 
