@@ -29,7 +29,7 @@ const InfoCard: React.FC<{ icon: React.ReactNode, label: string, value: string |
     </div>
 );
 
-const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onToggleFavorite, onAddToCompare }) => {
+const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onToggleFavorite }) => {
     const { t, language } = useLanguage();
     const [isShowing, setIsShowing] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
@@ -69,17 +69,8 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                 className={`bg-white dark:bg-slate-950 rounded-[3.5rem] shadow-2xl dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] max-w-5xl w-full relative transform transition-all duration-700 ease-[cubic-bezier(0.2,1,0.2,1)] overflow-y-auto max-h-[95vh] no-scrollbar border-[8px] border-slate-100 dark:border-slate-900 ${isShowing ? 'translate-y-0 scale-100' : 'translate-y-20 scale-95'}`} 
                 onClick={e => e.stopPropagation()}
             >
-                {/* Actions header */}
+                {/* Action Header - Cleaned up to remove Compare button */}
                 <div className="absolute top-8 right-8 z-50 flex items-center gap-3">
-                    {onAddToCompare && (
-                        <button 
-                            onClick={() => { onAddToCompare(country); onClose(); }} 
-                            className="hidden sm:flex items-center gap-2 px-5 py-3.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-lg active:scale-90 font-black text-[10px] uppercase tracking-widest group"
-                        >
-                            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                            {t('compareMode')}
-                        </button>
-                    )}
                     <button 
                         onClick={onClose} 
                         className="p-4 bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-90"

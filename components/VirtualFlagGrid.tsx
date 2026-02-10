@@ -30,14 +30,15 @@ interface VirtualFlagGridProps {
     comparisonList: Country[];
     favorites: Set<string>;
     onToggleFavorite: (country: Country) => void;
+    onToggleCompare?: (country: Country) => void;
+    viewedFlags?: string[];
 }
 
 const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
-    const { countries } = props;
+    const { countries, viewedFlags = [] } = props;
     const rootRef = useRef<HTMLDivElement>(null);
 
     const [columnCount, setColumnCount] = useState(getColumnCount());
-    // Overscan inicial maior para garantir que a tela nunca fique branca no carregamento
     const [visibleRange, setVisibleRange] = useState({ start: 0, end: 12 });
 
     const cardEstimatedHeight = getCardEstimatedHeight(columnCount);
@@ -52,7 +53,7 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
         const gridRect = rootRef.current.getBoundingClientRect();
         const gridTopAbsolute = gridRect.top + scrollTop;
         
-        const overscanRowCount = 5; // Aumentado para scroll mais suave
+        const overscanRowCount = 5;
         const visibleStart = Math.max(0, scrollTop - gridTopAbsolute);
         
         const startRow = Math.max(0, Math.floor(visibleStart / rowHeight) - overscanRowCount);
@@ -77,8 +78,6 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
 
         window.addEventListener('resize', handleResize);
         window.addEventListener('scroll', handleScroll, { passive: true });
-        
-        // Garante cálculo após layout estável
         const rafId = requestAnimationFrame(handleScroll);
         
         return () => {
@@ -132,6 +131,8 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
                             isSelectedForCompare={props.comparisonList.some(c => c.cca3 === country.cca3)}
                             isFavorite={props.favorites.has(country.cca3)}
                             onToggleFavorite={props.onToggleFavorite}
+                            onToggleCompare={props.onToggleCompare}
+                            isViewed={viewedFlags.includes(country.cca3)}
                         />
                     ))}
                 </div>

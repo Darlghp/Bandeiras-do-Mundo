@@ -113,11 +113,13 @@ interface ExplorerContentProps {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
     isCompareModeActive: boolean;
-    handleToggleCompareMode: () => void;
     sortOrder: SortOrder;
     setSortOrder: (order: SortOrder) => void;
     comparisonList: Country[];
     onRetry: () => void;
+    onToggleCompare: (country: Country) => void;
+    viewedFlags: string[];
+    onRandomDiscovery: () => void;
 }
 
 const ExplorerContent: React.FC<ExplorerContentProps> = ({
@@ -135,11 +137,13 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     searchQuery,
     setSearchQuery,
     isCompareModeActive,
-    handleToggleCompareMode,
     sortOrder,
     setSortOrder,
     comparisonList,
     onRetry,
+    onToggleCompare,
+    viewedFlags,
+    onRandomDiscovery
 }) => {
     const { t } = useLanguage();
 
@@ -186,11 +190,10 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                         setSelectedContinent={setSelectedContinent}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
-                        isCompareModeActive={isCompareModeActive}
-                        onToggleCompareMode={handleToggleCompareMode}
+                        onRandomDiscovery={onRandomDiscovery}
                     />
                     
-                    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2rem] shadow-lg border border-white dark:border-slate-800/50">
+                    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2.5rem] shadow-lg border border-white dark:border-slate-800/50">
                         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">{t('sortBy')}</h4>
                         <select 
                             value={sortOrder}
@@ -226,6 +229,8 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                                 comparisonList={comparisonList}
                                 favorites={favorites}
                                 onToggleFavorite={onToggleFavorite}
+                                onToggleCompare={onToggleCompare}
+                                viewedFlags={viewedFlags}
                             />
                         </>
                     ) : (
@@ -243,7 +248,7 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
 
 const AppContent: React.FC = () => {
     const { t, language } = useLanguage();
-    const { trackFlagView, trackFavorite } = useAchievements();
+    const { trackFlagView, trackFavorite, stats } = useAchievements();
     const [countries, setCountries] = useState<Country[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -365,24 +370,22 @@ const AppContent: React.FC = () => {
         }
     }, [countries, language]);
 
-    const handleAddToCompare = useCallback((country: Country) => {
-        setIsCompareModeActive(true);
+    const handleToggleCompare = useCallback((country: Country) => {
         setComparisonList(prev => {
             const isAlreadySelected = prev.some(c => c.cca3 === country.cca3);
-            if (isAlreadySelected) return prev;
-            if (prev.length < 2) return [...prev, country];
-            return [prev[1], country];
+            if (isAlreadySelected) {
+                return prev.filter(c => c.cca3 !== country.cca3);
+            }
+            if (prev.length < 2) {
+                return [...prev, country];
+            }
+            return [prev[1], country]; 
         });
     }, []);
 
     const handleCardClick = (country: Country) => {
         if (isCompareModeActive) {
-            setComparisonList(prev => {
-                const isAlreadySelected = prev.some(c => c.cca3 === country.cca3);
-                if (isAlreadySelected) return prev.filter(c => c.cca3 !== country.cca3);
-                if (prev.length < 2) return [...prev, country];
-                return prev;
-            });
+            handleToggleCompare(country);
         } else {
             setSelectedCountry(country);
             trackFlagView(country.cca3);
@@ -396,6 +399,13 @@ const AppContent: React.FC = () => {
             return nextState;
         });
     }, []);
+
+    const handleRandomDiscovery = useCallback(() => {
+        if (countries.length === 0) return;
+        const random = countries[Math.floor(Math.random() * countries.length)];
+        setSelectedCountry(random);
+        trackFlagView(random.cca3);
+    }, [countries, trackFlagView]);
 
     const filteredCountries = useMemo(() => {
         let result = [...countries];
@@ -449,11 +459,13 @@ const AppContent: React.FC = () => {
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
                         isCompareModeActive={isCompareModeActive}
-                        handleToggleCompareMode={handleToggleCompareMode}
                         sortOrder={sortOrder}
                         setSortOrder={setSortOrder}
                         comparisonList={comparisonList}
                         onRetry={loadData}
+                        onToggleCompare={handleToggleCompare}
+                        viewedFlags={stats.viewedFlags}
+                        onRandomDiscovery={handleRandomDiscovery}
                     />
                 );
             case 'quiz': return <Suspense fallback={<PageLoader />}><QuizView countries={countries} onBackToExplorer={() => setView('explorer')} /></Suspense>;
@@ -465,7 +477,13 @@ const AppContent: React.FC = () => {
     
     return (
         <div className="min-h-screen flex flex-col">
-            <Header currentView={view} setView={setView} scrollProgress={scrollProgress} />
+            <Header 
+                currentView={view} 
+                setView={setView} 
+                scrollProgress={scrollProgress} 
+                isCompareModeActive={isCompareModeActive}
+                onToggleCompareMode={handleToggleCompareMode}
+            />
             <main className="flex-grow pt-20">
                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         {renderContent()}
@@ -478,7 +496,6 @@ const AppContent: React.FC = () => {
                         onClose={() => setSelectedCountry(null)}
                         isFavorite={favorites.has(selectedCountry.cca3)}
                         onToggleFavorite={handleToggleFavorite}
-                        onAddToCompare={handleAddToCompare}
                     />
                 )}
                 {isCompareModalOpen && comparisonList.length === 2 && (
@@ -490,11 +507,14 @@ const AppContent: React.FC = () => {
             </Suspense>
             <Footer />
             <ScrollToTopButton />
-            {view === 'explorer' && isCompareModeActive && (
+            {(view === 'explorer' && (isCompareModeActive || comparisonList.length > 0)) && (
                 <CompareTray 
                     comparisonList={comparisonList}
                     onCompare={() => setIsCompareModalOpen(true)}
-                    onClear={() => setComparisonList([])}
+                    onClear={() => {
+                        setComparisonList([]);
+                        setIsCompareModeActive(false);
+                    }}
                 />
             )}
             {!(view === 'explorer' && isCompareModeActive) && <BottomNav currentView={view} setView={setView} />}

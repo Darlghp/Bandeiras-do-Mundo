@@ -296,7 +296,10 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     combo: "COMBO X{{n}}",
     timeLeft: "{{n}}s",
     speedBonus: "Speed Bonus: +{{n}}",
-    outOfTime: "Time Expired!"
+    outOfTime: "Time Expired!",
+    explored: "Explored",
+    addToComparison: "Add to Comparison",
+    removeFromComparison: "Remove from Comparison"
   },
   pt: {
     title: "Explorador de Bandeiras",
@@ -470,7 +473,7 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     achVexExpertTitle: "Autoridade em Vexilologia",
     achVexExpertDesc: "Analise profundamente 150 designs nacionais diferentes.",
     achMasterExplorerTitle: "Soberano da Terra",
-    achMasterExplorerDesc: "Complete o registro global visualizando todas as 240+ bandeiras.",
+    achMasterExplorerDesc: "Complete the global registry by viewing all 240+ flags.",
     achQuizStarterTitle: "Jornada Acadêmica",
     achQuizStarterDesc: "Conclua com sucesso seu primeiro desafio de conhecimento.",
     achQuizScholarTitle: "Estudioso Ativo",
@@ -508,7 +511,7 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     mapTitle: "Cartografia Global",
     mapSubtitle: "Navegue pelo mundo através da geografia e localização.",
     mapComingSoon: "Navegador Geográfico",
-    mapModeInstructions: "Use o mapa para explorar países por localização. Toque em uma tag para revelar a bandeira e o perfil estatístico.",
+    mapModeInstructions: "Use the map to explore countries by location. Tap a country tag to reveal its full flag and statistical profile.",
     nepalFlagDesc: "A única bandeira nacional não quadrilátera do mundo.",
     switzerlandFlagDesc: "Um design perfeitamente quadrado, raro entre estados soberanos.",
     vaticanFlagDesc: "A segunda de apenas duas bandeiras oficialmente quadradas.",
@@ -584,7 +587,10 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     combo: "COMBO X{{n}}",
     timeLeft: "{{n}}s",
     speedBonus: "Bônus de Velocidade: +{{n}}",
-    outOfTime: "Tempo Expirado!"
+    outOfTime: "Tempo Expirado!",
+    explored: "Explorado",
+    addToComparison: "Adicionar à Comparação",
+    removeFromComparison: "Remover da Comparação"
   }
 };
 

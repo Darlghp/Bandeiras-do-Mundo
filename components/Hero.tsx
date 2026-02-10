@@ -47,7 +47,7 @@ const Hero: React.FC<HeroProps> = ({ flagOfTheDay, isLoading, onFlagClick }) => 
 
                 <div className="relative flex flex-col lg:flex-row items-center gap-12 p-8 sm:p-14">
                     <div 
-                        className="w-full lg:w-2/5 flex-shrink-0 cursor-pointer perspective-1000"
+                        className="w-full lg:w-2/5 flex-shrink-0 cursor-pointer perspective-1000 relative"
                         onClick={() => onFlagClick(country)}
                     >
                         <div className="relative aspect-[3/2] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-black/20 transform-gpu transition-all duration-700 ease-out group-hover:rotate-y-6 group-hover:scale-[1.05] border-4 border-white/50 dark:border-slate-700/50">
