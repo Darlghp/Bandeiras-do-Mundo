@@ -17,9 +17,9 @@ interface FilterNavigatorProps {
 
 const FilterNavigator: React.FC<FilterNavigatorProps> = (props) => {
     const { t } = useLanguage();
-    const hasActiveFilters = props.searchQuery !== '' || props.selectedContinent !== 'All';
+    const isFiltered = props.searchQuery !== '' || props.selectedContinent !== 'All';
 
-    const handleReset = () => {
+    const handleClear = () => {
         props.onSearchChange('');
         props.setSelectedContinent('All');
     };
@@ -28,10 +28,10 @@ const FilterNavigator: React.FC<FilterNavigatorProps> = (props) => {
         <div className="space-y-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-3xl shadow-xl border border-white dark:border-slate-800/50 animate-fade-in">
             <div className="flex items-center justify-between px-1">
                 <h3 className="text-xl font-black text-gray-900 dark:text-slate-100 tracking-tight">{t('filterAndSearch')}</h3>
-                {hasActiveFilters && (
+                {isFiltered && (
                     <button 
-                        onClick={handleReset}
-                        className="text-[9px] font-black uppercase tracking-widest text-blue-600 dark:text-sky-400 hover:opacity-70 transition-opacity"
+                        onClick={handleClear}
+                        className="text-[10px] font-black text-blue-600 dark:text-sky-400 uppercase tracking-widest hover:opacity-70 transition-opacity"
                     >
                         {t('clearSelection')}
                     </button>

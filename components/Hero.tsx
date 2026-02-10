@@ -2,7 +2,7 @@
 import React from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
-import { CONTINENT_NAMES, LOCALIZED_ACRONYMS } from '../constants';
+import { CONTINENT_NAMES } from '../constants';
 
 interface HeroProps {
     flagOfTheDay: { country: Country; title: string; } | null;

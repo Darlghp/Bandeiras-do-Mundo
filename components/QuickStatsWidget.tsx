@@ -15,8 +15,11 @@ const QuickStatsWidget: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4 mb-5">
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-lg shadow-blue-500/20">
-                    {level}
+                <div className="relative">
+                    <div className="absolute inset-0 bg-blue-500 rounded-2xl blur-lg animate-pulse-soft opacity-40"></div>
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-lg relative z-10">
+                        {level}
+                    </div>
                 </div>
                 <div>
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t('level')}</h4>
