@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -8,6 +7,9 @@ interface HeaderProps {
     currentView: View;
     setView: (view: View) => void;
     scrollProgress: number;
+    // Fix: Added missing props to HeaderProps interface to match usage in App.tsx
+    isCompareModeActive?: boolean;
+    onToggleCompareMode?: () => void;
 }
 
 const WavingFlagIcon: React.FC = () => (

@@ -120,6 +120,7 @@ interface ExplorerContentProps {
     onToggleCompare: (country: Country) => void;
     viewedFlags: string[];
     onRandomDiscovery: () => void;
+    onToggleCompareMode: () => void;
 }
 
 const ExplorerContent: React.FC<ExplorerContentProps> = ({
@@ -143,9 +144,76 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     onRetry,
     onToggleCompare,
     viewedFlags,
-    onRandomDiscovery
+    onRandomDiscovery,
+    onToggleCompareMode
 }) => {
     const { t } = useLanguage();
+    const filterContainerRef = useRef<HTMLDivElement>(null);
+    const [scrollState, setScrollState] = useState({ top: 0, height: 0, containerHeight: 0 });
+    
+    // Estados para Drag-and-Scroll da Barra de Locomoção
+    const [isDragging, setIsDragging] = useState(false);
+    const [startY, setStartY] = useState(0);
+    const [startScrollTop, setStartScrollTop] = useState(0);
+
+    const handleFilterScroll = () => {
+        if (!filterContainerRef.current) return;
+        const { scrollTop, scrollHeight, clientHeight } = filterContainerRef.current;
+        setScrollState({ top: scrollTop, height: scrollHeight, containerHeight: clientHeight });
+    };
+
+    useEffect(() => {
+        handleFilterScroll();
+    }, [filteredCountries.length]);
+
+    // Constantes de Design da Barra
+    const handleHeight = 48; // Aumentado um pouco para melhor usabilidade
+    const trackPadding = 12;
+    const availableTrackHeight = scrollState.containerHeight - (trackPadding * 2);
+    const scrollMax = scrollState.height - scrollState.containerHeight;
+    const scrollRatio = scrollMax > 0 ? scrollState.top / scrollMax : 0;
+    const translateOffset = scrollRatio * (availableTrackHeight - handleHeight);
+
+    // Lógica de Drag
+    const onMouseDown = (e: React.MouseEvent) => {
+        if (!filterContainerRef.current) return;
+        setIsDragging(true);
+        setStartY(e.pageY);
+        setStartScrollTop(filterContainerRef.current.scrollTop);
+        document.body.style.userSelect = 'none'; // Evita seleção de texto durante o arrasto
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isDragging || !filterContainerRef.current) return;
+
+            const deltaY = e.pageY - startY;
+            const scrollableHandlePath = availableTrackHeight - handleHeight;
+            
+            if (scrollableHandlePath <= 0) return;
+
+            // Proporção do movimento do mouse em relação ao trilho
+            const moveRatio = deltaY / scrollableHandlePath;
+            const newScrollTop = startScrollTop + (moveRatio * scrollMax);
+
+            filterContainerRef.current.scrollTop = newScrollTop;
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+            document.body.style.userSelect = '';
+        };
+
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, startY, startScrollTop, scrollMax, availableTrackHeight]);
 
     if (error) {
         return (
@@ -180,47 +248,116 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                 onFlagClick={handleCardClick}
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-                <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
-                    <QuickStatsWidget />
-                    
-                    <FilterNavigator 
-                        continents={CONTINENTS_API_VALUES}
-                        selectedContinent={selectedContinent}
-                        setSelectedContinent={setSelectedContinent}
-                        searchQuery={searchQuery}
-                        onSearchChange={setSearchQuery}
-                        onRandomDiscovery={onRandomDiscovery}
-                    />
-                    
-                    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2.5rem] shadow-lg border border-white dark:border-slate-800/50">
-                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">{t('sortBy')}</h4>
-                        <select 
-                            value={sortOrder}
-                            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                            className="w-full p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-sm font-black border-none focus:ring-2 focus:ring-blue-500 outline-none"
-                        >
-                            <option value="name_asc">{t('sortNameAsc')}</option>
-                            <option value="name_desc">{t('sortNameDesc')}</option>
-                            <option value="pop_desc">{t('sortPopDesc')}</option>
-                            <option value="pop_asc">{t('sortPopAsc')}</option>
-                            <option value="area_desc">{t('sortAreaDesc')}</option>
-                            <option value="area_asc">{t('sortAreaAsc')}</option>
-                        </select>
-                    </div>
-                </div>
+            {/* Layout de Duas Colunas Principal */}
+            <div className="flex flex-col lg:flex-row gap-10 items-start">
+                
+                {/* BARRA LATERAL (SIDEBAR) */}
+                <aside className="w-full lg:w-80 lg:shrink-0 lg:sticky lg:top-24 z-30">
+                    <div className="animate-fade-in-up-short space-y-8">
+                        
+                        {/* Bloco de Estatísticas (Nível) */}
+                        <div className="hidden lg:block">
+                            <QuickStatsWidget />
+                        </div>
+                        
+                        {/* Painel de Controle Lateral com Barra de Locomoção Interativa */}
+                        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[2.5rem] border-2 border-slate-200 dark:border-slate-800 shadow-2xl shadow-blue-500/5 flex flex-col max-h-[80vh] lg:max-h-[calc(100vh-10rem)] relative overflow-hidden group/sidebar">
+                            
+                            {/* BARRA DE LOCOMOÇÃO INTERATIVA */}
+                            {scrollState.height > scrollState.containerHeight && (
+                                <div className="absolute right-1.5 top-0 bottom-0 w-3 flex items-center justify-center pointer-events-none z-50">
+                                    <div className="w-1.5 h-[calc(100%-24px)] bg-black/5 dark:bg-black/40 rounded-full relative">
+                                        <div 
+                                            onMouseDown={onMouseDown}
+                                            className={`absolute left-0 w-full rounded-full shadow-md transition-colors cursor-grab pointer-events-auto
+                                                ${isDragging 
+                                                    ? 'bg-blue-600 dark:bg-blue-500 cursor-grabbing' 
+                                                    : 'bg-slate-400 dark:bg-slate-500 hover:bg-slate-500 dark:hover:bg-slate-400'
+                                                }`}
+                                            style={{ 
+                                                height: `${handleHeight}px`, 
+                                                transform: `translateY(${translateOffset}px)`,
+                                                top: `${trackPadding}px`
+                                            }}
+                                        >
+                                            {/* Indicador Visual Tátil (3 pontos) */}
+                                            <div className="flex flex-col gap-0.5 items-center justify-center h-full opacity-40">
+                                                <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
+                                                <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
+                                                <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
-                <div className="lg:col-span-3">
+                            <div 
+                                ref={filterContainerRef}
+                                onScroll={handleFilterScroll}
+                                className={`p-8 pr-10 flex-grow overflow-y-auto no-scrollbar space-y-8 ${isDragging ? 'scroll-auto' : 'scroll-smooth'}`}
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">{t('filterAndSearch')}</h3>
+                                        <div className="w-1.5 h-1.5 bg-blue-600/30 rounded-full"></div>
+                                    </div>
+                                    <FilterNavigator 
+                                        continents={CONTINENTS_API_VALUES}
+                                        selectedContinent={selectedContinent}
+                                        setSelectedContinent={setSelectedContinent}
+                                        searchQuery={searchQuery}
+                                        onSearchChange={setSearchQuery}
+                                        onRandomDiscovery={onRandomDiscovery}
+                                        isCompareModeActive={isCompareModeActive}
+                                        onToggleCompareMode={onToggleCompareMode}
+                                    />
+                                </div>
+                                
+                                <div className="pt-8 border-t border-slate-200 dark:border-slate-800">
+                                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-4 px-1">{t('sortBy')}</h4>
+                                    <div className="relative">
+                                        <select 
+                                            value={sortOrder}
+                                            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+                                            className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-xs font-black border-2 border-transparent focus:border-blue-500/50 outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-all appearance-none text-slate-700 dark:text-slate-200 shadow-sm"
+                                        >
+                                            <option value="name_asc">{t('sortNameAsc')}</option>
+                                            <option value="name_desc">{t('sortNameDesc')}</option>
+                                            <option value="pop_desc">{t('sortPopDesc')}</option>
+                                            <option value="pop_asc">{t('sortPopAsc')}</option>
+                                            <option value="area_desc">{t('sortAreaDesc')}</option>
+                                            <option value="area_asc">{t('sortAreaAsc')}</option>
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Estatísticas no Mobile aparecem abaixo dos filtros */}
+                        <div className="lg:hidden">
+                            <QuickStatsWidget />
+                        </div>
+                    </div>
+                </aside>
+
+                {/* CONTEÚDO PRINCIPAL (CATÁLOGO) */}
+                <div className="flex-grow w-full overflow-hidden">
                     {isLoading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
                         </div>
                     ) : filteredCountries.length > 0 ? (
-                        <>
+                        <div className="animate-fade-in">
                             <div className="mb-8 flex items-center justify-between px-2">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                    {t('showingFlags', { count: filteredCountries.length.toString(), total: countries.length.toString() })}
-                                </p>
+                                <div className="flex flex-col">
+                                    <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">
+                                        {t('showingFlags', { count: filteredCountries.length.toString(), total: countries.length.toString() })}
+                                    </p>
+                                    <div className="h-1 w-12 bg-blue-600 mt-2 rounded-full shadow-lg shadow-blue-500/20"></div>
+                                </div>
                             </div>
                             <VirtualFlagGrid 
                                 countries={filteredCountries}
@@ -232,12 +369,12 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                                 onToggleCompare={onToggleCompare}
                                 viewedFlags={viewedFlags}
                             />
-                        </>
+                        </div>
                     ) : (
-                        <div className="text-center py-32 bg-white/50 dark:bg-slate-900/50 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
-                             <div className="text-6xl mb-6">🏜️</div>
-                             <h3 className="text-2xl font-black text-slate-800 dark:text-slate-200 mb-2">{t('noFlagsFound')}</h3>
-                             <p className="text-slate-500 dark:text-slate-400 font-medium">{t('noFlagsFoundDescription')}</p>
+                        <div className="text-center py-48 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl rounded-[4rem] border-4 border-dashed border-slate-200 dark:border-slate-800 animate-fade-in-up-short">
+                             <div className="text-8xl mb-8 opacity-40 grayscale">🏜️</div>
+                             <h3 className="text-3xl font-black text-slate-800 dark:text-slate-200 mb-4 tracking-tighter">{t('noFlagsFound')}</h3>
+                             <p className="text-slate-500 dark:text-slate-400 font-bold max-sm:px-4 max-w-sm mx-auto uppercase text-xs tracking-widest leading-loose">{t('noFlagsFoundDescription')}</p>
                         </div>
                     )}
                 </div>
@@ -466,6 +603,7 @@ const AppContent: React.FC = () => {
                         onToggleCompare={handleToggleCompare}
                         viewedFlags={stats.viewedFlags}
                         onRandomDiscovery={handleRandomDiscovery}
+                        onToggleCompareMode={handleToggleCompareMode}
                     />
                 );
             case 'quiz': return <Suspense fallback={<PageLoader />}><QuizView countries={countries} onBackToExplorer={() => setView('explorer')} /></Suspense>;

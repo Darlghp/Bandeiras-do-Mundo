@@ -8,7 +8,7 @@ const QuickStatsWidget: React.FC = () => {
     const { t } = useLanguage();
 
     return (
-        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2.5rem] shadow-xl border border-white dark:border-slate-800/50 overflow-hidden relative group animate-fade-in-up-short">
+        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2.5rem] shadow-xl border border-white dark:border-slate-800/50 overflow-hidden relative group">
             {/* Background Accent */}
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-all duration-1000 pointer-events-none transform group-hover:scale-150 group-hover:rotate-12">
                 <div className="text-[10rem] font-black leading-none">{level}</div>
