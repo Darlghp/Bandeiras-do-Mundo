@@ -148,77 +148,6 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     onToggleCompareMode
 }) => {
     const { t } = useLanguage();
-    const filterContainerRef = useRef<HTMLDivElement>(null);
-    const trackRef = useRef<HTMLDivElement>(null);
-    const [scrollState, setScrollState] = useState({ top: 0, height: 0, containerHeight: 0 });
-    
-    // Estados para Drag-and-Scroll
-    const [isDragging, setIsDragging] = useState(false);
-    const [startY, setStartY] = useState(0);
-    const [startScrollTop, setStartScrollTop] = useState(0);
-
-    const handleFilterScroll = () => {
-        if (!filterContainerRef.current) return;
-        const { scrollTop, scrollHeight, clientHeight } = filterContainerRef.current;
-        setScrollState({ top: scrollTop, height: scrollHeight, containerHeight: clientHeight });
-    };
-
-    useEffect(() => {
-        handleFilterScroll();
-    }, [filteredCountries.length]);
-
-    const handleHeight = 64; 
-    const trackPadding = 16;
-    const availableTrackHeight = scrollState.containerHeight - (trackPadding * 2);
-    const scrollMax = scrollState.height - scrollState.containerHeight;
-    const scrollRatio = scrollMax > 0 ? scrollState.top / scrollMax : 0;
-    const translateOffset = scrollRatio * (availableTrackHeight - handleHeight);
-
-    const onMouseDown = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!filterContainerRef.current) return;
-        setIsDragging(true);
-        setStartY(e.pageY);
-        setStartScrollTop(filterContainerRef.current.scrollTop);
-        document.body.style.userSelect = 'none';
-    };
-
-    const onTrackClick = (e: React.MouseEvent) => {
-        if (!trackRef.current || !filterContainerRef.current) return;
-        const rect = trackRef.current.getBoundingClientRect();
-        const clickY = e.clientY - rect.top - trackPadding;
-        const clickRatio = clickY / (rect.height - trackPadding * 2);
-        filterContainerRef.current.scrollTop = clickRatio * scrollMax;
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isDragging || !filterContainerRef.current) return;
-            const deltaY = e.pageY - startY;
-            const scrollableHandlePath = availableTrackHeight - handleHeight;
-            if (scrollableHandlePath <= 0) return;
-            const moveRatio = deltaY / scrollableHandlePath;
-            filterContainerRef.current.scrollTop = startScrollTop + (moveRatio * scrollMax);
-        };
-
-        const handleMouseUp = () => {
-            setIsDragging(false);
-            document.body.style.userSelect = '';
-        };
-
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, startY, startScrollTop, scrollMax, availableTrackHeight]);
-
-    const showTopShadow = scrollState.top > 10;
-    const showBottomShadow = scrollState.top < scrollMax - 10;
 
     if (error) {
         return (
@@ -237,151 +166,95 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     }
 
     return (
-        <div className="space-y-12 pb-24">
+        <div className="space-y-16 pb-24">
+            {/* Header de Introdução Panorâmico */}
             <div className="max-w-4xl animate-fade-in-up">
-                <h1 className="text-5xl sm:text-7xl font-black text-slate-900 dark:text-white leading-none mb-6 tracking-tighter">
+                <h1 className="text-6xl sm:text-8xl font-black text-slate-900 dark:text-white leading-[0.9] mb-6 tracking-tighter">
                     {t('headerTitle')}
                 </h1>
-                <p className="text-xl text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                <p className="text-xl text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-2xl">
                     {t('exploreSubtitle')}
                 </p>
             </div>
 
+            {/* Destaque do Dia */}
             <Hero 
                 flagOfTheDay={flagOfTheDay} 
                 isLoading={isFlagOfTheDayLoading} 
                 onFlagClick={handleCardClick}
             />
 
-            {/* Layout de Duas Colunas Principal */}
-            <div className="flex flex-col lg:flex-row gap-10 items-start">
-                
-                {/* BARRA LATERAL (SIDEBAR) REFINADA PARA PC */}
-                <aside className="w-full lg:w-[400px] lg:shrink-0 lg:sticky lg:top-24 z-30">
-                    <div className="animate-fade-in-up-short space-y-6">
-                        
-                        <div className="hidden lg:block">
-                            <QuickStatsWidget />
-                        </div>
-                        
-                        {/* Painel de Controle Lateral Otimizado */}
-                        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[3rem] border-2 border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[90vh] lg:max-h-[calc(100vh-12rem)] relative overflow-hidden group/sidebar">
-                            
-                            {/* INDICADORES DE SOMBRA (DEPTH) */}
-                            <div className={`absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white dark:from-slate-900 to-transparent z-40 pointer-events-none transition-opacity duration-300 ${showTopShadow ? 'opacity-100' : 'opacity-0'}`}></div>
-                            <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-slate-900 to-transparent z-40 pointer-events-none transition-opacity duration-300 ${showBottomShadow ? 'opacity-100' : 'opacity-0'}`}></div>
+            {/* DASHBOARD DE MAESTRIA (MUDOU PARA O TOPO) */}
+            <div className="animate-fade-in-up-short">
+                <QuickStatsWidget />
+            </div>
 
-                            {/* BARRA DE LOCOMOÇÃO "DESKTOP PRO" */}
-                            {scrollState.height > scrollState.containerHeight && (
-                                <div 
-                                    ref={trackRef}
-                                    onClick={onTrackClick}
-                                    className="absolute right-0 top-0 bottom-0 w-8 flex items-center justify-center cursor-pointer z-50 group/track"
-                                >
-                                    <div className="w-1.5 h-[calc(100%-40px)] bg-slate-100 dark:bg-black/30 rounded-full relative transition-all group-hover/track:w-2.5">
-                                        <div 
-                                            onMouseDown={onMouseDown}
-                                            className={`absolute left-0 w-full rounded-full shadow-lg transition-all cursor-grab pointer-events-auto
-                                                ${isDragging 
-                                                    ? 'bg-blue-600 shadow-blue-500/40 cursor-grabbing' 
-                                                    : 'bg-slate-300 dark:bg-slate-600 hover:bg-blue-500 group-hover/sidebar:bg-slate-400 dark:group-hover/sidebar:bg-slate-500'
-                                                }`}
-                                            style={{ 
-                                                height: `${handleHeight}px`, 
-                                                transform: `translateY(${translateOffset}px)`,
-                                                top: `${trackPadding}px`
-                                            }}
-                                        >
-                                            <div className="flex flex-col gap-0.5 items-center justify-center h-full opacity-40">
-                                                <div className="w-1 h-1 bg-white rounded-full"></div>
-                                                <div className="w-1 h-1 bg-white rounded-full"></div>
-                                                <div className="w-1 h-1 bg-white rounded-full"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+            {/* CENTRO DE CONTROLE E FILTROS (MUDOU PARA O TOPO) */}
+            <div className="sticky top-24 z-30 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-3xl py-8 -mx-4 px-4 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 shadow-xl shadow-blue-500/5">
+                <FilterNavigator 
+                    continents={CONTINENTS_API_VALUES}
+                    selectedContinent={selectedContinent}
+                    setSelectedContinent={setSelectedContinent}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    onRandomDiscovery={onRandomDiscovery}
+                    isCompareModeActive={isCompareModeActive}
+                    onToggleCompareMode={onToggleCompareMode}
+                />
+            </div>
 
-                            <div 
-                                ref={filterContainerRef}
-                                onScroll={handleFilterScroll}
-                                className={`p-8 pr-12 flex-grow overflow-y-auto no-scrollbar space-y-8 ${isDragging ? 'scroll-auto' : 'scroll-smooth'}`}
-                            >
-                                <FilterNavigator 
-                                    continents={CONTINENTS_API_VALUES}
-                                    selectedContinent={selectedContinent}
-                                    setSelectedContinent={setSelectedContinent}
-                                    searchQuery={searchQuery}
-                                    onSearchChange={setSearchQuery}
-                                    onRandomDiscovery={onRandomDiscovery}
-                                    isCompareModeActive={isCompareModeActive}
-                                    onToggleCompareMode={onToggleCompareMode}
-                                />
-                                
-                                <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
-                                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4 px-1">{t('sortBy')}</h4>
-                                    <div className="relative group/select">
-                                        <select 
-                                            value={sortOrder}
-                                            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                                            className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-[11px] font-black border-2 border-transparent focus:border-blue-500/50 outline-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all appearance-none text-slate-800 dark:text-slate-200 shadow-inner"
-                                        >
-                                            <option value="name_asc">{t('sortNameAsc')}</option>
-                                            <option value="name_desc">{t('sortNameDesc')}</option>
-                                            <option value="pop_desc">{t('sortPopDesc')}</option>
-                                            <option value="pop_asc">{t('sortPopAsc')}</option>
-                                            <option value="area_desc">{t('sortAreaDesc')}</option>
-                                            <option value="area_asc">{t('sortAreaAsc')}</option>
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover/select:text-blue-500 transition-colors">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="lg:hidden">
-                            <QuickStatsWidget />
-                        </div>
-                    </div>
-                </aside>
-
-                {/* CONTEÚDO PRINCIPAL (CATÁLOGO) */}
-                <div className="flex-grow w-full overflow-hidden">
-                    {isLoading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
-                        </div>
-                    ) : filteredCountries.length > 0 ? (
-                        <div className="animate-fade-in">
-                            <div className="mb-10 flex items-center justify-between px-4">
-                                <div className="flex flex-col">
-                                    <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mb-2">
-                                        {t('showingFlags', { count: filteredCountries.length.toString(), total: countries.length.toString() })}
-                                    </p>
-                                    <div className="h-1.5 w-16 bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full shadow-lg shadow-blue-500/20"></div>
-                                </div>
-                            </div>
-                            <VirtualFlagGrid 
-                                countries={filteredCountries}
-                                onCardClick={handleCardClick}
-                                isCompareModeActive={isCompareModeActive}
-                                comparisonList={comparisonList}
-                                favorites={favorites}
-                                onToggleFavorite={onToggleFavorite}
-                                onToggleCompare={onToggleCompare}
-                                viewedFlags={viewedFlags}
-                            />
-                        </div>
-                    ) : (
-                        <div className="text-center py-48 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl rounded-[4rem] border-4 border-dashed border-slate-200 dark:border-slate-800 animate-fade-in-up-short">
-                             <div className="text-8xl mb-8 opacity-40 grayscale">🏜️</div>
-                             <h3 className="text-3xl font-black text-slate-800 dark:text-slate-200 mb-4 tracking-tighter">{t('noFlagsFound')}</h3>
-                             <p className="text-slate-500 dark:text-slate-400 font-bold max-sm:px-4 max-w-sm mx-auto uppercase text-xs tracking-widest leading-loose">{t('noFlagsFoundDescription')}</p>
-                        </div>
-                    )}
+            {/* BARRA DE ORDENAÇÃO COMPACTA */}
+            <div className="flex items-center justify-between px-2">
+                <div className="flex flex-col">
+                    <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mb-2">
+                        {t('showingFlags', { count: filteredCountries.length.toString(), total: countries.length.toString() })}
+                    </p>
+                    <div className="h-1.5 w-20 bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full"></div>
                 </div>
+                
+                <div className="flex items-center gap-4">
+                     <span className="hidden sm:inline text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('sortBy')}:</span>
+                     <select 
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+                        className="p-3 px-5 rounded-xl bg-white dark:bg-slate-900 text-xs font-black border-2 border-slate-200 dark:border-slate-800 outline-none cursor-pointer hover:border-blue-500 transition-all text-slate-800 dark:text-slate-200 shadow-sm"
+                    >
+                        <option value="name_asc">{t('sortNameAsc')}</option>
+                        <option value="name_desc">{t('sortNameDesc')}</option>
+                        <option value="pop_desc">{t('sortPopDesc')}</option>
+                        <option value="pop_asc">{t('sortPopAsc')}</option>
+                        <option value="area_desc">{t('sortAreaDesc')}</option>
+                        <option value="area_asc">{t('sortAreaAsc')}</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* GRADE DE BANDEIRAS (CONTEÚDO PRINCIPAL) */}
+            <div className="w-full">
+                {isLoading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
+                    </div>
+                ) : filteredCountries.length > 0 ? (
+                    <div className="animate-fade-in">
+                        <VirtualFlagGrid 
+                            countries={filteredCountries}
+                            onCardClick={handleCardClick}
+                            isCompareModeActive={isCompareModeActive}
+                            comparisonList={comparisonList}
+                            favorites={favorites}
+                            onToggleFavorite={onToggleFavorite}
+                            onToggleCompare={onToggleCompare}
+                            viewedFlags={viewedFlags}
+                        />
+                    </div>
+                ) : (
+                    <div className="text-center py-48 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl rounded-[4rem] border-4 border-dashed border-slate-200 dark:border-slate-800 animate-fade-in-up-short">
+                         <div className="text-8xl mb-8 opacity-40 grayscale">🏜️</div>
+                         <h3 className="text-3xl font-black text-slate-800 dark:text-slate-200 mb-4 tracking-tighter">{t('noFlagsFound')}</h3>
+                         <p className="text-slate-500 dark:text-slate-400 font-bold max-sm:px-4 max-w-sm mx-auto uppercase text-xs tracking-widest leading-loose">{t('noFlagsFoundDescription')}</p>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -529,7 +402,7 @@ const AppContent: React.FC = () => {
             handleToggleCompare(country);
         } else {
             setSelectedCountry(country);
-            trackFlagView(country.cca3);
+            trackFlagView(country.cca3, country.continents);
         }
     };
 
@@ -545,7 +418,7 @@ const AppContent: React.FC = () => {
         if (countries.length === 0) return;
         const random = countries[Math.floor(Math.random() * countries.length)];
         setSelectedCountry(random);
-        trackFlagView(random.cca3);
+        trackFlagView(random.cca3, random.continents);
     }, [countries, trackFlagView]);
 
     const filteredCountries = useMemo(() => {
