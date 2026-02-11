@@ -5,6 +5,7 @@ import { CONTINENT_NAMES } from '../constants';
 import { COUNTRY_COLORS } from '../constants/colorData';
 import type { Country } from '../types';
 import { askVexy } from '../services/geminiService';
+import { useAchievements } from '../context/AchievementContext';
 
 interface Message {
     id: number;
@@ -28,6 +29,7 @@ const normalize = (str: string) => str.toLowerCase().trim().normalize("NFD").rep
 
 const VexyChatbot: React.FC<VexyChatbotProps> = ({ countries, onNavigate, onSelectCountry }) => {
     const { t, language } = useLanguage();
+    const { trackVexyQuery } = useAchievements();
     const [isOpen, setIsOpen] = useState(false);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -92,6 +94,7 @@ const VexyChatbot: React.FC<VexyChatbotProps> = ({ countries, onNavigate, onSele
         const activeCountry = mentioned[0] || lastContextCountry;
 
         setIsTyping(true);
+        trackVexyQuery(); // NOVO: Rastrear consulta
         const aiResponse = await askVexy(text, activeCountry);
         setIsTyping(false);
 

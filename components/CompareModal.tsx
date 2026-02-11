@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { CONTINENT_NAMES } from '../constants';
+import { useAchievements } from '../context/AchievementContext';
 
 interface CompareModalProps {
     countries: [Country, Country] | null;
@@ -10,44 +12,16 @@ interface CompareModalProps {
 
 const CompareModal: React.FC<CompareModalProps> = ({ countries, onClose }) => {
     const { t, language } = useLanguage();
+    const { trackComparison } = useAchievements();
     const [isShowing, setIsShowing] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setIsShowing(!!countries);
 
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') onClose();
-        };
-
-        const handleFocusTrap = (event: KeyboardEvent) => {
-            if (event.key === 'Tab' && modalRef.current) {
-                const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-                );
-                if (focusableElements.length === 0) return;
-
-                const firstElement = focusableElements[0];
-                const lastElement = focusableElements[focusableElements.length - 1];
-
-                if (event.shiftKey) { // Shift+Tab
-                    if (document.activeElement === firstElement) {
-                        lastElement.focus();
-                        event.preventDefault();
-                    }
-                } else { // Tab
-                    if (document.activeElement === lastElement) {
-                        firstElement.focus();
-                        event.preventDefault();
-                    }
-                }
-            }
-        };
-
         if (countries) {
+            trackComparison(); // Rastrear que uma comparação foi iniciada
             document.body.style.overflow = 'hidden';
-            window.addEventListener('keydown', handleKeyDown);
-            window.addEventListener('keydown', handleFocusTrap);
             
             // Focus the first focusable element on open
             setTimeout(() => {
@@ -58,10 +32,8 @@ const CompareModal: React.FC<CompareModalProps> = ({ countries, onClose }) => {
         }
         return () => {
             document.body.style.overflow = '';
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('keydown', handleFocusTrap);
         }
-    }, [countries, onClose]);
+    }, [countries, trackComparison]);
 
     if (!countries) return null;
     const [country1, country2] = countries;
@@ -79,63 +51,63 @@ const CompareModal: React.FC<CompareModalProps> = ({ countries, onClose }) => {
 
     return (
         <div 
-            className={`fixed inset-0 bg-black flex justify-center items-center z-50 p-4 transition-opacity duration-300 ${isShowing ? 'bg-opacity-70 opacity-100' : 'bg-opacity-0 opacity-0'}`}
+            className={`fixed inset-0 bg-black flex justify-center items-center z-[110] p-4 transition-all duration-500 ${isShowing ? 'bg-opacity-80 opacity-100 backdrop-blur-md' : 'bg-opacity-0 opacity-0 pointer-events-none'}`}
             onClick={onClose}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="compare-modal-title"
         >
             <div 
                 ref={modalRef}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-4xl w-full relative transform transition-all duration-300 ease-out overflow-y-auto max-h-[90vh] ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} 
+                className={`bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border-4 border-slate-100 dark:border-slate-800 max-w-4xl w-full relative transform transition-all duration-700 ease-[cubic-bezier(0.2,1,0.2,1)] overflow-y-auto max-h-[90vh] no-scrollbar ${isShowing ? 'scale-100 translate-y-0' : 'scale-90 translate-y-20'}`} 
                 onClick={e => e.stopPropagation()}
             >
                 <button 
                     onClick={onClose} 
-                    className="absolute top-3 right-3 text-gray-400 hover:text-gray-800 dark:text-gray-500 dark:hover:text-gray-100 transition-colors z-20"
+                    className="absolute top-6 right-6 p-3 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-red-500 rounded-2xl transition-colors z-20 shadow-sm active:scale-90"
                     aria-label={t('closeModal')}
                 >
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
                 
-                <div className="p-6 sm:p-8">
-                    <h2 id="compare-modal-title" className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">{t('comparisonTitle')}</h2>
+                <div className="p-8 sm:p-12">
+                    <div className="text-center mb-10">
+                        <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-none tracking-tighter mb-2">{t('comparisonTitle')}</h2>
+                        <div className="h-1 w-12 bg-blue-600 mx-auto rounded-full"></div>
+                    </div>
                     
-                    <div className="grid grid-cols-2 gap-4 sm:gap-8 items-center">
+                    <div className="grid grid-cols-2 gap-6 sm:gap-12 items-start mb-12">
                         {[country1, country2].map((c, i) => (
-                             <div key={c.cca3} className="text-center">
-                                <div className="aspect-w-4 aspect-h-3 bg-gray-100 dark:bg-gray-900/50 rounded-lg p-2 shadow-md">
+                             <div key={c.cca3} className="text-center space-y-4">
+                                <div className="aspect-[4/3] bg-slate-50 dark:bg-black rounded-3xl p-4 shadow-inner border border-slate-100 dark:border-slate-800 relative group overflow-hidden">
                                     <img 
                                         src={c.flags.svg} 
                                         alt={c.name.common} 
-                                        className="w-full h-full object-contain drop-shadow-lg" 
+                                        className="w-full h-full object-contain drop-shadow-xl transition-transform duration-700 group-hover:scale-105" 
                                         loading="lazy"
-                                        decoding="async"
                                     />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none"></div>
                                 </div>
-                                <h3 className="mt-4 text-lg font-bold text-gray-800 dark:text-gray-200">{getCountryName(c)}</h3>
+                                <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight">{getCountryName(c)}</h3>
                              </div>
                         ))}
                     </div>
 
-                    <div className="my-8">
-                        <div className="flow-root">
-                            <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                                <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                            {stats.map(stat => (
-                                                <tr key={stat.label}>
-                                                    <td className="py-4 px-3 w-1/3 text-right text-sm font-medium text-gray-800 dark:text-gray-200">{stat.value1}</td>
-                                                    <td className="py-4 px-3 w-1/3 text-center text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{stat.label}</td>
-                                                    <td className="py-4 px-3 w-1/3 text-left text-sm font-medium text-gray-800 dark:text-gray-200">{stat.value2}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="bg-slate-50 dark:bg-black/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden">
+                        <table className="w-full">
+                            <tbody>
+                                {stats.map((stat, idx) => (
+                                    <tr key={stat.label} className={idx % 2 === 0 ? '' : 'bg-slate-100/50 dark:bg-white/5'}>
+                                        <td className="py-6 px-4 w-1/3 text-right text-sm font-black text-slate-800 dark:text-slate-200">{stat.value1}</td>
+                                        <td className="py-6 px-4 w-1/3 text-center">
+                                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm">
+                                                {stat.label}
+                                            </span>
+                                        </td>
+                                        <td className="py-6 px-4 w-1/3 text-left text-sm font-black text-slate-800 dark:text-slate-200">{stat.value2}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
