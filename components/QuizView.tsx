@@ -1,18 +1,15 @@
-
-import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAchievements } from '../context/AchievementContext';
-import { CONTINENT_NAMES } from '../constants';
 
 const FlagleGame = lazy(() => import('./FlagleGame'));
 
 type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'country-to-capital' | 'shape-to-country' | 'flagle' | 'odd-one-out';
 type QuizDifficulty = 'easy' | 'medium' | 'hard';
+type HubView = 'menu' | 'quiz-setup' | 'quiz-game' | 'battle' | 'missions' | 'hall-of-fame';
 
-const OPTIONS_COUNT = 4;
-const HINTS_PER_QUIZ = 3;
-const FIFTY_FIFTY_HINTS_PER_QUIZ = 1;
+const EXCLUDED_QUIZ_COUNTRIES = ['BVT', 'HMD', 'UMI', 'MAF', 'SJM'];
 
 function shuffleArray<T>(array: T[]): T[] {
     const newArray = [...array];
@@ -23,506 +20,395 @@ function shuffleArray<T>(array: T[]): T[] {
     return newArray;
 }
 
-const FlagFabricOverlay: React.FC = () => (
-    <div className="absolute inset-0 pointer-events-none opacity-[0.08] mix-blend-multiply overflow-hidden">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <filter id="tex">
-                <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" />
-                <feColorMatrix type="saturate" values="0" />
-            </filter>
-            <rect width="100%" height="100%" filter="url(#tex)" />
-        </svg>
-    </div>
+// --- SUB-COMPONENT: MODE CARD (AS SEEN IN IMAGE) ---
+const ModeCard: React.FC<{ 
+    id: QuizMode; 
+    icon: string | React.ReactNode; 
+    title: string; 
+    desc: string; 
+    isActive: boolean; 
+    onClick: () => void 
+}> = ({ icon, title, desc, isActive, onClick }) => (
+    <button 
+        onClick={onClick}
+        className={`relative flex flex-col p-6 rounded-[2rem] text-left transition-all duration-300 group min-h-[180px] border-2 shadow-xl ${
+            isActive 
+                ? 'bg-blue-600/20 border-blue-500 ring-4 ring-blue-500/10' 
+                : 'bg-[#0f172a]/80 border-white/5 hover:border-blue-500/50 hover:bg-[#1e293b]'
+        }`}
+    >
+        <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">{icon}</div>
+        <h3 className="text-xl font-black text-white mb-2 leading-tight uppercase tracking-tight">{title}</h3>
+        <p className="text-xs font-bold text-slate-500 leading-relaxed">{desc}</p>
+        {isActive && <div className="absolute top-4 right-4 w-3 h-3 bg-blue-500 rounded-full animate-pulse shadow-lg shadow-blue-500"></div>}
+    </button>
 );
 
-const Stat: React.FC<{ label: string, value: string | number, color?: string }> = ({ label, value, color = "text-gray-800 dark:text-slate-200" }) => (
-    <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800/50 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-        <h4 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">{label}</h4>
-        <p className={`text-xl font-black mt-1 ${color}`}>{value}</p>
-    </div>
-);
-
-interface QuizHistoryItem {
-    question: Country;
-    userAnswer: string | null;
-    correctAnswer: string;
-    isCorrect: boolean;
-    options: string[];
-}
-
-interface QuizGameProps {
-    countries: Country[];
-    mode: QuizMode;
-    difficulty: QuizDifficulty;
-    quizLength: number;
-    onBackToMenu: () => void;
-}
-
-const QuizGame: React.FC<QuizGameProps> = ({ countries, mode, difficulty, quizLength, onBackToMenu }) => {
+// --- SUB-COMPONENT: BATTLE OF NATIONS ---
+const BattleGame: React.FC<{ countries: Country[], onBack: () => void }> = ({ countries, onBack }) => {
     const { t, language } = useLanguage();
-    const { trackQuizResult } = useAchievements();
-    const [quizState, setQuizState] = useState<'playing' | 'results'>('playing');
-    const [quizQuestions, setQuizQuestions] = useState<Country[]>([]);
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [score, setScore] = useState(0);
-    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-    const [isAnswered, setIsAnswered] = useState(false);
-    const [startTime, setStartTime] = useState(Date.now());
-    const [endTime, setEndTime] = useState(Date.now());
-    const [error, setError] = useState<string | null>(null);
-    const [quizHistory, setQuizHistory] = useState<QuizHistoryItem[]>([]);
-    const [streak, setStreak] = useState(0);
-    const [bestStreak, setBestStreak] = useState(0);
-    const [hintsRemaining, setHintsRemaining] = useState(HINTS_PER_QUIZ);
-    const [isHintUsedThisTurn, setIsHintUsedThisTurn] = useState(false);
-    const [fiftyFiftyHintsRemaining, setFiftyFiftyHintsRemaining] = useState(FIFTY_FIFTY_HINTS_PER_QUIZ);
-    const [isFiftyFiftyUsedThisTurn, setIsFiftyFiftyUsedThisTurn] = useState(false);
-    const [disabledOptions, setDisabledOptions] = useState<string[]>([]);
-    const [isReviewing, setIsReviewing] = useState(false);
-    const [actualQuizLength, setActualQuizLength] = useState(0);
-    const [shake, setShake] = useState(false);
+    const { trackComparison } = useAchievements();
+    const [step, setStep] = useState<'pick' | 'duel'>('pick');
+    const [playerCard, setPlayerCard] = useState<Country | null>(null);
+    const [aiCard, setAiCard] = useState<Country | null>(null);
+    const [result, setResult] = useState<{ winner: 'player' | 'ai' | 'draw', msg: string } | null>(null);
 
-    const getCountryName = useCallback((c: Country) => {
-        const name = language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common;
-        if (name.length <= 2 && name === name.toLowerCase()) return c.cca3;
-        return name;
-    }, [language]);
+    const filteredCountries = useMemo(() => countries.filter(c => !EXCLUDED_QUIZ_COUNTRIES.includes(c.cca3)), [countries]);
 
-    const getCorrectValue = useCallback((c: Country): string => {
-        switch (mode) {
-            case 'flag-to-capital':
-            case 'country-to-capital':
-                return c.capital?.[0] || 'N/A';
-            case 'country-to-flag':
-            case 'odd-one-out':
-                return c.cca3;
-            default:
-                return getCountryName(c);
-        }
-    }, [mode, getCountryName]);
+    const getCountryName = (c: Country) => language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common;
 
-    const startNewQuiz = useCallback(() => {
-        let difficultyPool: Country[];
-        const sortedByPopulation = [...countries].sort((a, b) => b.population - a.population);
-
-        if (difficulty === 'easy') {
-            difficultyPool = sortedByPopulation.slice(0, 75);
-        } else if (difficulty === 'hard') {
-            difficultyPool = sortedByPopulation.slice(-125);
-        } else {
-            difficultyPool = [...countries];
-        }
-
-        let questionPool: Country[];
-        if (mode === 'flag-to-capital' || mode === 'country-to-capital') {
-            questionPool = difficultyPool.filter(c => c.capital && c.capital.length > 0);
-        } else if (mode === 'shape-to-country') {
-            questionPool = difficultyPool.filter(c => c.coatOfArms?.svg);
-        } else {
-            questionPool = difficultyPool;
-        }
-
-        if (questionPool.length < OPTIONS_COUNT) {
-            setError('Not enough countries available for this mode and difficulty.');
-            return;
-        }
-        
-        const finalQuizLength = Math.min(quizLength, questionPool.length);
-        setActualQuizLength(finalQuizLength);
-
-        const shuffled = shuffleArray(questionPool);
-        setQuizQuestions(shuffled.slice(0, finalQuizLength));
-        setCurrentQuestionIndex(0);
-        setScore(0);
-        setSelectedAnswer(null);
-        setIsAnswered(false);
-        setQuizState('playing');
-        setStartTime(Date.now());
-        setError(null);
-        setQuizHistory([]);
-        setStreak(0);
-        setBestStreak(0);
-        setHintsRemaining(HINTS_PER_QUIZ);
-        setFiftyFiftyHintsRemaining(FIFTY_FIFTY_HINTS_PER_QUIZ);
-    }, [countries, mode, difficulty, quizLength]);
-
-    useEffect(() => {
-        startNewQuiz();
-    }, [startNewQuiz]);
-
-    const currentCountry = useMemo(() => quizQuestions[currentQuestionIndex], [quizQuestions, currentQuestionIndex]);
-
-    const options = useMemo(() => {
-        if (!currentCountry) return [];
-        
-        const correctAnswer = getCorrectValue(currentCountry);
-
-        if (mode === 'odd-one-out') {
-            const targetContinent = currentCountry.continents[0];
-            const otherContinents = countries
-                .filter(c => !c.continents.includes(targetContinent))
-                .map(c => c.continents[0]);
-            
-            const selectedOtherContinent = otherContinents[Math.floor(Math.random() * otherContinents.length)];
-            const decoys = shuffleArray(countries.filter((c: Country) => c.continents.includes(selectedOtherContinent) && c.cca3 !== currentCountry.cca3))
-                .slice(0, OPTIONS_COUNT - 1)
-                .map((c: Country) => c.cca3);
-
-            return shuffleArray([currentCountry.cca3, ...decoys]);
-        }
-
-        let wrongOptionPool: Country[];
-        let getOptionValue: (country: Country) => string;
-
-        switch (mode) {
-            case 'flag-to-capital':
-            case 'country-to-capital':
-                wrongOptionPool = countries.filter(c => c.capital && c.capital.length > 0 && c.cca3 !== currentCountry.cca3);
-                getOptionValue = c => c.capital[0];
-                break;
-            case 'country-to-flag':
-                wrongOptionPool = countries.filter(c => c.cca3 !== currentCountry.cca3);
-                getOptionValue = c => c.cca3;
-                break;
-            default:
-                wrongOptionPool = countries.filter(c => c.cca3 !== currentCountry.cca3);
-                getOptionValue = getCountryName;
-        }
-
-        const uniqueOptions = new Set<string>();
-        uniqueOptions.add(correctAnswer);
-
-        const shuffledWrongPool = shuffleArray(wrongOptionPool);
-        for (const country of shuffledWrongPool) {
-            const val = getOptionValue(country);
-            if (!uniqueOptions.has(val) && val.length > 2) {
-                uniqueOptions.add(val);
-            }
-            if (uniqueOptions.size === OPTIONS_COUNT) break;
-        }
-
-        return shuffleArray(Array.from(uniqueOptions));
-    }, [currentCountry, countries, getCountryName, mode, getCorrectValue]);
-
-    const handleAnswer = (answer: string | null) => {
-        if (isAnswered || !currentCountry) return;
-        
-        const correctAnswer = getCorrectValue(currentCountry);
-        const isCorrect = answer === correctAnswer;
-        
-        setSelectedAnswer(answer);
-        setIsAnswered(true);
-
-        if (isCorrect) {
-            setScore(prev => prev + 1);
-            setStreak(prev => {
-                const newStreak = prev + 1;
-                setBestStreak(curr => Math.max(curr, newStreak));
-                return newStreak;
-            });
-        } else {
-            setStreak(0);
-            setShake(true);
-            setTimeout(() => setShake(false), 500);
-        }
-
-        setQuizHistory(prev => [
-            ...prev,
-            { question: currentCountry, userAnswer: answer, correctAnswer, isCorrect, options }
-        ]);
+    const handlePick = (c: Country) => {
+        setPlayerCard(c);
+        let aiCandidate: Country;
+        do {
+            aiCandidate = filteredCountries[Math.floor(Math.random() * filteredCountries.length)];
+        } while (aiCandidate.cca3 === c.cca3);
+        setAiCard(aiCandidate);
+        setStep('duel');
     };
 
-    const handleNextQuestion = () => {
-        if (currentQuestionIndex < actualQuizLength - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
-            setSelectedAnswer(null);
-            setIsAnswered(false);
-            setIsHintUsedThisTurn(false);
-            setIsFiftyFiftyUsedThisTurn(false);
-            setDisabledOptions([]);
-        } else {
-            setEndTime(Date.now());
-            setQuizState('results');
-            trackQuizResult(score, actualQuizLength, bestStreak);
-        }
+    const resolveDuel = (attr: 'population' | 'area') => {
+        if (!playerCard || !aiCard) return;
+        trackComparison();
+        const pVal = playerCard[attr];
+        const aVal = aiCard[attr];
+        let winner: 'player' | 'ai' | 'draw' = 'draw';
+        if (pVal > aVal) winner = 'player';
+        else if (aVal > pVal) winner = 'ai';
+
+        const msg = winner === 'player' 
+            ? `${getCountryName(playerCard)} (${pVal.toLocaleString()}) > ${getCountryName(aiCard)} (${aVal.toLocaleString()})`
+            : winner === 'ai' 
+                ? `${getCountryName(aiCard)} (${aVal.toLocaleString()}) > ${getCountryName(playerCard)} (${pVal.toLocaleString()})`
+                : t('draw');
+        
+        setResult({ winner, msg });
     };
 
-    const handleUseHint = () => {
-        if (hintsRemaining > 0 && !isHintUsedThisTurn && !isAnswered && currentCountry) {
-            setHintsRemaining(prev => prev - 1);
-            setIsHintUsedThisTurn(true);
-        }
-    };
-    
-    const handleUseFiftyFiftyHint = () => {
-        if (fiftyFiftyHintsRemaining > 0 && !isFiftyFiftyUsedThisTurn && !isAnswered && currentCountry) {
-            setFiftyFiftyHintsRemaining(prev => prev - 1);
-            setIsFiftyFiftyUsedThisTurn(true);
-            const correctAnswer = getCorrectValue(currentCountry);
-            const wrongOptions = options.filter(opt => opt !== correctAnswer);
-            setDisabledOptions(shuffleArray(wrongOptions).slice(0, 2));
-        }
-    };
-
-    if (quizState === 'results') {
-        const totalTime = ((endTime - startTime) / 1000).toFixed(1);
-        const percentage = Math.round((score / actualQuizLength) * 100);
-
-        const rank = ((p: number) => {
-            if (p >= 95) return { title: t('rankMaster'), color: 'text-amber-400', bg: 'bg-amber-400/10', icon: '👑' };
-            if (p >= 80) return { title: t('rankExpert'), color: 'text-violet-400', bg: 'bg-violet-400/10', icon: '💎' };
-            if (p >= 60) return { title: t('rankAdept'), color: 'text-blue-400', bg: 'bg-blue-400/10', icon: '🏆' };
-            if (p >= 40) return { title: t('rankApprentice'), color: 'text-green-400', bg: 'bg-green-400/10', icon: '🛡️' };
-            return { title: t('rankNovice'), color: 'text-slate-400', bg: 'bg-slate-400/10', icon: '🔰' };
-        })(percentage);
-
-        if (isReviewing) {
-            return (
-                <div className="max-w-2xl mx-auto animate-fade-in">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-3xl font-black text-gray-900 dark:text-white">{t('quizReviewTitle')}</h2>
-                        <button onClick={() => setIsReviewing(false)} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-full font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">{t('quizBackToSummary')}</button>
+    return (
+        <div className="animate-fade-in space-y-8">
+            <div className="flex justify-between items-center">
+                <button onClick={onBack} className="text-blue-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2">← {t('backToHub')}</button>
+                <h2 className="text-2xl font-black text-white italic">{t('battleTitle')}</h2>
+            </div>
+            {step === 'pick' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {shuffleArray(filteredCountries).slice(0, 8).map((c: Country) => (
+                        <button key={c.cca3} onClick={() => handlePick(c)} className="aspect-[3/4] bg-slate-900 rounded-3xl overflow-hidden border-4 border-white/5 hover:border-blue-500 transition-all p-2 group">
+                            <img src={c.flags.svg} className="w-full h-2/3 object-cover rounded-xl" alt="" />
+                            <p className="text-[10px] font-black text-white mt-4 uppercase text-center">{getCountryName(c)}</p>
+                        </button>
+                    ))}
+                </div>
+            ) : (
+                <div className="flex flex-col items-center gap-8">
+                    <div className="flex items-center gap-4 sm:gap-12">
+                        <div className="w-32 sm:w-48 aspect-[3/4.2] bg-blue-900/40 rounded-3xl border-4 border-blue-500 p-4 text-center">
+                            <img src={playerCard?.flags.svg} className="w-full h-24 object-cover rounded-lg mb-4" />
+                            <p className="text-xs font-black text-white uppercase">{playerCard && getCountryName(playerCard)}</p>
+                        </div>
+                        <div className="text-4xl font-black text-white opacity-20">{t('battleVs')}</div>
+                        <div className="w-32 sm:w-48 aspect-[3/4.2] bg-slate-900 rounded-3xl border-4 border-white/5 p-4 text-center">
+                            <div className="h-24 flex items-center justify-center text-4xl mb-4">?</div>
+                            <p className="text-xs font-black text-slate-500 uppercase">{t('aiRival')}</p>
+                        </div>
                     </div>
-                    <div className="space-y-4">
-                        {quizHistory.map((item, idx) => (
-                            <div key={idx} className={`p-5 rounded-3xl border-2 ${item.isCorrect ? 'bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30' : 'bg-red-50/50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30'}`}>
-                                <div className="flex gap-4 items-start">
-                                    <div className="relative w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 shadow-md border border-white/40 bg-slate-100">
-                                        <img src={item.question.flags.svg} alt="" className="w-full h-full object-cover" />
-                                        <FlagFabricOverlay />
-                                    </div>
-                                    <div className="flex-grow">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t('questionLabel')} {idx + 1}</p>
-                                        <h4 className="font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                                            {item.isCorrect ? t('quizCorrect') : t('quizIncorrect')}
-                                        </h4>
-                                        <p className="text-sm mt-2 text-slate-600 dark:text-slate-400">
-                                            {t('quizCorrectAnswer')} <span className="font-bold text-slate-900 dark:text-white">{item.correctAnswer}</span>
-                                        </p>
-                                        {!item.isCorrect && item.userAnswer && (
-                                            <p className="text-sm text-red-500 line-through mt-1">
-                                                {t('quizYourAnswer')} {item.userAnswer}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                    {!result ? (
+                        <div className="flex gap-4">
+                            <button onClick={() => resolveDuel('population')} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-xs hover:scale-105 transition-all">{t('attributePop')}</button>
+                            <button onClick={() => resolveDuel('area')} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs hover:scale-105 transition-all">{t('attributeArea')}</button>
+                        </div>
+                    ) : (
+                        <div className="text-center animate-fade-in-up">
+                            <img src={aiCard?.flags.svg} className="w-48 h-32 object-cover rounded-2xl mx-auto border-4 border-white/10 mb-4" />
+                            <h3 className={`text-4xl font-black mb-2 ${result.winner === 'player' ? 'text-green-500' : result.winner === 'ai' ? 'text-red-500' : 'text-slate-400'}`}>
+                                {result.winner === 'player' ? t('playerWins') : result.winner === 'ai' ? t('aiWins') : t('draw')}
+                            </h3>
+                            <p className="text-slate-400 font-bold mb-8">{result.msg}</p>
+                            <button onClick={() => { setStep('pick'); setResult(null); }} className="px-12 py-4 bg-white text-slate-900 rounded-full font-black uppercase text-sm">{t('playAgain')}</button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const QuizView: React.FC<{ countries: Country[], onBackToExplorer: () => void }> = ({ countries }) => {
+    const { t } = useLanguage();
+    const [view, setView] = useState<HubView>('menu');
+    const [mode, setMode] = useState<QuizMode | null>(null);
+    const [difficulty, setDifficulty] = useState<QuizDifficulty | null>(null);
+    const [quizLength, setQuizLength] = useState<number>(10);
+
+    const filteredCountries = useMemo(() => countries.filter(c => !EXCLUDED_QUIZ_COUNTRIES.includes(c.cca3)), [countries]);
+
+    const hubItems = [
+        { id: 'quiz-setup', title: t('startQuiz'), subtitle: t('classicModes'), icon: '🎯', color: 'bg-blue-600' },
+        { id: 'battle', title: t('battleTitle'), subtitle: t('battleSubtitle'), icon: '⚔️', color: 'bg-red-600' },
+        { id: 'missions', title: t('missionsTitle'), subtitle: t('missionsSubtitle'), icon: '✈️', color: 'bg-emerald-600' },
+        { id: 'hall-of-fame', title: t('hallOfFameTitle'), subtitle: t('hallOfFameSubtitle'), icon: '🏆', color: 'bg-amber-600' },
+    ];
+
+    const quizModes = [
+        { id: 'flag-to-country', icon: '🏁', title: t('modeFlagToCountry'), desc: t('modeFlagToCountryDesc') },
+        { id: 'country-to-flag', icon: '🗺️', title: t('modeCountryToFlag'), desc: t('modeCountryToFlagDesc') },
+        { id: 'flag-to-capital', icon: '🏛️', title: t('modeFlagToCapital'), desc: t('modeFlagToCapitalDesc') },
+        { id: 'country-to-capital', icon: '📍', title: t('modeCountryToCapital'), desc: t('modeCountryToCapitalDesc') },
+        { id: 'shape-to-country', icon: '🛡️', title: t('modeShapeToCountry'), desc: t('modeShapeToCountryDesc') },
+        { id: 'odd-one-out', icon: '🧩', title: t('modeOddOneOut'), desc: t('modeOddOneOutDesc') },
+        { id: 'flagle', icon: '👾', title: t('modeFlagle'), desc: t('modeFlagleDesc') },
+    ];
+
+    if (view === 'quiz-game' && mode === 'flagle') {
+        return <Suspense fallback={null}><FlagleGame countries={filteredCountries} onBackToMenu={() => setView('quiz-setup')} /></Suspense>;
+    }
+
+    return (
+        <div className="max-w-5xl mx-auto pb-32">
+            {view === 'menu' && (
+                <div className="space-y-12 animate-fade-in-up">
+                    <div className="text-center">
+                        <h1 className="text-6xl font-black text-white tracking-tighter mb-4">{t('quizTitle')}</h1>
+                        <div className="h-2 w-32 bg-blue-600 mx-auto rounded-full"></div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {hubItems.map(item => (
+                            <button key={item.id} onClick={() => setView(item.id as HubView)} className="group relative flex items-center gap-6 p-8 bg-slate-900 border border-white/5 rounded-[3rem] text-left hover:border-blue-500/50 hover:bg-slate-800 transition-all shadow-xl active:scale-95">
+                                <div className={`w-20 h-20 rounded-3xl ${item.color} flex items-center justify-center text-4xl shadow-lg transform group-hover:rotate-6 transition-transform`}>{item.icon}</div>
+                                <div><h3 className="text-2xl font-black text-white mb-1">{item.title}</h3><p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{item.subtitle}</p></div>
+                                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"><svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 5l7 7m0 0l-7 7m7-7H3" /></svg></div>
+                            </button>
                         ))}
                     </div>
                 </div>
-            );
-        }
+            )}
 
-        return (
-            <div className="max-w-2xl mx-auto text-center animate-fade-in space-y-8">
-                <div className={`inline-block p-10 rounded-[3rem] shadow-2xl relative ${rank.bg}`}>
-                    <div className="absolute -top-6 -right-6 text-6xl animate-bounce">{rank.icon}</div>
-                    <h2 className="text-2xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">{t('quizResults')}</h2>
-                    <p className={`text-5xl font-black ${rank.color} mb-6 tracking-tighter`}>{rank.title}</p>
-                    <div className="flex items-baseline justify-center gap-2">
-                        <span className="text-7xl font-black text-slate-900 dark:text-white tracking-tighter">{score}</span>
-                        <span className="text-2xl font-bold text-slate-400">/ {actualQuizLength}</span>
+            {view === 'quiz-setup' && (
+                <div className="space-y-12 animate-fade-in-up">
+                    <button onClick={() => setView('menu')} className="text-slate-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2">← {t('backToHub')}</button>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {quizModes.map(m => (
+                            <ModeCard 
+                                key={m.id}
+                                id={m.id as QuizMode}
+                                icon={m.icon}
+                                title={m.title}
+                                desc={m.desc}
+                                isActive={mode === m.id}
+                                onClick={() => setMode(m.id as QuizMode)}
+                            />
+                        ))}
                     </div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <Stat label={t('quizAccuracy')} value={`${percentage}%`} color={rank.color} />
-                    <Stat label={t('quizBestStreak')} value={bestStreak} color="text-orange-500" />
-                    <Stat label={t('quizTime')} value={t('quizSeconds', { seconds: totalTime })} />
-                    <Stat label={rank.title} value={rank.icon} />
-                </div>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onClick={startNewQuiz} className="flex-1 py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95">{t('playAgain')}</button>
-                    <button onClick={() => setIsReviewing(true)} className="flex-1 py-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:bg-slate-50 transition-all active:scale-95">{t('quizReviewAnswers')}</button>
-                </div>
-            </div>
-        );
-    }
 
-    if (quizState === 'playing' && !currentCountry) return <div className="py-20 flex justify-center"><div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>;
-
-    const progress = actualQuizLength > 0 ? ((currentQuestionIndex + 1) / actualQuizLength) * 100 : 0;
-
-    return (
-        <div className="max-w-2xl mx-auto space-y-6">
-            <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-3xl backdrop-blur-md border border-white/50 dark:border-slate-800/50">
-                <div className="flex justify-between items-center mb-3">
-                    <span className="text-[10px] font-black text-blue-600 dark:text-sky-400 uppercase tracking-[0.2em]">
-                        {t('questionOf', { current: (currentQuestionIndex + 1).toString(), total: actualQuizLength.toString() })}
-                    </span>
-                    <div className="flex items-center gap-3">
-                        {streak > 1 && <span className="px-3 py-1 bg-orange-500 text-white rounded-full text-[10px] font-black animate-pulse flex items-center gap-1">🔥 {streak}</span>}
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{score} {t('hitsLabel')}</span>
-                    </div>
-                </div>
-                <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: `${progress}%` }}></div>
-                </div>
-            </div>
-
-            <div className={`relative bg-white dark:bg-slate-900 p-8 sm:p-12 rounded-[3rem] shadow-2xl transition-all duration-300 ${shake ? 'animate-bounce' : ''}`}>
-                 <h2 className="text-center text-2xl font-black text-slate-800 dark:text-white mb-8 min-h-[64px] flex items-center justify-center px-4 tracking-tight">
-                    {mode === 'flag-to-country' ? t('whichCountry') : 
-                     mode === 'flag-to-capital' ? t('whichCapital') :
-                     mode === 'country-to-flag' ? t('whichFlag', { country: getCountryName(currentCountry) }) :
-                     mode === 'shape-to-country' ? t('whichCoatOfArms') : 
-                     mode === 'country-to-capital' ? t('whichCapitalForCountry', { country: getCountryName(currentCountry) }) :
-                     t('whichIsTheOddOneOut')}
-                </h2>
-
-                <div className="flex flex-col items-center gap-8">
-                    {currentCountry && (mode === 'flag-to-country' || mode === 'flag-to-capital') && (
-                        <div className="relative w-full max-w-sm aspect-[3/2] rounded-[2rem] overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] border-[6px] border-white dark:border-slate-800 transform transition-all hover:scale-[1.03] bg-slate-100">
-                            <img src={currentCountry.flags.svg} alt="" className="w-full h-full object-cover" />
-                            <FlagFabricOverlay />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/5 pointer-events-none"></div>
-                        </div>
-                    )}
-                    {currentCountry && mode === 'shape-to-country' && (
-                        <div className="w-full max-w-xs h-40 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] p-8 border-2 border-slate-100 dark:border-slate-800">
-                            <img src={currentCountry.coatOfArms.svg} alt="" className="h-full w-auto object-contain drop-shadow-xl" />
-                        </div>
-                    )}
-                    {!isAnswered && (
-                        <div className="flex gap-2.5">
-                             <button onClick={handleUseHint} disabled={hintsRemaining === 0 || isHintUsedThisTurn} className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200/50 disabled:opacity-20 hover:bg-amber-100 transition-all">💡 {hintsRemaining}</button>
-                             <button onClick={handleUseFiftyFiftyHint} disabled={fiftyFiftyHintsRemaining === 0 || isFiftyFiftyUsedThisTurn} className="px-4 py-2 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-sky-200/50 disabled:opacity-20 hover:bg-sky-100 transition-all">🎭 {fiftyFiftyHintsRemaining}</button>
-                        </div>
-                    )}
-                    {isHintUsedThisTurn && currentCountry && (
-                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 animate-fade-in-up">
-                            <p className="text-xs font-black text-blue-700 dark:text-blue-300 uppercase tracking-widest">
-                                {t('continentHint', { continent: currentCountry.continents.map(c => CONTINENT_NAMES[c]?.[language] || c).join(', ') })}
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                <div className={`mt-10 grid gap-4 ${mode === 'country-to-flag' || mode === 'odd-one-out' ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
-                    {options.map((opt, i) => {
-                        const isVisual = mode === 'country-to-flag' || mode === 'odd-one-out';
-                        const correctAnswer = getCorrectValue(currentCountry);
-                        const isCorrect = isAnswered && opt === correctAnswer;
-                        const isWrong = isAnswered && opt === selectedAnswer && !isCorrect;
-                        const isDisabled = disabledOptions.includes(opt);
-                        const countryForFlag = isVisual ? countries.find(c => c.cca3 === opt) : null;
-
-                        return (
-                            <button
-                                key={i}
-                                onClick={() => handleAnswer(opt)}
-                                disabled={isAnswered || isDisabled}
-                                className={`group relative rounded-2xl border-2 transition-all duration-300 active:scale-95 flex flex-col items-center justify-center overflow-hidden
-                                    ${isVisual ? 'aspect-[3/2]' : 'p-5'}
-                                    ${isDisabled ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'}
-                                    ${!isAnswered ? 'bg-slate-100 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800 hover:border-blue-500 hover:bg-white dark:hover:bg-slate-700' : ''}
-                                    ${isCorrect ? 'bg-green-500 border-green-500 text-white shadow-xl shadow-green-500/30 z-10' : ''}
-                                    ${isWrong ? 'bg-red-500 border-red-500 text-white shadow-xl shadow-red-500/30 z-10' : ''}
-                                    ${isAnswered && !isCorrect && !isWrong ? 'opacity-30 grayscale' : ''}
-                                `}
-                            >
-                                {countryForFlag ? (
-                                    <div className="relative w-full h-full bg-white dark:bg-slate-900 flex items-center justify-center">
-                                        <img src={countryForFlag.flags.svg} alt="" className="w-full h-full object-cover" />
-                                        <FlagFabricOverlay />
+                    {mode && (
+                        <div className="pt-8 border-t border-white/5 space-y-12 animate-fade-in">
+                            <div className="max-w-2xl mx-auto space-y-8">
+                                <div className="space-y-6">
+                                    <h2 className="text-xl font-black text-slate-400 uppercase tracking-widest text-center">{t('selectNumberOfQuestions')}</h2>
+                                    <div className="flex flex-wrap justify-center gap-4">
+                                        {[5, 10, 20, filteredCountries.length].map(n => (
+                                            <button 
+                                                key={n} 
+                                                onClick={() => setQuizLength(n)} 
+                                                className={`px-8 py-4 rounded-2xl border-2 font-black transition-all ${quizLength === n ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/5 text-slate-400'}`}
+                                            >
+                                                {n === filteredCountries.length ? t('allQuestions') : n}
+                                            </button>
+                                        ))}
                                     </div>
-                                ) : (
-                                    <span className="font-black text-xs uppercase tracking-widest text-center">{opt}</span>
-                                )}
-                                {isCorrect && <div className="absolute top-2 right-2 bg-white text-green-500 rounded-full p-1 shadow-lg animate-bounce"><CheckIcon /></div>}
-                                {isWrong && <div className="absolute top-2 right-2 bg-white text-red-500 rounded-full p-1 shadow-lg"><CrossIcon /></div>}
-                            </button>
-                        );
-                    })}
-                </div>
+                                </div>
 
-                {isAnswered && (
-                    <div className="mt-12 flex justify-center animate-fade-in-up">
-                        <button onClick={handleNextQuestion} className="px-12 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-4 uppercase tracking-[0.2em] text-xs">
-                            {t('nextQuestion')}
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                        </button>
+                                {mode !== 'flagle' && (
+                                    <div className="space-y-6">
+                                        <h2 className="text-xl font-black text-slate-400 uppercase tracking-widest text-center">{t('selectDifficulty')}</h2>
+                                        <div className="flex justify-center gap-4">
+                                            {['easy', 'medium', 'hard'].map(d => (
+                                                <button key={d} onClick={() => setDifficulty(d as QuizDifficulty)} className={`flex-1 p-5 rounded-2xl border-2 font-black transition-all ${difficulty === d ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/5 text-slate-400'}`}>
+                                                    {t(`difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`)}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-center pt-8">
+                                    <button 
+                                        onClick={() => setView('quiz-game')} 
+                                        disabled={mode !== 'flagle' && !difficulty}
+                                        className="px-20 py-6 bg-blue-600 text-white font-black rounded-3xl shadow-2xl disabled:opacity-30 uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all"
+                                    >
+                                        {t('startQuiz')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {view === 'quiz-game' && mode !== 'flagle' && (
+               <QuizGame countries={filteredCountries} mode={mode!} difficulty={difficulty!} quizLength={quizLength} onBackToMenu={() => setView('quiz-setup')} />
+            )}
+
+            {view === 'battle' && <BattleGame countries={filteredCountries} onBack={() => setView('menu')} />}
+            {view === 'missions' && <MissionsView onBack={() => setView('menu')} />}
+            {view === 'hall-of-fame' && <HallOfFameView onBack={() => setView('menu')} />}
+        </div>
+    );
+};
+
+const MissionsView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const { t } = useLanguage();
+    const { stats } = useAchievements();
+    const missions = [
+        { title: t('missionExploration'), progress: stats.viewedFlags.length, total: 20 },
+        { title: t('missionQuizMaster'), progress: stats.quizzesCompleted, total: 5 },
+        { title: t('missionCollector'), progress: stats.favoritesCount, total: 10 },
+    ];
+    return (
+        <div className="max-w-2xl mx-auto space-y-8 animate-fade-in-up">
+            <button onClick={onBack} className="text-slate-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2">← {t('backToHub')}</button>
+            <h2 className="text-4xl font-black text-white">{t('missionsTitle')}</h2>
+            <div className="space-y-6">
+                {missions.map((m, i) => (
+                    <div key={i} className="bg-slate-900/50 p-6 rounded-[2rem] border border-white/5">
+                        <div className="flex justify-between mb-4">
+                            <span className="text-sm font-black text-white uppercase tracking-widest">{m.title}</span>
+                            <span className="text-xs font-bold text-slate-500">{m.progress}/{m.total}</span>
+                        </div>
+                        <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${Math.min(100, (m.progress/m.total)*100)}%` }} />
+                        </div>
                     </div>
-                )}
+                ))}
             </div>
         </div>
     );
 };
 
-const CheckIcon = () => <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
-const CrossIcon = () => <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
+const HallOfFameView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const { t, language } = useLanguage();
+    const { stats } = useAchievements();
+    const leaders = [
+        { name: "VexKing_92", xp: 12400, avatar: "🦁" },
+        { name: "FlagHunter", xp: 9850, avatar: "🐉" },
+        { name: "AtlasPro", xp: 8200, avatar: "🦅" },
+        { name: t('you'), xp: stats.totalXP, avatar: "⭐", isUser: true },
+        { name: "GeoNinja", xp: 5400, avatar: "⚔️" },
+    ].sort((a,b) => b.xp - a.xp);
+    return (
+        <div className="max-w-2xl mx-auto space-y-8 animate-fade-in-up">
+            <button onClick={onBack} className="text-slate-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2">← {t('backToHub')}</button>
+            <h2 className="text-4xl font-black text-white">{t('hallOfFameTitle')}</h2>
+            <div className="space-y-4">
+                {leaders.map((l, i) => (
+                    <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border ${l.isUser ? 'bg-blue-600/20 border-blue-500' : 'bg-slate-900 border-white/5'}`}>
+                        <div className="flex items-center gap-4">
+                            <span className={`w-6 font-black ${i === 0 ? 'text-amber-400' : 'text-slate-500'}`}>#{i+1}</span>
+                            <span className="text-2xl">{l.avatar}</span>
+                            <span className="font-black text-white text-sm">{l.name}</span>
+                        </div>
+                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{l.xp.toLocaleString(language)} XP</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 
-const QuizView: React.FC<{ countries: Country[], onBackToExplorer: () => void }> = ({ countries, onBackToExplorer }) => {
-    const { t } = useLanguage();
-    const [mode, setMode] = useState<QuizMode | null>(null);
-    const [difficulty, setDifficulty] = useState<QuizDifficulty | null>(null);
-    const [quizLength, setQuizLength] = useState<number>(20);
-    const [isQuizStarted, setIsQuizStarted] = useState(false);
+const QuizGame: React.FC<{ countries: Country[], mode: QuizMode, difficulty: QuizDifficulty, quizLength: number, onBackToMenu: () => void }> = ({ countries, mode, quizLength, onBackToMenu }) => {
+    const { t, language } = useLanguage();
+    const { trackQuizResult } = useAchievements();
+    const [quizState, setQuizState] = useState<'playing' | 'results'>('playing');
+    const [questions, setQuestions] = useState<Country[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [score, setScore] = useState(0);
+    const [answered, setAnswered] = useState(false);
+    const [selected, setSelected] = useState<string | null>(null);
 
-    const quizCountries = useMemo(() => {
-        const exclude = new Set(['Bouvet Island', 'Heard Island and McDonald Islands', 'United States Minor Outlying Islands', 'Svalbard and Jan Mayen', 'Saint Martin']);
-        return countries.filter(c => !exclude.has(c.name.common));
-    }, [countries]);
+    const getCountryName = useCallback((c: Country) => language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common, [language]);
+    const getCorrectValue = useCallback((c: Country) => {
+        if (mode === 'flag-to-capital' || mode === 'country-to-capital') return c.capital?.[0] || '?';
+        return getCountryName(c);
+    }, [mode, getCountryName]);
 
-    const gameModes: { id: QuizMode, title: string, desc: string, icon: string }[] = [
-        { id: 'flag-to-country', title: t('modeFlagToCountry'), desc: t('modeFlagToCountryDesc'), icon: '🏁' },
-        { id: 'country-to-flag', title: t('modeCountryToFlag'), desc: t('modeCountryToFlagDesc'), icon: '🗺️' },
-        { id: 'flag-to-capital', title: t('modeFlagToCapital'), desc: t('modeFlagToCapitalDesc'), icon: '🏛️' },
-        { id: 'country-to-capital', title: t('modeCountryToCapital'), desc: t('modeCountryToCapitalDesc'), icon: '📍' },
-        { id: 'shape-to-country', title: t('modeShapeToCountry'), desc: t('modeShapeToCountryDesc'), icon: '🛡️' },
-        { id: 'odd-one-out', title: t('modeOddOneOut'), desc: t('modeOddOneOutDesc'), icon: '🧩' },
-        { id: 'flagle', title: t('modeFlagle'), desc: t('modeFlagleDesc'), icon: '👾' },
-    ];
+    useEffect(() => {
+        setQuestions(shuffleArray(countries).slice(0, quizLength));
+    }, [countries, quizLength]);
 
-    if (isQuizStarted) {
-        if (mode === 'flagle') return <Suspense fallback={null}><FlagleGame countries={quizCountries} onBackToMenu={() => setIsQuizStarted(false)} /></Suspense>;
-        if (mode && (mode as QuizMode !== 'flagle' && difficulty)) return <QuizGame countries={quizCountries} mode={mode} difficulty={difficulty} quizLength={quizLength} onBackToMenu={() => setIsQuizStarted(false)} />;
-    }
+    const current = questions[currentIndex];
+    const options = useMemo(() => {
+        if (!current) return [];
+        const correct = getCorrectValue(current);
+        const others = shuffleArray(countries.filter(c => c.cca3 !== current.cca3)).slice(0, 3).map(c => getCorrectValue(c));
+        return shuffleArray([correct, ...others]);
+    }, [current, countries, getCorrectValue]);
+
+    const handleAnswer = (opt: string) => {
+        if (answered) return;
+        setSelected(opt);
+        setAnswered(true);
+        if (opt === getCorrectValue(current)) setScore(s => s + 1);
+    };
+
+    const next = () => {
+        if (currentIndex < questions.length - 1) {
+            setCurrentIndex(i => i + 1);
+            setAnswered(false);
+            setSelected(null);
+        } else {
+            setQuizState('results');
+            trackQuizResult(score, questions.length, 0);
+        }
+    };
+
+    if (quizState === 'results') return (
+        <div className="text-center space-y-8 py-20 animate-fade-in">
+            <h2 className="text-6xl font-black text-white">{score} / {questions.length}</h2>
+            <p className="text-slate-400 font-bold uppercase tracking-widest">{t('quizResults')}</p>
+            <button onClick={onBackToMenu} className="px-12 py-4 bg-blue-600 text-white rounded-full font-black uppercase text-sm shadow-2xl hover:scale-105 transition-all">{t('playAgain')}</button>
+        </div>
+    );
+
+    if (!current) return null;
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in-up pb-20 px-4">
-            <div className="text-center mb-12">
-                <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">{t('quizSetupTitle')}</h1>
-                <div className="h-1.5 w-24 bg-blue-600 mx-auto rounded-full"></div>
+        <div className="animate-fade-in space-y-12">
+            <div className="text-center space-y-2">
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{currentIndex + 1} / {questions.length}</span>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
+                    {mode === 'country-to-flag' || mode === 'country-to-capital' ? getCountryName(current) : t('whichCountry')}
+                </h3>
             </div>
-            <div className="space-y-12">
-                <div>
-                    <h2 className="text-xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">{t('chooseMode')}</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {gameModes.map(m => (
-                            <button key={m.id} onClick={() => setMode(m.id)} className={`p-6 text-left rounded-3xl border-2 transition-all duration-300 flex flex-col items-start gap-4 active:scale-95 ${mode === m.id ? 'border-blue-600 bg-blue-600 text-white shadow-xl shadow-blue-600/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-blue-300'}`}>
-                                <span className="text-4xl">{m.icon}</span>
-                                <div><h3 className="font-black text-lg leading-tight">{m.title}</h3><p className={`text-xs mt-1 font-medium ${mode === m.id ? 'text-blue-100' : 'text-slate-500'}`}>{m.desc}</p></div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <div className={`transition-all duration-500 space-y-12 ${mode === 'flagle' ? 'opacity-30 grayscale pointer-events-none' : 'opacity-100'}`}>
-                    <div>
-                        <h2 className="text-xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">{t('selectDifficulty')}</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {['easy', 'medium', 'hard'].map((d) => (
-                                <button key={d} onClick={() => setDifficulty(d as QuizDifficulty)} className={`p-6 text-center rounded-3xl border-2 transition-all duration-300 active:scale-95 ${difficulty === d ? 'border-blue-600 bg-blue-600 text-white shadow-xl shadow-blue-600/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900'}`}>
-                                    <h3 className="font-black text-lg capitalize">{t(`difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`)}</h3>
-                                    <p className={`text-xs mt-1 font-medium ${difficulty === d ? 'text-blue-100' : 'text-slate-500'}`}>{t(`difficulty${d.charAt(0).toUpperCase() + d.slice(1)}Desc`)}</p>
+
+            <div className="flex justify-center">
+                {mode === 'country-to-flag' ? (
+                     <div className="grid grid-cols-2 gap-4 w-full max-w-2xl">
+                        {options.map((opt, i) => {
+                            const country = countries.find(c => getCorrectValue(c) === opt);
+                            return (
+                                <button key={i} onClick={() => handleAnswer(opt)} className={`aspect-[3/2] rounded-[2rem] overflow-hidden border-4 transition-all ${answered ? (opt === getCorrectValue(current) ? 'border-green-500 scale-105' : (opt === selected ? 'border-red-500' : 'border-white/5 opacity-30')) : 'border-white/10 bg-slate-900 hover:border-blue-500'}`}>
+                                    <img src={country?.flags.svg} className="w-full h-full object-cover" alt="" />
                                 </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">{t('selectNumberOfQuestions')}</h2>
-                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border-2 border-slate-100 dark:border-slate-800 shadow-xl">
-                            <input type="range" min="5" max="55" step="5" value={quizLength >= 55 ? 55 : quizLength} onChange={(e) => setQuizLength(Number(e.target.value) >= 55 ? 999 : Number(e.target.value))} className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-blue-600" />
-                            <div className="flex justify-between text-[10px] font-black text-slate-400 mt-4 px-1 uppercase tracking-widest"><span>5</span><span>20</span><span>40</span><span>{t('all')}</span></div>
-                            <div className="text-center text-3xl font-black text-slate-900 dark:text-white mt-6 tracking-tighter">{quizLength >= 55 ? t('allQuestions') : t('numberOfQuestions', { count: quizLength.toString() })}</div>
-                        </div>
-                    </div>
+                            );
+                        })}
+                     </div>
+                ) : (
+                    <img src={current.flags.svg} className="w-full max-w-md h-64 object-cover rounded-[3rem] shadow-2xl border-8 border-white/5" alt="" />
+                )}
+            </div>
+
+            {mode !== 'country-to-flag' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                    {options.map((opt, i) => (
+                        <button key={i} onClick={() => handleAnswer(opt)} className={`p-6 rounded-3xl border-4 font-black transition-all text-sm uppercase tracking-widest ${answered ? (opt === getCorrectValue(current) ? 'border-green-500 bg-green-500 text-white' : (opt === selected ? 'border-red-500 bg-red-500 text-white' : 'border-white/5 opacity-30')) : 'border-white/5 bg-slate-900 text-slate-300 hover:border-blue-500'}`}>{opt}</button>
+                    ))}
                 </div>
-            </div>
-            <div className="mt-16 text-center">
-                <button onClick={() => setIsQuizStarted(true)} disabled={!mode || (mode !== 'flagle' && !difficulty)} className="group relative px-16 py-6 bg-blue-600 text-white font-black text-xl rounded-full shadow-2xl shadow-blue-600/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none">
-                    <span className="relative z-10 flex items-center gap-3">{t('startQuiz')}<svg className="w-6 h-6 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 5l7 7m0 0l-7 7m7-7H3" /></svg></span>
-                </button>
-            </div>
+            )}
+
+            {answered && <div className="text-center pt-8"><button onClick={next} className="px-12 py-4 bg-white text-slate-900 rounded-full font-black uppercase text-sm transition-all hover:scale-105 active:scale-95 shadow-xl">{t('nextQuestion')}</button></div>}
         </div>
     );
 };

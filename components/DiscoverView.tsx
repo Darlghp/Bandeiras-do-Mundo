@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import CollectionShowcase from './CollectionShowcase';
@@ -11,14 +10,17 @@ const VexillologyVignettes: React.FC = () => {
 
     const facts = useMemo(() => {
         try {
-            return JSON.parse(t('flagFactsList'));
+            const raw = t('flagFactsList');
+            // Se a tradução retornar apenas o nome da chave (falha no contexto) ou não for JSON
+            if (!raw || !raw.startsWith('[')) return [];
+            return JSON.parse(raw);
         } catch (e) {
             console.error("Failed to parse flag facts:", e);
             return [];
         }
     }, [t]);
 
-    const [factIndex, setFactIndex] = useState(() => Math.floor(Math.random() * facts.length));
+    const [factIndex, setFactIndex] = useState(() => facts.length > 0 ? Math.floor(Math.random() * facts.length) : 0);
 
     const showNewFact = useCallback(() => {
         if (facts.length <= 1) return;
@@ -32,6 +34,7 @@ const VexillologyVignettes: React.FC = () => {
     const currentFact = facts[factIndex] || '';
     
     const parsedFact = useMemo(() => {
+        if (!currentFact) return null;
         return currentFact.split('**').map((part: string, index: number) => 
             index % 2 === 1 ? <strong key={index} className="text-white">{part}</strong> : part
         );

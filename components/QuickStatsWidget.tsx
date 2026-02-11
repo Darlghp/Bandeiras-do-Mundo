@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { useAchievements } from '../context/AchievementContext';
 import { useLanguage } from '../context/LanguageContext';
 
 const QuickStatsWidget: React.FC = () => {
     const { level, stats, levelProgress, xpToNextLevel } = useAchievements();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
     return (
         <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2.5rem] shadow-xl border border-white dark:border-slate-800/50 overflow-hidden relative group">
@@ -24,15 +23,15 @@ const QuickStatsWidget: React.FC = () => {
                 <div>
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-2">{t('level')}</h4>
                     <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-sky-400 dark:to-blue-400">
-                        Vexillologist
+                        {t('rankVexillologist')}
                     </span>
                 </div>
             </div>
 
             <div className="space-y-3 relative z-10">
                 <div className="flex justify-between items-end px-1">
-                    <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">XP: {stats.totalXP.toLocaleString()}</span>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{xpToNextLevel.toLocaleString()} XP</span>
+                    <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">XP: {stats.totalXP.toLocaleString(language)}</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{xpToNextLevel.toLocaleString(language)} XP</span>
                 </div>
                 <div className="h-3 w-full bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden border border-black/5 dark:border-white/5 p-[2px]">
                     <div 

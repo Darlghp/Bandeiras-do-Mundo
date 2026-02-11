@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { CONTINENT_NAMES } from '../constants';
@@ -45,17 +44,15 @@ const VexyChatbot: React.FC<VexyChatbotProps> = ({ countries, onNavigate, onSele
         if (messages.length === 0) {
             setMessages([{
                 id: 1,
-                text: language === 'pt' 
-                    ? 'Olá! Sou o Vexy, seu guia de inteligência artificial pelo mundo das bandeiras. O que você quer descobrir hoje?' 
-                    : 'Hello! I am Vexy, your AI guide through the world of flags. What would you like to discover today?',
+                text: t('vexyGreeting'),
                 sender: 'vexy',
                 timestamp: new Date(),
                 suggestions: language === 'pt' 
                     ? ['Significado da bandeira do Brasil 🇧🇷', 'Bandeiras com estrelas ⭐', 'Curiosidade aleatória 💡'] 
-                    : ['Meaning of the Brazilian flag 🇧🇷', 'Flags with stars ⭐', 'Random flag trivia 💡']
+                    : ['Meaning of the US flag 🇺🇸', 'Flags with stars ⭐', 'Random flag trivia 💡']
             }]);
         }
-    }, [language, messages.length]);
+    }, [language, messages.length, t]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -88,13 +85,12 @@ const VexyChatbot: React.FC<VexyChatbotProps> = ({ countries, onNavigate, onSele
         return found;
     };
 
-    // Main interaction logic leveraging Gemini AI
     const processQuery = async (text: string) => {
         const mentioned = findCountriesInText(text);
         const activeCountry = mentioned[0] || lastContextCountry;
 
         setIsTyping(true);
-        trackVexyQuery(); // NOVO: Rastrear consulta
+        trackVexyQuery();
         const aiResponse = await askVexy(text, activeCountry);
         setIsTyping(false);
 
@@ -146,7 +142,7 @@ const VexyChatbot: React.FC<VexyChatbotProps> = ({ countries, onNavigate, onSele
                                 <h3 className="text-white font-black text-lg leading-tight">Vexy Gemini</h3>
                                 <div className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                    <span className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Enhanced AI Mode</span>
+                                    <span className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">{t('aiEnhanced')}</span>
                                 </div>
                             </div>
                         </div>
@@ -219,7 +215,7 @@ const VexyChatbot: React.FC<VexyChatbotProps> = ({ countries, onNavigate, onSele
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder={language === 'pt' ? "Fale com o Vexy..." : "Ask Vexy something..."}
+                            placeholder={t('askVexy')}
                             className="flex-grow bg-slate-100 dark:bg-slate-900 border-none focus:ring-2 focus:ring-blue-500 rounded-2xl px-5 py-3 text-sm font-bold outline-none dark:text-white"
                         />
                         <button type="submit" disabled={isTyping} className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-90 flex-shrink-0 disabled:opacity-50">

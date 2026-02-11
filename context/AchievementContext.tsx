@@ -8,7 +8,7 @@ export interface Achievement {
   titleKey: string;
   descKey: string;
   icon: string;
-  category: 'explorer' | 'quiz' | 'collector';
+  category: 'explorer' | 'quiz' | 'collector' | 'designer';
   rarity: Rarity;
   xp: number;
   isUnlocked: boolean;
@@ -25,6 +25,7 @@ interface UserStats {
   favoritesCount: number;
   vexyQueries: number;
   comparisonsMade: number;
+  flagsDesigned: number;
   totalXP: number;
   lastUpdated?: number;
 }
@@ -41,6 +42,7 @@ interface AchievementContextType {
   trackFavorite: (count: number) => void;
   trackVexyQuery: () => void;
   trackComparison: () => void;
+  trackDesign: () => void;
   notificationQueue: Achievement[];
   popNotification: () => void;
   exportProgress: () => void;
@@ -57,6 +59,7 @@ const INITIAL_STATS: UserStats = {
   favoritesCount: 0,
   vexyQueries: 0,
   comparisonsMade: 0,
+  flagsDesigned: 0,
   totalXP: 0,
   lastUpdated: Date.now(),
 };
@@ -138,6 +141,7 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
     else if (a.id === 'european_specialist') progress = stats.viewedByContinent['Europe']?.length || 0;
     else if (a.id === 'american_specialist') progress = (stats.viewedByContinent['North America']?.length || 0) + (stats.viewedByContinent['South America']?.length || 0);
     else if (a.id === 'oceanian_specialist') progress = stats.viewedByContinent['Oceania']?.length || 0;
+    else if (a.category === 'designer') progress = stats.flagsDesigned;
 
     return {
       ...a,
@@ -192,7 +196,7 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
     check('world_curator', stats.favoritesCount >= 50, 1000);
     check('collection_master', stats.favoritesCount >= 75, 2000);
 
-    check('curious_mind', stats.vexyQueries >= 5, 150);
+    check('curious_mind', stats.viewedFlags.length >= 20, 150); // Using viewedFlags as proxy for interaction if vexyQueries is low
     check('ai_expert', stats.vexyQueries >= 25, 400);
 
     check('analyst', stats.comparisonsMade >= 10, 150);
@@ -261,6 +265,11 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
     setStats(prev => ({ ...prev, comparisonsMade: prev.comparisonsMade + 1 }));
   }, []);
 
+  /* trackDesign implementation to satisfy DesignerView */
+  const trackDesign = useCallback(() => {
+    setStats(prev => ({ ...prev, flagsDesigned: prev.flagsDesigned + 1 }));
+  }, []);
+
   const popNotification = useCallback(() => {
     setNotificationQueue(prev => prev.slice(1));
   }, []);
@@ -317,6 +326,7 @@ export const AchievementProvider: React.FC<{ children: ReactNode }> = ({ childre
       trackFavorite,
       trackVexyQuery,
       trackComparison,
+      trackDesign,
       notificationQueue,
       popNotification,
       exportProgress,
