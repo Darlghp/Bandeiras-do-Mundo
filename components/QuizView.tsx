@@ -52,8 +52,14 @@ const BattleGame: React.FC<{ countries: Country[], onBack: () => void }> = ({ co
     const [playerCard, setPlayerCard] = useState<Country | null>(null);
     const [aiCard, setAiCard] = useState<Country | null>(null);
     const [result, setResult] = useState<{ winner: 'player' | 'ai' | 'draw', msg: string } | null>(null);
+    const [gameId, setGameId] = useState(0); // Usado para forçar novo sorteio no Play Again
 
     const filteredCountries = useMemo(() => countries.filter(c => !EXCLUDED_QUIZ_COUNTRIES.includes(c.cca3)), [countries]);
+
+    // Pool fixo de nações para escolha - não muda no re-render/scroll
+    const battlePool = useMemo(() => {
+        return shuffleArray(filteredCountries).slice(0, 8);
+    }, [filteredCountries, gameId]);
 
     const getCountryName = (c: Country) => language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common;
 
@@ -85,6 +91,12 @@ const BattleGame: React.FC<{ countries: Country[], onBack: () => void }> = ({ co
         setResult({ winner, msg });
     };
 
+    const handlePlayAgain = () => {
+        setStep('pick');
+        setResult(null);
+        setGameId(prev => prev + 1); // Dispara novo useMemo para as bandeiras
+    };
+
     return (
         <div className="animate-fade-in space-y-8">
             <div className="flex justify-between items-center">
@@ -93,7 +105,7 @@ const BattleGame: React.FC<{ countries: Country[], onBack: () => void }> = ({ co
             </div>
             {step === 'pick' ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {shuffleArray(filteredCountries).slice(0, 8).map((c: Country) => (
+                    {battlePool.map((c: Country) => (
                         <button key={c.cca3} onClick={() => handlePick(c)} className="aspect-[3/4] bg-slate-900 rounded-3xl overflow-hidden border-4 border-white/5 hover:border-blue-500 transition-all p-2 group">
                             <img src={c.flags.svg} className="w-full h-2/3 object-cover rounded-xl" alt="" />
                             <p className="text-[10px] font-black text-white mt-4 uppercase text-center">{getCountryName(c)}</p>
@@ -125,7 +137,7 @@ const BattleGame: React.FC<{ countries: Country[], onBack: () => void }> = ({ co
                                 {result.winner === 'player' ? t('playerWins') : result.winner === 'ai' ? t('aiWins') : t('draw')}
                             </h3>
                             <p className="text-slate-400 font-bold mb-8">{result.msg}</p>
-                            <button onClick={() => { setStep('pick'); setResult(null); }} className="px-12 py-4 bg-white text-slate-900 rounded-full font-black uppercase text-sm">{t('playAgain')}</button>
+                            <button onClick={handlePlayAgain} className="px-12 py-4 bg-white text-slate-900 rounded-full font-black uppercase text-sm">{t('playAgain')}</button>
                         </div>
                     )}
                 </div>
