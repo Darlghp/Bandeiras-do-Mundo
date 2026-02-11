@@ -11,17 +11,20 @@ const getColumnCount = () => {
     return 1;
 };
 
+// Ajustado para refletir a proporção aspect-[3/4.2] + padding/informações
 const getCardEstimatedHeight = (columns: number) => {
-    switch (columns) {
-        case 1: return 540;
-        case 2: return 420;
-        case 3: return 320;
-        case 4: return 300;
-        default: return 400;
-    }
+    if (typeof window === 'undefined') return 500;
+    const width = window.innerWidth;
+    const padding = 48; // padding lateral do container
+    const gap = 24;
+    const availableWidth = width - padding;
+    const cardWidth = (availableWidth - (gap * (columns - 1))) / columns;
+    
+    // Proporção 4.2 / 3 = 1.4. Adicionamos uma margem de segurança.
+    return cardWidth * 1.45;
 };
 
-const GAP = 24;
+const GAP = 32; // Aumentado para melhor respiro
 
 interface VirtualFlagGridProps {
     countries: Country[];
@@ -39,10 +42,10 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
     const rootRef = useRef<HTMLDivElement>(null);
 
     const [columnCount, setColumnCount] = useState(getColumnCount());
-    const [visibleRange, setVisibleRange] = useState({ start: 0, end: 12 });
+    const [cardHeight, setCardHeight] = useState(getCardEstimatedHeight(getColumnCount()));
 
-    const cardEstimatedHeight = getCardEstimatedHeight(columnCount);
-    const rowHeight = Math.max(1, cardEstimatedHeight + GAP);
+    const rowHeight = useMemo(() => cardHeight + GAP, [cardHeight]);
+    const [visibleRange, setVisibleRange] = useState({ start: 0, end: 10 });
 
     const handleScroll = useCallback(() => {
         if (!rootRef.current) return;
@@ -53,7 +56,7 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
         const gridRect = rootRef.current.getBoundingClientRect();
         const gridTopAbsolute = gridRect.top + scrollTop;
         
-        const overscanRowCount = 5;
+        const overscanRowCount = 3;
         const visibleStart = Math.max(0, scrollTop - gridTopAbsolute);
         
         const startRow = Math.max(0, Math.floor(visibleStart / rowHeight) - overscanRowCount);
@@ -72,12 +75,16 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
 
     useEffect(() => {
         const handleResize = () => {
-            setColumnCount(getColumnCount());
-            handleScroll();
+            const cols = getColumnCount();
+            setColumnCount(cols);
+            setCardHeight(getCardEstimatedHeight(cols));
         };
 
         window.addEventListener('resize', handleResize);
         window.addEventListener('scroll', handleScroll, { passive: true });
+        
+        // Initial calc
+        handleResize();
         const rafId = requestAnimationFrame(handleScroll);
         
         return () => {
@@ -104,24 +111,29 @@ const VirtualFlagGrid: React.FC<VirtualFlagGridProps> = (props) => {
                             position: 'absolute' as const,
                             top: `${i * rowHeight}px`,
                             width: '100%',
+                            height: `${cardHeight}px`
                         }
                     });
                 }
             }
         }
         return rows;
-    }, [visibleRange.start, visibleRange.end, countries, columnCount, rowHeight]);
+    }, [visibleRange.start, visibleRange.end, countries, columnCount, rowHeight, cardHeight]);
 
     const totalHeight = Math.ceil(countries.length / columnCount) * rowHeight;
 
     return (
         <div 
             ref={rootRef} 
-            className="min-h-[600px] w-full"
+            className="w-full"
             style={{ position: 'relative', height: `${Math.max(600, totalHeight)}px` }}
         >
             {virtualRows.map(row => (
-                <div key={row.index} style={row.style} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div 
+                    key={row.index} 
+                    style={row.style} 
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                >
                     {row.items.map(country => (
                         <FlagCard
                             key={country.cca3}

@@ -169,10 +169,10 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
         <div className="space-y-16 pb-24">
             {/* Header de Introdução Panorâmico */}
             <div className="max-w-4xl animate-fade-in-up">
-                <h1 className="text-6xl sm:text-8xl font-black text-slate-900 dark:text-white leading-[0.9] mb-6 tracking-tighter">
+                <h1 className="text-6xl sm:text-8xl font-black text-white leading-[0.9] mb-6 tracking-tighter">
                     {t('headerTitle')}
                 </h1>
-                <p className="text-xl text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-2xl">
+                <p className="text-xl text-slate-400 leading-relaxed font-medium max-w-2xl">
                     {t('exploreSubtitle')}
                 </p>
             </div>
@@ -184,40 +184,38 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                 onFlagClick={handleCardClick}
             />
 
-            {/* DASHBOARD DE MAESTRIA (MUDOU PARA O TOPO) */}
+            {/* DASHBOARD DE MAESTRIA */}
             <div className="animate-fade-in-up-short">
                 <QuickStatsWidget />
             </div>
 
-            {/* CENTRO DE CONTROLE E FILTROS (MUDOU PARA O TOPO) */}
-            <div className="sticky top-24 z-30 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-3xl py-8 -mx-4 px-4 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 shadow-xl shadow-blue-500/5">
-                <FilterNavigator 
-                    continents={CONTINENTS_API_VALUES}
-                    selectedContinent={selectedContinent}
-                    setSelectedContinent={setSelectedContinent}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    onRandomDiscovery={onRandomDiscovery}
-                    isCompareModeActive={isCompareModeActive}
-                    onToggleCompareMode={onToggleCompareMode}
-                />
-            </div>
+            {/* CENTRO DE CONTROLE E FILTROS */}
+            <FilterNavigator 
+                continents={CONTINENTS_API_VALUES}
+                selectedContinent={selectedContinent}
+                setSelectedContinent={setSelectedContinent}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onRandomDiscovery={onRandomDiscovery}
+                isCompareModeActive={isCompareModeActive}
+                onToggleCompareMode={onToggleCompareMode}
+            />
 
             {/* BARRA DE ORDENAÇÃO COMPACTA */}
             <div className="flex items-center justify-between px-2">
                 <div className="flex flex-col">
-                    <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mb-2">
+                    <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">
                         {t('showingFlags', { count: filteredCountries.length.toString(), total: countries.length.toString() })}
                     </p>
                     <div className="h-1.5 w-20 bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full"></div>
                 </div>
                 
                 <div className="flex items-center gap-4">
-                     <span className="hidden sm:inline text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('sortBy')}:</span>
+                     <span className="hidden sm:inline text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('sortBy')}:</span>
                      <select 
                         value={sortOrder}
                         onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                        className="p-3 px-5 rounded-xl bg-white dark:bg-slate-900 text-xs font-black border-2 border-slate-200 dark:border-slate-800 outline-none cursor-pointer hover:border-blue-500 transition-all text-slate-800 dark:text-slate-200 shadow-sm"
+                        className="p-3 px-5 rounded-xl bg-slate-900 text-xs font-black border border-white/10 outline-none cursor-pointer hover:border-blue-500 transition-all text-white shadow-sm"
                     >
                         <option value="name_asc">{t('sortNameAsc')}</option>
                         <option value="name_desc">{t('sortNameDesc')}</option>
@@ -249,10 +247,10 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                         />
                     </div>
                 ) : (
-                    <div className="text-center py-48 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl rounded-[4rem] border-4 border-dashed border-slate-200 dark:border-slate-800 animate-fade-in-up-short">
+                    <div className="text-center py-48 bg-slate-900/40 backdrop-blur-2xl rounded-[4rem] border-4 border-dashed border-slate-800 animate-fade-in-up-short">
                          <div className="text-8xl mb-8 opacity-40 grayscale">🏜️</div>
-                         <h3 className="text-3xl font-black text-slate-800 dark:text-slate-200 mb-4 tracking-tighter">{t('noFlagsFound')}</h3>
-                         <p className="text-slate-500 dark:text-slate-400 font-bold max-sm:px-4 max-w-sm mx-auto uppercase text-xs tracking-widest leading-loose">{t('noFlagsFoundDescription')}</p>
+                         <h3 className="text-3xl font-black text-white mb-4 tracking-tighter">{t('noFlagsFound')}</h3>
+                         <p className="text-slate-500 font-bold max-sm:px-4 max-w-sm mx-auto uppercase text-xs tracking-widest leading-loose">{t('noFlagsFoundDescription')}</p>
                     </div>
                 )}
             </div>
