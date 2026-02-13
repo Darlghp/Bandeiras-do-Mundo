@@ -1,4 +1,3 @@
-
 import React, { useRef } from 'react';
 import { useAchievements, Achievement, Rarity } from '../context/AchievementContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -79,7 +78,7 @@ const AchievementGallery: React.FC = () => {
                 alert(t('dataImported'));
                 window.location.reload();
             } else {
-                alert('Invalid backup file.');
+                alert(t('invalidBackup'));
             }
         };
         reader.readAsText(file);

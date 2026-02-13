@@ -20,7 +20,7 @@ function shuffleArray<T>(array: T[]): T[] {
     return newArray;
 }
 
-// --- SUB-COMPONENT: MODE CARD (AS SEEN IN IMAGE) ---
+// --- SUB-COMPONENT: MODE CARD ---
 const ModeCard: React.FC<{ 
     id: QuizMode; 
     icon: string | React.ReactNode; 
@@ -52,11 +52,11 @@ const BattleGame: React.FC<{ countries: Country[], onBack: () => void }> = ({ co
     const [playerCard, setPlayerCard] = useState<Country | null>(null);
     const [aiCard, setAiCard] = useState<Country | null>(null);
     const [result, setResult] = useState<{ winner: 'player' | 'ai' | 'draw', msg: string } | null>(null);
-    const [gameId, setGameId] = useState(0); // Usado para forçar novo sorteio no Play Again
+    const [gameId, setGameId] = useState(0); // Único estado que controla o ciclo de sorteio
 
     const filteredCountries = useMemo(() => countries.filter(c => !EXCLUDED_QUIZ_COUNTRIES.includes(c.cca3)), [countries]);
 
-    // Pool fixo de nações para escolha - não muda no re-render/scroll
+    // O useMemo garante que o sorteio de 8 nações seja feito APENAS UMA VEZ por gameId
     const battlePool = useMemo(() => {
         return shuffleArray(filteredCountries).slice(0, 8);
     }, [filteredCountries, gameId]);
@@ -94,7 +94,7 @@ const BattleGame: React.FC<{ countries: Country[], onBack: () => void }> = ({ co
     const handlePlayAgain = () => {
         setStep('pick');
         setResult(null);
-        setGameId(prev => prev + 1); // Dispara novo useMemo para as bandeiras
+        setGameId(prev => prev + 1); // Força um novo sorteio estável
     };
 
     return (

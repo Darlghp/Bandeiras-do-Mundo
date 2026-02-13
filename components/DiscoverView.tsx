@@ -193,7 +193,7 @@ const DiscoverView: React.FC<DiscoverViewProps> = ({ countries, collections, isL
 
             <div className="my-16">
                  <div className="text-center mb-12">
-                    <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">🏅 {t('quizResults')}</h2>
+                    <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">🏅 {t('vexMastery')}</h2>
                     <p className="text-slate-500">{t('achievementsSubtitle')}</p>
                 </div>
                 <AchievementGallery />
