@@ -105,10 +105,22 @@ export const fetchCountries = async (): Promise<Country[]> => {
         
         if (!response.ok) {
             if (response.status === 404 || response.status === 400) {
+                // First fallback: try fetching all fields (no filter)
                 const fallbackResponse = await fetch(`${API_BASE_URL}/all`);
-                if (!fallbackResponse.ok) throw new Error(`HTTP_ERR_${fallbackResponse.status}`);
-                const fallbackData = await fallbackResponse.json();
-                return applyImprovements(fallbackData);
+                if (fallbackResponse.ok) {
+                    const fallbackData = await fallbackResponse.json();
+                    return applyImprovements(fallbackData);
+                }
+                
+                // Second fallback: try fetching minimal fields
+                const minimalFields = ['name', 'cca3', 'flags', 'population', 'area', 'continents', 'maps', 'translations', 'capital'];
+                const fallbackResponse2 = await fetch(`${API_BASE_URL}/all?fields=${minimalFields.join(',')}`);
+                if (fallbackResponse2.ok) {
+                    const fallbackData2 = await fallbackResponse2.json();
+                    return applyImprovements(fallbackData2);
+                }
+
+                throw new Error(`HTTP_ERR_${fallbackResponse.status}`);
             }
             throw new Error(`HTTP_ERR_${response.status}`);
         }

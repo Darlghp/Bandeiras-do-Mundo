@@ -95,7 +95,7 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                             </div>
                         </div>
 
-                        {country.coatOfArms.svg && (
+                        {country.coatOfArms?.svg && (
                              <div className="animate-fade-in-up">
                                  <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest mb-4 text-center">{t('coatOfArms')}</h3>
                                  <div className="bg-white dark:bg-white/5 p-10 rounded-[2.5rem] border border-slate-100 dark:border-white/5 flex items-center justify-center shadow-inner">
@@ -181,7 +181,7 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                         {/* Interactive Map Button */}
                         <div className="pt-4 animate-fade-in-up">
                             <a 
-                                href={country.maps.googleMaps}
+                                href={country.maps?.googleMaps}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="relative group flex items-center justify-between px-8 w-full h-24 bg-blue-600 rounded-[2.5rem] overflow-hidden transition-all hover:scale-[1.02] active:scale-95 shadow-xl"

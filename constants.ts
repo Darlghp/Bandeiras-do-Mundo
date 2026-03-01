@@ -1,6 +1,6 @@
 
 export const API_BASE_URL = 'https://restcountries.com/v3.1';
-export const API_FIELDS = ['name', 'flags', 'continents', 'cca3', 'translations', 'capital', 'population', 'area', 'maps', 'coatOfArms', 'currencies'];
+export const API_FIELDS = ['name', 'flags', 'continents', 'cca3', 'translations', 'capital', 'population', 'area', 'maps', 'coatOfArms', 'currencies', 'languages', 'borders', 'subregion', 'timezones'];
 
 export const CONTINENT_NAMES: { [key: string]: { en: string; pt: string } } = {
     'All': { en: 'All Continents', pt: 'Todos os Continentes' },

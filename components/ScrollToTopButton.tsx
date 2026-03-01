@@ -21,7 +21,12 @@ const ScrollToTopButton: React.FC = () => {
 
         const totalScroll = document.documentElement.scrollTop;
         const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-        const progress = windowHeight > 0 ? (totalScroll / windowHeight) * 100 : 0;
+        
+        let progress = 0;
+        if (windowHeight > 0) {
+            progress = (totalScroll / windowHeight) * 100;
+        }
+        
         setScrollProgress(progress > 100 ? 100 : progress);
     };
     
