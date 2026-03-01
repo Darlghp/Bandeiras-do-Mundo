@@ -4,6 +4,11 @@ export interface CountryName {
   official: string;
 }
 
+export interface Currency {
+  name: string;
+  symbol: string;
+}
+
 export interface Country {
   cca3: string;
   name: CountryName;
@@ -28,4 +33,7 @@ export interface Country {
     svg?: string;
   };
   latlng: [number, number];
+  currencies?: {
+    [key: string]: Currency;
+  };
 }

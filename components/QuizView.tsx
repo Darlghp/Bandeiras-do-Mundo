@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
 import type { Country } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAchievements } from '../context/AchievementContext';
+import html2canvas from 'html2canvas';
 
 const FlagleGame = lazy(() => import('./FlagleGame'));
 
@@ -330,7 +331,7 @@ const HallOfFameView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
 };
 
-const QuizGame: React.FC<{ countries: Country[], mode: QuizMode, difficulty: QuizDifficulty, quizLength: number, onBackToMenu: () => void }> = ({ countries, mode, quizLength, onBackToMenu }) => {
+const QuizGame: React.FC<{ countries: Country[], mode: QuizMode, difficulty: QuizDifficulty, quizLength: number, onBackToMenu: () => void }> = ({ countries, mode, difficulty, quizLength, onBackToMenu }) => {
     const { t, language } = useLanguage();
     const { trackQuizResult } = useAchievements();
     const [quizState, setQuizState] = useState<'playing' | 'results'>('playing');
@@ -339,6 +340,13 @@ const QuizGame: React.FC<{ countries: Country[], mode: QuizMode, difficulty: Qui
     const [score, setScore] = useState(0);
     const [answered, setAnswered] = useState(false);
     const [selected, setSelected] = useState<string | null>(null);
+    const [answerHistory, setAnswerHistory] = useState<{ country: Country, correct: boolean, selected: string | null, correctValue: string }[]>([]);
+
+    const [highScore, setHighScore] = useState(0);
+    const [isNewRecord, setIsNewRecord] = useState(false);
+    const [showShareTooltip, setShowShareTooltip] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
+    const resultsRef = useRef<HTMLDivElement>(null);
 
     const getCountryName = useCallback((c: Country) => language === 'pt' ? (c.translations?.por?.common || c.name.common) : c.name.common, [language]);
     const getCorrectValue = useCallback((c: Country) => {
@@ -348,7 +356,12 @@ const QuizGame: React.FC<{ countries: Country[], mode: QuizMode, difficulty: Qui
 
     useEffect(() => {
         setQuestions(shuffleArray(countries).slice(0, quizLength));
-    }, [countries, quizLength]);
+        // Load high score
+        const savedHighScore = localStorage.getItem(`highscore_${mode}_${difficulty}_${quizLength}`);
+        if (savedHighScore) {
+            setHighScore(parseInt(savedHighScore, 10));
+        }
+    }, [countries, quizLength, mode, difficulty]);
 
     const current = questions[currentIndex];
     const options = useMemo(() => {
@@ -362,7 +375,15 @@ const QuizGame: React.FC<{ countries: Country[], mode: QuizMode, difficulty: Qui
         if (answered) return;
         setSelected(opt);
         setAnswered(true);
-        if (opt === getCorrectValue(current)) setScore(s => s + 1);
+        const isCorrect = opt === getCorrectValue(current);
+        if (isCorrect) setScore(s => s + 1);
+        
+        setAnswerHistory(prev => [...prev, {
+            country: current,
+            correct: isCorrect,
+            selected: opt,
+            correctValue: getCorrectValue(current)
+        }]);
     };
 
     const next = () => {
@@ -371,18 +392,289 @@ const QuizGame: React.FC<{ countries: Country[], mode: QuizMode, difficulty: Qui
             setAnswered(false);
             setSelected(null);
         } else {
-            setQuizState('results');
-            trackQuizResult(score, questions.length, 0);
+            finishQuiz();
         }
     };
 
-    if (quizState === 'results') return (
-        <div className="text-center space-y-8 py-20 animate-fade-in">
-            <h2 className="text-6xl font-black text-white">{score} / {questions.length}</h2>
-            <p className="text-slate-400 font-bold uppercase tracking-widest">{t('quizResults')}</p>
-            <button onClick={onBackToMenu} className="px-12 py-4 bg-blue-600 text-white rounded-full font-black uppercase text-sm shadow-2xl hover:scale-105 transition-all">{t('playAgain')}</button>
-        </div>
-    );
+    const finishQuiz = () => {
+        setQuizState('results');
+        trackQuizResult(score, questions.length, 0);
+        
+        if (score > highScore) {
+            setHighScore(score);
+            setIsNewRecord(true);
+            localStorage.setItem(`highscore_${mode}_${difficulty}_${quizLength}`, score.toString());
+        }
+    };
+
+    const generateResultImage = async () => {
+        if (!resultsRef.current) return null;
+        try {
+            return await html2canvas(resultsRef.current, {
+                backgroundColor: '#0f172a',
+                scale: 2,
+                logging: false,
+                useCORS: true
+            });
+        } catch (error) {
+            console.error('Image generation failed:', error);
+            return null;
+        }
+    };
+
+    const handleDownload = async () => {
+        if (isSharing) return;
+        setIsSharing(true);
+        
+        const canvas = await generateResultImage();
+        if (canvas) {
+            const link = document.createElement('a');
+            link.download = `flags-explorer-result-${new Date().toISOString().slice(0, 10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            // Show feedback
+            const originalText = t('resultCopied');
+            // We might want a different message for download, but reusing for now or adding a new one
+            setShowShareTooltip(true);
+            setTimeout(() => setShowShareTooltip(false), 3000);
+        }
+        setIsSharing(false);
+    };
+
+    const handleShare = async () => {
+        if (isSharing || !resultsRef.current) return;
+        setIsSharing(true);
+
+        const canvas = await generateResultImage();
+        
+        if (canvas) {
+            canvas.toBlob(async (blob) => {
+                if (!blob) { setIsSharing(false); return; }
+
+                const file = new File([blob], 'quiz-result.png', { type: 'image/png' });
+
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            title: 'Flags Explorer Quiz Result',
+                            text: `${t('flags')}: ${score}/${questions.length} in ${t(`mode${mode.charAt(0).toUpperCase() + mode.slice(1).replace(/-/g, '')}` as any) || mode}! Can you beat me?`,
+                            files: [file]
+                        });
+                    } catch (err) {
+                        console.error('Share failed:', err);
+                    }
+                } else {
+                    // Fallback to download if share is not supported (PC behavior)
+                    const link = document.createElement('a');
+                    link.download = 'quiz-result.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                    setShowShareTooltip(true);
+                    setTimeout(() => setShowShareTooltip(false), 3000);
+                }
+                setIsSharing(false);
+            }, 'image/png');
+        } else {
+            setIsSharing(false);
+            // Fallback to text copy
+            const text = `🏳️ Flags Explorer Quiz 🏳️\nMode: ${t(`mode${mode.charAt(0).toUpperCase() + mode.slice(1).replace(/-/g, '')}` as any) || mode}\n${t('flags')}: ${score}/${questions.length}\nCan you beat me?`;
+            navigator.clipboard.writeText(text).then(() => {
+                setShowShareTooltip(true);
+                setTimeout(() => setShowShareTooltip(false), 2000);
+            });
+        }
+    };
+
+    if (quizState === 'results') {
+        const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
+        let message = '';
+        let colorClass = '';
+        let icon = '';
+        let rank = 'C';
+        let bgGradient = 'from-slate-900 to-slate-800';
+        
+        if (percentage === 100) {
+            message = t('perfectScore');
+            colorClass = 'text-amber-400';
+            icon = '👑';
+            rank = 'S';
+            bgGradient = 'from-amber-900/40 to-slate-900';
+        } else if (percentage >= 80) {
+            message = t('greatJob');
+            colorClass = 'text-green-400';
+            icon = '🌟';
+            rank = 'A';
+            bgGradient = 'from-green-900/40 to-slate-900';
+        } else if (percentage >= 50) {
+            message = t('goodEffort');
+            colorClass = 'text-blue-400';
+            icon = '👍';
+            rank = 'B';
+            bgGradient = 'from-blue-900/40 to-slate-900';
+        } else {
+            message = t('keepPracticing');
+            colorClass = 'text-slate-400';
+            icon = '📚';
+            rank = 'C';
+        }
+
+        return (
+            <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 animate-fade-in-up pb-32">
+                <div ref={resultsRef} className={`relative overflow-hidden rounded-[3rem] border-2 border-white/10 p-8 sm:p-12 text-center shadow-2xl mb-8 bg-gradient-to-br ${bgGradient}`}>
+                    {/* Background decoration */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+                        <div className={`absolute -top-32 -right-32 w-96 h-96 rounded-full blur-3xl opacity-20 ${colorClass.replace('text-', 'bg-')}`}></div>
+                        <div className={`absolute -bottom-32 -left-32 w-96 h-96 rounded-full blur-3xl opacity-20 ${colorClass.replace('text-', 'bg-')}`}></div>
+                        {percentage === 100 && (
+                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 animate-pulse"></div>
+                        )}
+                    </div>
+
+                    {isNewRecord && (
+                        <div className="absolute top-8 right-8 rotate-12 animate-pulse-soft z-10">
+                            <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-black px-4 py-2 rounded-full shadow-lg uppercase tracking-widest border-2 border-white/20">
+                                {t('newRecord')}
+                            </span>
+                        </div>
+                    )}
+
+                    {percentage === 100 && (
+                        <div className="absolute top-8 left-8 -rotate-12 z-10">
+                            <span className="bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 text-slate-900 text-xs font-black px-4 py-2 rounded-full shadow-lg uppercase tracking-widest border-2 border-white/20 animate-bounce">
+                                {t('perfectRun')}
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="relative z-10">
+                        <div className="text-8xl sm:text-9xl mb-2 animate-float inline-block filter drop-shadow-2xl scale-110 transform transition-transform duration-500 hover:scale-125 cursor-default select-none">
+                            {rank}
+                        </div>
+                        <div className="text-xs font-black text-slate-500 uppercase tracking-[0.5em] mb-8 -mt-4">{t('rank')}</div>
+                        
+                        <h2 className={`text-4xl sm:text-6xl font-black mb-2 uppercase tracking-tight ${colorClass} drop-shadow-lg`}>
+                            {message}
+                        </h2>
+                        <p className="text-slate-400 font-bold uppercase tracking-widest mb-10 text-sm sm:text-base">
+                            {t('quizCompleted')}
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-10 max-w-lg mx-auto">
+                            <div className="bg-slate-800/40 backdrop-blur-sm rounded-3xl p-5 border border-white/5 flex flex-col justify-center items-center group hover:bg-slate-800/60 transition-colors">
+                                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">{t('flags')}</div>
+                                <div className="text-3xl sm:text-4xl font-black text-white group-hover:scale-110 transition-transform">
+                                    {score} <span className="text-lg text-slate-500">/ {questions.length}</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-800/40 backdrop-blur-sm rounded-3xl p-5 border border-white/5 flex flex-col justify-center items-center group hover:bg-slate-800/60 transition-colors">
+                                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">{t('accuracy')}</div>
+                                <div className={`text-3xl sm:text-4xl font-black group-hover:scale-110 transition-transform ${percentage >= 80 ? 'text-green-400' : 'text-white'}`}>
+                                    {percentage}<span className="text-lg opacity-50">%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-center gap-2 opacity-50">
+                            <span className="text-2xl">🌍</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                {t('playAt')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+                    <button 
+                        onClick={onBackToMenu} 
+                        className="px-8 py-4 bg-slate-800 text-white rounded-2xl font-black uppercase text-xs shadow-lg hover:bg-slate-700 active:scale-95 transition-all tracking-widest border border-white/5"
+                    >
+                        {t('backToMenu')}
+                    </button>
+                    
+                    <button 
+                        onClick={() => {
+                            setQuizState('playing');
+                            setCurrentIndex(0);
+                            setScore(0);
+                            setAnswered(false);
+                            setSelected(null);
+                            setAnswerHistory([]);
+                            setQuestions(shuffleArray(countries).slice(0, quizLength));
+                            setIsNewRecord(false);
+                        }} 
+                        className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs shadow-xl hover:bg-blue-500 hover:scale-105 active:scale-95 transition-all tracking-widest flex items-center justify-center gap-2"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        {t('playAgain')}
+                    </button>
+
+                    <div className="relative">
+                        <button 
+                            onClick={handleDownload}
+                            disabled={isSharing}
+                            className="px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs shadow-xl hover:bg-emerald-500 hover:scale-105 active:scale-95 transition-all tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            {t('download') || 'Download'}
+                        </button>
+                    </div>
+
+                    <div className="relative">
+                        <button 
+                            onClick={handleShare}
+                            disabled={isSharing}
+                            className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs shadow-xl hover:bg-indigo-500 hover:scale-105 active:scale-95 transition-all tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait"
+                        >
+                            {isSharing ? (
+                                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                            )}
+                            {t('shareResult')}
+                        </button>
+                        {showShareTooltip && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-black text-white text-[10px] font-bold rounded-lg whitespace-nowrap animate-fade-in-up-short">
+                                {t('resultCopied')}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Detailed History */}
+                <div className="bg-slate-900/50 backdrop-blur-md rounded-[2.5rem] border border-white/5 p-6 sm:p-10">
+                    <h3 className="text-2xl font-black text-white mb-8 text-center uppercase tracking-widest">{t('reviewAnswers')}</h3>
+                    <div className="space-y-4">
+                        {answerHistory.map((item, index) => (
+                            <div key={index} className={`flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-3xl border-2 transition-all ${item.correct ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                                <div className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full font-black text-sm ${item.correct ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                    {index + 1}
+                                </div>
+                                <div className="flex-shrink-0 w-20 h-14 rounded-xl overflow-hidden shadow-md border border-white/10">
+                                    <img src={item.country.flags.svg} alt="" className="w-full h-full object-cover" />
+                                </div>
+                                <div className="flex-grow text-center sm:text-left">
+                                    <div className="font-black text-white text-base mb-1">{getCountryName(item.country)}</div>
+                                    <div className="text-xs font-bold text-slate-400">
+                                        {t('correctAnswerWasLabel')} <span className="text-white">{item.correctValue}</span>
+                                    </div>
+                                    {!item.correct && (
+                                        <div className="text-xs font-bold text-red-400 mt-1">
+                                            {t('yourAnswer')}: <span className="line-through opacity-70">{item.selected}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-shrink-0 text-2xl">
+                                    {item.correct ? '✅' : '❌'}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (!current) return null;
 
@@ -408,7 +700,7 @@ const QuizGame: React.FC<{ countries: Country[], mode: QuizMode, difficulty: Qui
                         })}
                      </div>
                 ) : (
-                    <img src={current.flags.svg} className="w-full max-w-md h-64 object-cover rounded-[3rem] shadow-2xl border-8 border-white/5" alt="" />
+                    <img src={mode === 'shape-to-country' && current.coatOfArms?.svg ? current.coatOfArms.svg : current.flags.svg} className={`w-full max-w-md object-cover rounded-[3rem] shadow-2xl border-8 border-white/5 ${mode === 'shape-to-country' ? 'h-64 object-contain bg-slate-800 p-4' : 'h-64'}`} alt="" />
                 )}
             </div>
 

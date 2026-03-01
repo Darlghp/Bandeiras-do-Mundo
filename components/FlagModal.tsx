@@ -23,7 +23,7 @@ const InfoCard: React.FC<{ icon: React.ReactNode, label: string, value: string |
             </div>
             <dt className="text-[10px] font-black text-slate-500 dark:text-slate-500 uppercase tracking-[0.2em]">{label}</dt>
         </div>
-        <dd className="text-lg font-black text-slate-900 dark:text-white truncate">
+        <dd className="text-lg font-black text-slate-900 dark:text-white line-clamp-2">
             {value}
         </dd>
     </div>
@@ -164,6 +164,18 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                                 label={t('area')} 
                                 value={<>{country.area.toLocaleString(language)} <span className="text-[10px] opacity-60">km²</span></>} 
                             />
+                            <div className="sm:col-span-2">
+                                <InfoCard 
+                                    delay="300ms"
+                                    icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                                    label={t('currencies')} 
+                                    value={
+                                        country.currencies 
+                                            ? Object.values(country.currencies).map(c => `${c.name} ${c.symbol ? `(${c.symbol})` : ''}`).join(', ') 
+                                            : t('notAvailable')
+                                    } 
+                                />
+                            </div>
                         </div>
 
                         {/* Interactive Map Button */}

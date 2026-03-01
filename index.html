@@ -18,8 +18,7 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
-    "@google/genai": "https://cdn.jsdelivr.net/npm/@google/genai@latest/+esm"
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client"
   }
 }
 </script>
@@ -80,9 +79,10 @@
   @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
   .animate-float { animation: float 6s ease-in-out infinite; }
 </style>
-  </head>
+  <link rel="stylesheet" href="/index.css">
+</head>
   <body class="bg-slate-950 transition-colors duration-700 overflow-x-hidden">
     <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
-  </body>
+    <script type="module" src="/index.tsx"></script>
+</body>
 </html>

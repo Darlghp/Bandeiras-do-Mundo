@@ -3,8 +3,8 @@ import type { Country } from '../types';
 import { API_BASE_URL, API_FIELDS } from '../constants';
 import { COUNTRY_NAMES_PT } from '../constants/countryNamesPT';
 
-// Versão v18 para forçar limpeza total e evitar siglas como "ir", "br", "ps"
-const CACHE_KEY = 'countries_data_v18_clean'; 
+// Versão v19 para forçar limpeza total e evitar siglas como "ir", "br", "ps" e adicionar moedas
+const CACHE_KEY = 'countries_data_v19_clean'; 
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
 /**
