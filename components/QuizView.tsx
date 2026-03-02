@@ -6,7 +6,7 @@ import html2canvas from 'html2canvas';
 
 const FlagleGame = lazy(() => import('./FlagleGame'));
 
-type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'country-to-capital' | 'shape-to-country' | 'flagle' | 'odd-one-out';
+type QuizMode = 'flag-to-country' | 'country-to-flag' | 'flag-to-capital' | 'country-to-capital' | 'shape-to-country' | 'flagle' | 'odd-one-out' | 'daily-flagle';
 type QuizDifficulty = 'easy' | 'medium' | 'hard';
 type HubView = 'menu' | 'quiz-setup' | 'quiz-game' | 'battle' | 'missions' | 'hall-of-fame';
 
@@ -173,8 +173,10 @@ const QuizView: React.FC<{ countries: Country[], onBackToExplorer: () => void }>
         { id: 'flagle', icon: '👾', title: t('modeFlagle'), desc: t('modeFlagleDesc') },
     ];
 
-    if (view === 'quiz-game' && mode === 'flagle') {
-        return <Suspense fallback={null}><FlagleGame countries={filteredCountries} onBackToMenu={() => setView('quiz-setup')} /></Suspense>;
+    const [flagleMode, setFlagleMode] = useState<'daily' | 'infinite' | null>(null);
+
+    if (view === 'quiz-game' && mode === 'flagle' && flagleMode) {
+        return <Suspense fallback={null}><FlagleGame countries={filteredCountries} isDaily={flagleMode === 'daily'} onBackToMenu={() => { setView('quiz-setup'); setFlagleMode(null); }} /></Suspense>;
     }
 
     return (
@@ -233,7 +235,29 @@ const QuizView: React.FC<{ countries: Country[], onBackToExplorer: () => void }>
                                     </div>
                                 </div>
 
-                                {mode !== 'flagle' && (
+                                {mode === 'flagle' ? (
+                                    <div className="space-y-6">
+                                        <h2 className="text-xl font-black text-slate-400 uppercase tracking-widest text-center">{t('chooseMode')}</h2>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <button 
+                                                onClick={() => setFlagleMode('daily')}
+                                                className={`p-6 rounded-3xl border-2 font-black transition-all border-white/5 bg-slate-900 hover:border-blue-500 hover:bg-slate-800 ${flagleMode === 'daily' ? 'border-blue-500 bg-blue-500/10' : ''}`}
+                                            >
+                                                <div className="text-3xl mb-2">📅</div>
+                                                <div className="text-white uppercase tracking-widest text-sm">{t('dailyChallenge')}</div>
+                                                <div className="text-[10px] text-slate-500 font-bold mt-1">{t('modeDailyFlagleDesc')}</div>
+                                            </button>
+                                            <button 
+                                                onClick={() => setFlagleMode('infinite')}
+                                                className={`p-6 rounded-3xl border-2 font-black transition-all border-white/5 bg-slate-900 hover:border-blue-500 hover:bg-slate-800 ${flagleMode === 'infinite' ? 'border-blue-500 bg-blue-500/10' : ''}`}
+                                            >
+                                                <div className="text-3xl mb-2">♾️</div>
+                                                <div className="text-white uppercase tracking-widest text-sm">{t('unlimitedPractice')}</div>
+                                                <div className="text-[10px] text-slate-500 font-bold mt-1">{t('modeFlagleDesc')}</div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
                                     <div className="space-y-6">
                                         <h2 className="text-xl font-black text-slate-400 uppercase tracking-widest text-center">{t('selectDifficulty')}</h2>
                                         <div className="flex justify-center gap-4">
@@ -249,7 +273,7 @@ const QuizView: React.FC<{ countries: Country[], onBackToExplorer: () => void }>
                                 <div className="flex justify-center pt-8">
                                     <button 
                                         onClick={() => setView('quiz-game')} 
-                                        disabled={mode !== 'flagle' && !difficulty}
+                                        disabled={mode === 'flagle' ? !flagleMode : !difficulty}
                                         className="px-20 py-6 bg-blue-600 text-white font-black rounded-3xl shadow-2xl disabled:opacity-30 uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all"
                                     >
                                         {t('startQuiz')}

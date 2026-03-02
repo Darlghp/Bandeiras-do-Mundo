@@ -27,7 +27,31 @@ const FlagFabricTexture: React.FC = () => (
     </div>
 );
 
-const FlagleGame: React.FC<{ countries: Country[], onBackToMenu: () => void }> = ({ countries, onBackToMenu }) => {
+const getDailyCountry = (countries: Country[]) => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Simple seeded random generator (Mulberry32)
+    let seed = 0;
+    for (let i = 0; i < today.length; i++) {
+        seed = (seed + today.charCodeAt(i)) | 0;
+    }
+    
+    const mulberry32 = (a: number) => {
+        return function() {
+          let t = a += 0x6D2B79F5;
+          t = Math.imul(t ^ t >>> 15, t | 1);
+          t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+          return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        }
+    }
+
+    const rand = mulberry32(seed);
+    const sorted = [...countries].sort((a, b) => a.cca3.localeCompare(b.cca3));
+    const index = Math.floor(rand() * sorted.length);
+    return sorted[index];
+};
+
+const FlagleGame: React.FC<{ countries: Country[], onBackToMenu: () => void, isDaily?: boolean }> = ({ countries, onBackToMenu, isDaily = false }) => {
     const { t, language } = useLanguage();
     
     const [correctCountry, setCorrectCountry] = useState<Country | null>(null);
@@ -44,18 +68,53 @@ const FlagleGame: React.FC<{ countries: Country[], onBackToMenu: () => void }> =
     const startNewGame = useCallback(() => {
         if (countries.length === 0) return;
 
-        const randomCountry = countries[Math.floor(Math.random() * countries.length)];
-        setCorrectCountry(randomCountry);
-        setGuesses([]);
+        if (isDaily) {
+            const dailyCountry = getDailyCountry(countries);
+            setCorrectCountry(dailyCountry);
+            
+            const today = new Date().toISOString().split('T')[0];
+            const saved = localStorage.getItem(`daily_flagle_${today}`);
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    if (state && Array.isArray(state.guesses) && typeof state.isWon === 'boolean' && typeof state.isGameOver === 'boolean') {
+                        setGuesses(state.guesses);
+                        setIsWon(state.isWon);
+                        setIsGameOver(state.isGameOver);
+                    } else {
+                        setGuesses([]);
+                        setIsWon(false);
+                        setIsGameOver(false);
+                    }
+                } catch (e) {
+                    console.error("Failed to load daily state", e);
+                    setGuesses([]);
+                    setIsWon(false);
+                    setIsGameOver(false);
+                }
+            } else {
+                setGuesses([]);
+                setIsWon(false);
+                setIsGameOver(false);
+            }
+        } else {
+            const randomCountry = countries[Math.floor(Math.random() * countries.length)];
+            setCorrectCountry(randomCountry);
+            setGuesses([]);
+            setIsWon(false);
+            setIsGameOver(false);
+        }
+        
         setCurrentInput("");
-        setIsWon(false);
-        setIsGameOver(false);
         setSuggestions([]);
         setTimeout(() => inputRef.current?.focus(), 100);
-    }, [countries]);
+    }, [countries, isDaily]);
 
     useEffect(() => {
-        startNewGame();
+        const timer = setTimeout(() => {
+            startNewGame();
+        }, 0);
+        return () => clearTimeout(timer);
     }, [startNewGame]);
 
     const handleGuess = useCallback((country: Country) => {
@@ -68,21 +127,37 @@ const FlagleGame: React.FC<{ countries: Country[], onBackToMenu: () => void }> =
             isCorrect
         };
 
-        setGuesses(prev => [...prev, newGuess]);
+        const newGuesses = [...guesses, newGuess];
+        setGuesses(newGuesses);
         setCurrentInput("");
         setSuggestions([]);
 
+        let newIsWon = isWon;
+        let newIsGameOver = isGameOver;
+
         if (isCorrect) {
+            newIsWon = true;
+            newIsGameOver = true;
             setIsWon(true);
             setIsGameOver(true);
         } else {
             setShake(true);
             setTimeout(() => setShake(false), 500);
-            if (guesses.length + 1 >= MAX_GUESSES) {
+            if (newGuesses.length >= MAX_GUESSES) {
+                newIsGameOver = true;
                 setIsGameOver(true);
             }
         }
-    }, [isGameOver, correctCountry, guesses.length, getCountryName]);
+
+        if (isDaily) {
+             const today = new Date().toISOString().split('T')[0];
+             localStorage.setItem(`daily_flagle_${today}`, JSON.stringify({
+                 guesses: newGuesses,
+                 isWon: newIsWon,
+                 isGameOver: newIsGameOver
+             }));
+        }
+    }, [isGameOver, correctCountry, guesses, getCountryName, isWon, isDaily]);
 
     const handleInputChange = (val: string) => {
         setCurrentInput(val);
@@ -114,6 +189,10 @@ const FlagleGame: React.FC<{ countries: Country[], onBackToMenu: () => void }> =
         }
         return null;
     }, [guesses.length, correctCountry, language, getCountryName, isGameOver, t]);
+
+    if (!correctCountry) {
+        return <div className="flex justify-center items-center h-64"><div className="animate-spin text-4xl">🌍</div></div>;
+    }
 
     return (
         <div className="max-w-xl mx-auto px-4 pb-24 animate-fade-in">
@@ -246,12 +325,18 @@ const FlagleGame: React.FC<{ countries: Country[], onBackToMenu: () => void }> =
                     <p className="text-slate-500 dark:text-slate-400 font-bold mb-8 uppercase tracking-widest text-xs">
                         {t('correctAnswerWasLabel')} <span className="text-slate-900 dark:text-white text-lg block mt-1">{getCountryName(correctCountry!)}</span>
                     </p>
-                    <button 
-                        onClick={startNewGame}
-                        className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest text-sm"
-                    >
-                        {t('playAgain').toUpperCase()}
-                    </button>
+                    {!isDaily ? (
+                        <button 
+                            onClick={startNewGame}
+                            className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest text-sm"
+                        >
+                            {t('playAgain').toUpperCase()}
+                        </button>
+                    ) : (
+                        <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                            <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-xs">{t('comeBackTomorrow')}</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
