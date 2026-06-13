@@ -2,8 +2,8 @@
 import type { Country } from '../types';
 import { COUNTRY_NAMES_PT } from '../constants/countryNamesPT';
 
-// Versão v22 para corrigir a bandeira da Síria.
-const CACHE_KEY = 'countries_data_v22_clean'; 
+// Versão v23 para deploy vercel (buscando o json diretamente)
+const CACHE_KEY = 'countries_data_v23_clean'; 
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -99,7 +99,7 @@ export const fetchCountries = async (): Promise<Country[]> => {
     }
 
     try {
-        const response = await fetch('/api/countries');
+        const response = await fetch('/countries.json');
         
         if (!response.ok) {
             throw new Error(`HTTP_ERR_${response.status}`);

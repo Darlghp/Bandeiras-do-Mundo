@@ -6,7 +6,7 @@ const APP_SHELL_URLS = [
 ];
 
 const DYNAMIC_CACHE_PATTERNS = [
-  '/api/countries',
+  '/countries.json',
   'https://aistudiocdn.com/',
   'https://cdn.jsdelivr.net/'
 ];
