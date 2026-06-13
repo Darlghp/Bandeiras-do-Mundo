@@ -7,7 +7,7 @@ import { askVexy } from '../services/geminiService';
 import { useAchievements } from '../context/AchievementContext';
 
 interface Message {
-    id: number;
+    id: string;
     text: string;
     sender: 'user' | 'vexy';
     timestamp: Date;
@@ -97,7 +97,7 @@ const VexyChatbot: React.FC<VexyChatbotProps> = ({ countries, onNavigate, onSele
         if (activeCountry) setLastContextCountry(activeCountry);
 
         const vexyMsg: Message = {
-            id: Date.now(),
+            id: crypto.randomUUID(),
             text: aiResponse,
             sender: 'vexy',
             timestamp: new Date(),
@@ -111,7 +111,7 @@ const VexyChatbot: React.FC<VexyChatbotProps> = ({ countries, onNavigate, onSele
     const handleSuggestion = (s: string) => {
         const cleanS = s.replace(/[^a-zA-Z0-9\s?]/g, "").trim();
         setInput(cleanS);
-        const userMsg: Message = { id: Date.now(), text: s, sender: 'user', timestamp: new Date() };
+        const userMsg: Message = { id: crypto.randomUUID(), text: s, sender: 'user', timestamp: new Date() };
         setMessages(prev => [...prev, userMsg]);
         setIsTyping(true);
         setTimeout(async () => {
@@ -124,7 +124,7 @@ const VexyChatbot: React.FC<VexyChatbotProps> = ({ countries, onNavigate, onSele
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isTyping) return;
-        const userMsg: Message = { id: Date.now(), text: input, sender: 'user', timestamp: new Date() };
+        const userMsg: Message = { id: crypto.randomUUID(), text: input, sender: 'user', timestamp: new Date() };
         setMessages(prev => [...prev, userMsg]);
         const currentInput = input;
         setInput('');

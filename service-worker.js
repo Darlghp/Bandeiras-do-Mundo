@@ -1,12 +1,12 @@
 
-const CACHE_NAME = 'flag-explorer-cache-v3';
+const CACHE_NAME = 'flag-explorer-cache-v4';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
 ];
 
 const DYNAMIC_CACHE_PATTERNS = [
-  'https://restcountries.com/v3.1/all',
+  '/api/countries',
   'https://aistudiocdn.com/',
   'https://cdn.jsdelivr.net/'
 ];

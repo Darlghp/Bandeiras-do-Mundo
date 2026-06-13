@@ -171,7 +171,7 @@ const FlagModal: React.FC<FlagModalProps> = ({ country, onClose, isFavorite, onT
                                     label={t('currencies')} 
                                     value={
                                         country.currencies 
-                                            ? Object.values(country.currencies).map(c => `${c.name} ${c.symbol ? `(${c.symbol})` : ''}`).join(', ') 
+                                            ? (Object.values(country.currencies) as {name: string, symbol: string}[]).map(c => `${c.name} ${c.symbol ? `(${c.symbol})` : ''}`).join(', ') 
                                             : t('notAvailable')
                                     } 
                                 />
