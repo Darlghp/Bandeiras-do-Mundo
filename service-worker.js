@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'flag-explorer-cache-v4';
+const CACHE_NAME = 'flag-explorer-cache-v6';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
