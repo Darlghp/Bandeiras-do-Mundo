@@ -99,7 +99,7 @@ export const fetchCountries = async (): Promise<Country[]> => {
     }
 
     try {
-        const response = await fetch('/api/countries');
+        const response = await fetch('/countries.json?v=' + Date.now()); // static file in public
         
         if (!response.ok) {
             throw new Error(`HTTP_ERR_${response.status}`);

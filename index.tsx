@@ -17,6 +17,15 @@ if ('serviceWorker' in navigator) {
         });
       }
     });
+
+    // Brute-force clear caches just to be safe
+    if (window.caches) {
+      caches.keys().then((names) => {
+        for (let name of names) {
+          caches.delete(name);
+        }
+      });
+    }
   });
 }
 

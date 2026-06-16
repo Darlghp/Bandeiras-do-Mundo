@@ -16,26 +16,6 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  let countriesCache: any = null;
-  let cacheTimestamp = 0;
-
-  app.get("/api/countries", async (req, res) => {
-    try {
-      if (countriesCache) {
-        return res.json(countriesCache);
-      }
-      
-      const filePath = path.join(process.cwd(), 'countries.json');
-      const data = fs.readFileSync(filePath, 'utf8');
-      countriesCache = JSON.parse(data);
-      
-      res.json(countriesCache);
-    } catch (error) {
-      console.error("Countries provider error:", error);
-      res.status(500).json({ error: "Failed to fetch countries" });
-    }
-  });
-
   app.post("/api/chat", async (req, res) => {
     try {
       const { prompt, countryContext } = req.body;
