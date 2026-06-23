@@ -45,7 +45,7 @@ const cleanName = (name: string): string => {
 /**
  * Aplica mapeamentos manuais e limpezas automáticas nos dados dos países.
  */
-const applyImprovements = (countries: Country[]): Country[] => {
+export const applyImprovements = (countries: Country[]): Country[] => {
     return countries.map(country => {
         // 1. Limpeza básica nos nomes originais (inglês)
         country.name.common = cleanName(country.name.common) || country.cca3;
@@ -99,17 +99,13 @@ export const fetchCountries = async (): Promise<Country[]> => {
     }
 
     try {
-        const url = `${API_BASE_URL}/all`;
-        const response = await fetch(url);
+        // Try local JSON first as it's more reliable than external APIs
+        const fallbackRes = await fetch('/countries.json?v=' + Date.now());
+        if (!fallbackRes.ok) throw new Error('Local JSON not found');
+        const fallbackData = await fallbackRes.json();
         
-        if (!response.ok) {
-            throw new Error(`HTTP_ERR_${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (Array.isArray(data) && data.length > 0) {
-            const improvedData = applyImprovements(data);
+        if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+            const improvedData = applyImprovements(fallbackData);
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 timestamp: Date.now(),
                 data: improvedData,
@@ -118,17 +114,25 @@ export const fetchCountries = async (): Promise<Country[]> => {
         }
         throw new Error('EMPTY_DATA');
     } catch (error) {
-        console.error("Fetch failed, using local JSON as fallback", error);
+        console.error("Local JSON failed, trying API as fallback", error);
+        
         try {
-            const fallbackRes = await fetch(import.meta.env.BASE_URL + 'countries.json?v=' + Date.now());
-            if (fallbackRes.ok) {
-                const fallbackData = await fallbackRes.json();
-                if (Array.isArray(fallbackData) && fallbackData.length > 0) {
-                    return applyImprovements(fallbackData);
+            const url = `${API_BASE_URL}/all`;
+            const response = await fetch(url);
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    const improvedData = applyImprovements(data);
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({
+                        timestamp: Date.now(),
+                        data: improvedData,
+                    }));
+                    return improvedData;
                 }
             }
         } catch (e) {
-            console.error("Local JSON fallback also failed", e);
+            console.error("API fallback also failed", e);
         }
 
         if (cachedItem) {
