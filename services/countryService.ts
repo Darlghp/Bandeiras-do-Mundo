@@ -99,9 +99,16 @@ export const fetchCountries = async (): Promise<Country[]> => {
     }
 
     try {
-        const response = await fetch('/countries.json?v=' + Date.now()); // static file in public
+        const url = `${API_BASE_URL}/all?fields=${API_FIELDS.join(',')}`;
+        const response = await fetch(url);
         
         if (!response.ok) {
+            if (response.status === 404 || response.status === 400) {
+                const fallbackResponse = await fetch(`${API_BASE_URL}/all`);
+                if (!fallbackResponse.ok) throw new Error(`HTTP_ERR_${fallbackResponse.status}`);
+                const fallbackData = await fallbackResponse.json();
+                return applyImprovements(fallbackData);
+            }
             throw new Error(`HTTP_ERR_${response.status}`);
         }
         
@@ -117,7 +124,19 @@ export const fetchCountries = async (): Promise<Country[]> => {
         }
         throw new Error('EMPTY_DATA');
     } catch (error) {
-        console.error("Fetch failed, using cache as fallback", error);
+        console.error("Fetch failed, using local JSON as fallback", error);
+        try {
+            const fallbackRes = await fetch('/countries.json?v=' + Date.now());
+            if (fallbackRes.ok) {
+                const fallbackData = await fallbackRes.json();
+                if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+                    return applyImprovements(fallbackData);
+                }
+            }
+        } catch (e) {
+            console.error("Local JSON fallback also failed", e);
+        }
+
         if (cachedItem) {
             try {
                 const { data } = JSON.parse(cachedItem);

@@ -168,12 +168,15 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
     return (
         <div className="space-y-16 pb-24">
             {/* Header de Introdução Panorâmico */}
-            <div className="max-w-4xl animate-fade-in-up">
-                <h1 className="text-6xl sm:text-8xl font-black text-white leading-[0.9] mb-6 tracking-tighter">
-                    {t('headerTitle')}
+            <div className="max-w-4xl animate-fade-in-up text-center mx-auto mb-12">
+                <div className="inline-block px-4 py-1.5 rounded-full bg-blue-500/20 text-blue-400 font-bold tracking-widest uppercase text-xs mb-4 border border-blue-500/30">
+                    O maior explorador do mundo
+                </div>
+                <h1 className="text-5xl sm:text-7xl font-black text-white leading-tight mb-4 tracking-tighter uppercase">
+                    Aprenda e Jogue
                 </h1>
-                <p className="text-xl text-slate-400 leading-relaxed font-medium max-w-2xl">
-                    {t('exploreSubtitle')}
+                <p className="text-xl text-slate-400 font-medium max-w-2xl mx-auto">
+                    Adivinhe bandeiras, decore capitais e desafie seus amigos em modos épicos.
                 </p>
             </div>
 
@@ -183,6 +186,47 @@ const ExplorerContent: React.FC<ExplorerContentProps> = ({
                 isLoading={isFlagOfTheDayLoading} 
                 onFlagClick={handleCardClick}
             />
+
+            {/* GAMIFIED MENU */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up">
+                <div 
+                    onClick={() => {
+                        const event = new CustomEvent('navigate', { detail: 'quiz' });
+                        window.dispatchEvent(event);
+                    }}
+                    className="relative overflow-hidden group cursor-pointer bg-blue-600 rounded-[2.5rem] p-8 sm:p-10 shadow-[0_8px_0_0_#1e40af] hover:shadow-[0_4px_0_0_#1e40af] hover:translate-y-1 transition-all active:shadow-none active:translate-y-2 border-4 border-white/10"
+                >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-white/20 transition-all"></div>
+                    <div className="relative z-10 flex flex-col h-full justify-between gap-8">
+                        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30 text-3xl shadow-lg">
+                            🎮
+                        </div>
+                        <div>
+                            <h3 className="text-3xl font-black text-white tracking-tighter mb-2">Quiz de Bandeiras</h3>
+                            <p className="text-blue-100 font-bold opacity-90 max-w-xs">Teste seus conhecimentos identificando as bandeiras corretas no menor tempo.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div 
+                    onClick={() => {
+                        const event = new CustomEvent('navigate', { detail: 'discover' });
+                        window.dispatchEvent(event);
+                    }}
+                    className="relative overflow-hidden group cursor-pointer bg-emerald-500 rounded-[2.5rem] p-8 sm:p-10 shadow-[0_8px_0_0_#047857] hover:shadow-[0_4px_0_0_#047857] hover:translate-y-1 transition-all active:shadow-none active:translate-y-2 border-4 border-white/10"
+                >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-white/20 transition-all"></div>
+                    <div className="relative z-10 flex flex-col h-full justify-between gap-8">
+                        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30 text-3xl shadow-lg">
+                            🌎
+                        </div>
+                        <div>
+                            <h3 className="text-3xl font-black text-white tracking-tighter mb-2">Modo Descoberta</h3>
+                            <p className="text-emerald-50 font-bold opacity-90 max-w-xs">Explore coleções, aprenda simbolismos e treine para ser um mestre.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* DASHBOARD DE MAESTRIA */}
             <div className="animate-fade-in-up-short">
@@ -335,7 +379,17 @@ const AppContent: React.FC = () => {
             setScrollProgress(scroll);
         };
         window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
+        
+        const handleNavigate = (e: Event) => {
+            const customEvent = e as CustomEvent<View>;
+            if (customEvent.detail) setView(customEvent.detail);
+        };
+        window.addEventListener('navigate', handleNavigate);
+        
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('navigate', handleNavigate);
+        };
     }, []);
 
     const loadData = useCallback(async () => {

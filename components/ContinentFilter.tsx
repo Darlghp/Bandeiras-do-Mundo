@@ -22,7 +22,7 @@ const ContinentFilter: React.FC<ContinentFilterProps> = ({ continents, selectedC
     const { language } = useLanguage();
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4">
+        <div className="flex overflow-x-auto gap-3 pb-4 scrollbar-hide -mx-6 px-6 sm:mx-0 sm:px-0">
             {continents.map(continentKey => {
                 const isActive = selectedContinent === continentKey;
                 const Icon = continentIcons[continentKey] || MapPinIcon;
@@ -30,16 +30,16 @@ const ContinentFilter: React.FC<ContinentFilterProps> = ({ continents, selectedC
                     <button
                         key={continentKey}
                         onClick={() => setSelectedContinent(continentKey)}
-                        className={`w-full group flex items-center gap-4 py-2 text-left transition-all focus:outline-none rounded-xl px-3
+                        className={`flex-shrink-0 group flex items-center gap-2 py-3 px-6 text-left transition-all focus:outline-none rounded-[2rem] border-2 font-black text-sm uppercase tracking-wider
                             ${isActive 
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
+                                ? 'bg-blue-600 border-blue-500 text-white shadow-[0_4px_0_0_#1e40af] translate-y-[-2px]' 
+                                : 'bg-slate-800 border-white/5 text-slate-400 hover:border-slate-600 hover:text-white shadow-[0_4px_0_0_rgba(255,255,255,0.05)]'
+                            } active:shadow-none active:translate-y-[2px]`}
                     >
-                        <div className={`${isActive ? 'text-white' : 'text-slate-500 group-hover:text-blue-400'} transition-colors`}>
+                        <div className={`${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'} transition-colors`}>
                             <Icon />
                         </div>
-                        <span className="text-[11px] font-black uppercase tracking-[0.1em] truncate">
+                        <span className="truncate">
                             {CONTINENT_NAMES[continentKey][language]}
                         </span>
                     </button>

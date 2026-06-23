@@ -5,12 +5,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z'/%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <title>Flags of the World Explorer</title>
+    <title>Bandeiras do Mundo</title>
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#020617" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
     <style>
   @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
   .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }

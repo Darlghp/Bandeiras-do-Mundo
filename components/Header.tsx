@@ -13,7 +13,7 @@ interface HeaderProps {
 }
 
 const WavingFlagIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600 dark:text-sky-400 group-hover:text-blue-700 dark:group-hover:text-sky-300 transition-colors" viewBox="0 0 24 24" fill="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
         <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z" />
     </svg>
 );
@@ -65,21 +65,23 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, scrollProgress })
     }, [currentView, t, navItems.length]);
 
     return (
-        <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-950/40 backdrop-blur-2xl z-20 border-b border-slate-200/50 dark:border-slate-800/40 transition-colors duration-500 shadow-sm">
+        <header className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-900 border-b-4 border-slate-200 dark:border-slate-800 z-50">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     <div className="flex-1 flex justify-start">
-                        <button onClick={() => setView('explorer')} className="flex items-center space-x-3 group" aria-label={t('headerTitle')}>
-                            <WavingFlagIcon />
-                            <span className="hidden sm:inline text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight transition-colors">
-                                {t('headerTitle')}
+                        <button onClick={() => setView('explorer')} className="flex items-center space-x-3 group active:scale-95 transition-transform" aria-label={t('headerTitle')}>
+                            <div className="bg-sky-500 rounded-xl p-2 shadow-[0_4px_0_0_#0ea5e9]">
+                                <WavingFlagIcon />
+                            </div>
+                            <span className="hidden sm:inline text-2xl font-black text-slate-800 dark:text-white tracking-tighter transition-colors">
+                                Bandeiras do Mundo
                             </span>
                         </button>
                     </div>
                     
                     <div className="hidden md:block">
-                        <div ref={navRef} className="relative flex items-center justify-center p-1.5 bg-slate-200/40 dark:bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-300/30 dark:border-slate-800/30 transition-colors duration-500">
-                             <div className="absolute top-1.5 bottom-1.5 bg-white dark:bg-slate-800/80 rounded-xl shadow-sm transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1)" style={magicLineStyle}></div>
+                        <div ref={navRef} className="relative flex items-center justify-center p-2 bg-slate-100 dark:bg-slate-800 rounded-[1.5rem] border-b-4 border-slate-200 dark:border-slate-950">
+                             <div className="absolute top-2 bottom-2 bg-white dark:bg-slate-700 rounded-xl shadow-sm transition-all duration-300 ease-out" style={magicLineStyle}></div>
                             {navItems.map(item => (
                                 <NavItem 
                                     key={item.id}
@@ -93,13 +95,13 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, scrollProgress })
                     </div>
 
                     <div className="flex-1 flex justify-end">
-                        <div className="flex items-center space-x-2 sm:space-x-4">
+                        <div className="flex items-center space-x-4">
                             <LanguageSwitcher />
                         </div>
                     </div>
                 </div>
             </div>
-            <div className="absolute bottom-[-1px] left-0 h-[2px] bg-blue-600 dark:bg-sky-400 rounded-r-full transition-all duration-300 ease-out" style={{ width: `${scrollProgress}%`, boxShadow: scrollProgress > 0 ? '0 0 10px rgba(56, 189, 248, 0.5)' : 'none' }} />
+            <div className="absolute bottom-[-4px] left-0 h-[4px] bg-sky-500 rounded-r-full transition-all duration-300 ease-out" style={{ width: `${scrollProgress}%` }} />
         </header>
     );
 };
