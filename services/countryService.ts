@@ -99,16 +99,10 @@ export const fetchCountries = async (): Promise<Country[]> => {
     }
 
     try {
-        const url = `${API_BASE_URL}/all?fields=${API_FIELDS.join(',')}`;
+        const url = `${API_BASE_URL}/all`;
         const response = await fetch(url);
         
         if (!response.ok) {
-            if (response.status === 404 || response.status === 400) {
-                const fallbackResponse = await fetch(`${API_BASE_URL}/all`);
-                if (!fallbackResponse.ok) throw new Error(`HTTP_ERR_${fallbackResponse.status}`);
-                const fallbackData = await fallbackResponse.json();
-                return applyImprovements(fallbackData);
-            }
             throw new Error(`HTTP_ERR_${response.status}`);
         }
         
@@ -126,7 +120,7 @@ export const fetchCountries = async (): Promise<Country[]> => {
     } catch (error) {
         console.error("Fetch failed, using local JSON as fallback", error);
         try {
-            const fallbackRes = await fetch('/countries.json?v=' + Date.now());
+            const fallbackRes = await fetch(import.meta.env.BASE_URL + 'countries.json?v=' + Date.now());
             if (fallbackRes.ok) {
                 const fallbackData = await fallbackRes.json();
                 if (Array.isArray(fallbackData) && fallbackData.length > 0) {
